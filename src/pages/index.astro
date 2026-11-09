@@ -1,0 +1,8 @@
+---
+// Portada. El catálogo público llega en la Fase 3; por ahora lleva al login
+// o, si ya hay sesión, al inicio que corresponde al rol.
+import { destinoPorRol } from '../lib/auth';
+
+const { usuario } = Astro.locals;
+return Astro.redirect(usuario ? destinoPorRol(usuario) : '/login');
+---

@@ -1,0 +1,49 @@
+---
+// Etiqueta. El semáforo siempre lleva icono + texto, nunca solo color:
+//   rojo "Vence hoy" · naranja "En 2 días" · verde "En 4 días"
+// "sugerido" marca valores por defecto inteligentes; "neutro" informa sin urgencia.
+import Icono, { type NombreIcono } from './Icono.astro';
+
+export type TonoBadge = 'rojo' | 'naranja' | 'verde' | 'sugerido' | 'lila' | 'neutro';
+
+interface Props {
+  tono: TonoBadge;
+  icono?: NombreIcono;
+  class?: string;
+  [atributo: `data-${string}`]: string | boolean | undefined;
+}
+
+const { tono, icono: iconoPropio, class: clase, ...resto } = Astro.props;
+const iconos: Partial<Record<TonoBadge, NombreIcono>> = {
+  rojo: 'alerta',
+  naranja: 'reloj',
+  verde: 'check',
+};
+const icono = iconoPropio ?? iconos[tono];
+---
+
+<span class:list={['badge', `badge--${tono}`, clase]} {...resto}>
+  {icono && <Icono nombre={icono} tamano={16} />}
+  <span data-badge-texto><slot /></span>
+</span>
+
+<style>
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: var(--e1) 12px;
+    border-radius: 999px;
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge--rojo { background: var(--red-t); color: var(--red); }
+  .badge--naranja { background: var(--org-t); color: var(--org); }
+  .badge--verde { background: var(--grn-t); color: var(--grn); }
+  .badge--sugerido { background: var(--mint); color: var(--grn); min-height: 24px; padding: 2px 10px; font-size: var(--t-nota); line-height: var(--lh-nota); }
+  .badge--lila { background: var(--lila); color: var(--ink); }
+  .badge--neutro { background: var(--paper); color: var(--ink2); }
+</style>

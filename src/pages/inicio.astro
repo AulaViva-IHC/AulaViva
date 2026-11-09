@@ -1,0 +1,506 @@
+---
+// Inicio del estudiante · referencias/pantallas/04-inicio.png y 04b-inicio-buscador.png
+// La página llega con skeleton y pide los datos en dos partes:
+//   /api/inicio        → "Continúa donde te quedaste", próximo certificado y otros cursos
+//   /api/esta-semana   → tareas con semáforo (si falla, solo esa tarjeta: estado parcial)
+// Así los 5 estados son reales. Lógica del navegador: src/scripts/inicio.ts.
+import App from '../layouts/App.astro';
+import Topbar from '../components/Topbar.astro';
+import Tarjeta from '../components/Tarjeta.astro';
+import Boton from '../components/Boton.astro';
+import BotonMultimodal from '../components/BotonMultimodal.astro';
+import Badge from '../components/Badge.astro';
+import Icono from '../components/Icono.astro';
+import EstadoVacio from '../components/EstadoVacio.astro';
+import EstadoError from '../components/EstadoError.astro';
+import EstadoParcial from '../components/EstadoParcial.astro';
+
+const usuario = Astro.locals.usuario!;
+if (usuario.rol === 'admin') return Astro.redirect('/admin/cursos/nuevo');
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+
+// Saludo según la hora en Perú.
+const hora = Number(
+  new Intl.DateTimeFormat('es-PE', { hour: 'numeric', hourCycle: 'h23', timeZone: 'America/Lima' }).format(new Date()),
+);
+const saludo = hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches';
+const primerNombre = usuario.nombre.split(' ')[0];
+
+const RADIO = 52;
+const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
+---
+
+<App titulo="Inicio" activo="inicio" simular={simular}>
+  <Topbar titulo={`${saludo}, ${primerNombre}`} buscador notificaciones sonido />
+
+  <div class="inicio" data-inicio aria-busy="true">
+    <!-- Ideal (con skeleton mientras carga) -->
+    <div class="rejilla" data-region="contenido">
+      <Tarjeta class="continuar" aria-labelledby="continuar-curso">
+        <div data-esqueleto aria-hidden="true" class="esqueleto">
+          <span class="skeleton sk sk--ceja"></span>
+          <span class="skeleton sk sk--titulo"></span>
+          <span class="skeleton sk sk--linea"></span>
+          <span class="skeleton sk sk--ruta"></span>
+          <span class="skeleton sk sk--boton"></span>
+        </div>
+        <div data-contenido hidden class="continuar__contenido">
+          <div class="continuar__textos">
+            <p class="ceja">Continúa donde te quedaste</p>
+            <h2 class="continuar__curso" id="continuar-curso" data-curso></h2>
+            <p class="continuar__clase" data-clase></p>
+          </div>
+          <ol class="ruta" aria-label="Tu avance por módulos" data-ruta></ol>
+          <div>
+            <!-- Enlace (navega): solo toque al presionar, sin earcon de éxito -->
+            <BotonMultimodal variante="principal" href="/mis-cursos" textoCargando="Abriendo clase…" modo="toque" data-continuar>
+              <Icono nombre="play" tamano={18} />
+              Continuar clase
+            </BotonMultimodal>
+          </div>
+        </div>
+      </Tarjeta>
+
+      <Tarjeta class="certificado" aria-labelledby="certificado-ceja">
+        <p class="ceja" id="certificado-ceja">Tu próximo certificado</p>
+        <div data-esqueleto aria-hidden="true" class="esqueleto esqueleto--centro">
+          <span class="skeleton sk sk--anillo"></span>
+          <span class="skeleton sk sk--linea"></span>
+        </div>
+        <div data-contenido hidden class="certificado__contenido">
+          <div class="anillo" role="img" data-anillo>
+            <svg viewBox="0 0 128 128" aria-hidden="true" focusable="false">
+              <circle cx="64" cy="64" r={RADIO} class="anillo__fondo"></circle>
+              <circle
+                cx="64"
+                cy="64"
+                r={RADIO}
+                class="anillo__avance"
+                stroke-dasharray={CIRCUNFERENCIA.toFixed(2)}
+                stroke-dashoffset={CIRCUNFERENCIA.toFixed(2)}
+                data-circunferencia={CIRCUNFERENCIA.toFixed(2)}
+                data-anillo-avance></circle>
+            </svg>
+            <div class="anillo__texto" aria-hidden="true">
+              <span class="anillo__porcentaje" data-porcentaje></span>
+              <span class="anillo__clases" data-clases></span>
+            </div>
+          </div>
+          <p class="certificado__curso" data-cert-curso></p>
+        </div>
+        <p class="certificado__sin" data-cert-vacio hidden>
+          Ya terminaste todos tus cursos. Revisa tus certificados en “Mis certificados”.
+        </p>
+      </Tarjeta>
+
+      <Tarjeta class="semana" aria-labelledby="semana-titulo" data-semana aria-busy="true">
+        <h2 class="h2" id="semana-titulo" tabindex="-1">Esta semana</h2>
+        <ul class="semana__lista" data-semana-cargando aria-hidden="true">
+          {
+            [0, 1, 2].map(() => (
+              <li class="tarea">
+                <span class="skeleton sk sk--fecha" />
+                <span class="tarea__textos">
+                  <span class="skeleton sk sk--linea" />
+                  <span class="skeleton sk sk--corta" />
+                </span>
+                <span class="skeleton sk sk--badge" />
+              </li>
+            ))
+          }
+        </ul>
+        <ul class="semana__lista" data-semana-lista hidden></ul>
+        <p class="secundario" data-semana-vacia hidden>
+          Nada vence esta semana. Es un buen momento para adelantar una clase.
+        </p>
+        <EstadoParcial
+          texto="Lo demás de tu Inicio funciona; tus entregas aparecerán al reconectar."
+          multimodal
+          data-semana-error
+          hidden
+        />
+      </Tarjeta>
+
+      <Tarjeta class="otros" aria-labelledby="otros-titulo">
+        <h2 class="otros__titulo" id="otros-titulo">Tus otros cursos</h2>
+        <div data-esqueleto aria-hidden="true" class="esqueleto">
+          <span class="skeleton sk sk--linea"></span>
+          <span class="skeleton sk sk--barra"></span>
+          <span class="skeleton sk sk--linea"></span>
+          <span class="skeleton sk sk--barra"></span>
+        </div>
+        <ul class="otros__lista" data-contenido data-otros hidden></ul>
+        <p class="secundario" data-otros-vacio hidden>
+          Este es tu único curso por ahora. En el catálogo hay más esperándote.
+        </p>
+      </Tarjeta>
+    </div>
+
+    <!-- Vacío: estudiante nuevo, sin cursos -->
+    <Tarjeta data-region="vacio" hidden>
+      <EstadoVacio
+        titulo="Aún no tienes cursos"
+        texto="Elige tu primer curso en el catálogo. Aquí verás tu avance, lo que vence cada semana y tu próximo certificado."
+        icono="libro"
+      >
+        <Boton variante="principal" href="/catalogo" textoCargando="Abriendo catálogo…">
+          <Icono nombre="cuadricula" tamano={18} />
+          Explorar cursos
+        </Boton>
+      </EstadoVacio>
+    </Tarjeta>
+
+    <!-- Error: no cargó lo principal -->
+    <Tarjeta data-region="error" hidden>
+      <EstadoError
+        titulo="No pudimos cargar tu Inicio"
+        texto="Revisa tu conexión a internet. Tu avance está guardado; vuelve a intentarlo."
+        multimodal
+      />
+    </Tarjeta>
+  </div>
+  <p class="solo-lector" aria-live="polite" data-anuncio-inicio></p>
+
+  <template data-plantilla="tarea-rojo"><Badge tono="rojo">Vence hoy</Badge></template>
+  <template data-plantilla="tarea-naranja"><Badge tono="naranja">En 2 días</Badge></template>
+  <template data-plantilla="tarea-verde"><Badge tono="verde">En 4 días</Badge></template>
+  <template data-plantilla="paso-completado"><Icono nombre="check" tamano={22} /></template>
+  <template data-plantilla="paso-bloqueada"><Icono nombre="candado" tamano={20} /></template>
+</App>
+
+<script>
+  import '../scripts/inicio';
+</script>
+
+<style>
+  .rejilla {
+    display: grid;
+    grid-template-columns: minmax(0, 2.35fr) minmax(280px, 1fr);
+    gap: var(--e5);
+    align-items: stretch;
+  }
+  .rejilla[hidden] {
+    display: none;
+  }
+  .ceja {
+    color: var(--indigo3);
+    font-weight: 700;
+  }
+
+  /* ─── Skeleton ─────────────────────────────────────────── */
+  .esqueleto {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  .esqueleto[hidden] {
+    display: none;
+  }
+  .esqueleto--centro {
+    align-items: center;
+    margin-top: var(--e4);
+  }
+  .sk { display: block; }
+  .sk--ceja { width: 200px; height: 20px; }
+  .sk--titulo { width: 70%; height: 36px; }
+  .sk--linea { width: 85%; height: 18px; }
+  .sk--corta { width: 50%; height: 16px; }
+  .sk--ruta { width: 100%; height: 96px; margin-top: var(--e3); }
+  .sk--boton { width: 200px; height: 56px; margin-top: var(--e3); }
+  .sk--anillo { width: 176px; height: 176px; border-radius: 50%; }
+  .sk--barra { width: 100%; height: 10px; border-radius: 5px; margin-bottom: var(--e3); }
+  .sk--fecha { width: 56px; height: 18px; }
+  .sk--badge { width: 104px; height: 32px; border-radius: 999px; }
+
+  [data-contenido][hidden] {
+    display: none !important;
+  }
+
+  /* ─── Continúa donde te quedaste ───────────────────────── */
+  .continuar__contenido {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e5);
+  }
+  .continuar__textos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+  }
+  .continuar__curso {
+    font-size: var(--t-h1);
+    line-height: var(--lh-h1);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .continuar__clase {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    color: var(--ink2);
+  }
+
+  .ruta {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ruta :global(.paso) {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--e1);
+    text-align: center;
+  }
+  /* Conector con el paso anterior: índigo si ya se avanzó, gris si no */
+  .ruta :global(.paso + .paso)::before {
+    content: '';
+    position: absolute;
+    top: 26px;
+    right: 50%;
+    width: 100%;
+    height: 4px;
+    background: var(--paper);
+  }
+  .ruta :global(.paso[data-linea='hecha'])::before {
+    background: var(--indigo3);
+  }
+  .ruta :global(.paso__circulo) {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    margin-bottom: var(--e2);
+    border-radius: 50%;
+    background: var(--paper);
+    color: var(--ink3);
+  }
+  .ruta :global(.paso[data-estado='completado'] .paso__circulo) {
+    background: var(--indigo);
+    color: var(--white);
+  }
+  .ruta :global(.paso[data-estado='en-curso'] .paso__circulo) {
+    background: var(--yellow);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--yellow) 30%, var(--white));
+  }
+  .ruta :global(.paso[data-estado='en-curso'] .paso__circulo)::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--ink);
+  }
+  .ruta :global(.paso__textos) {
+    display: flex;
+    flex-direction: column;
+  }
+  .ruta :global(.paso__nombre) {
+    font-weight: 600;
+  }
+  .ruta :global(.paso__estado) {
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: var(--ink3);
+  }
+  .ruta :global(.paso[data-estado='completado'] .paso__estado) {
+    color: var(--grn);
+  }
+  .ruta :global(.paso[data-estado='en-curso'] .paso__estado) {
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  /* ─── Próximo certificado ──────────────────────────────── */
+  .certificado {
+    display: flex;
+    flex-direction: column;
+  }
+  .certificado__contenido {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--e4);
+    margin-top: var(--e4);
+    text-align: center;
+  }
+  .anillo {
+    position: relative;
+    width: 192px;
+    height: 192px;
+  }
+  .anillo svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .anillo circle {
+    fill: none;
+    stroke-width: 12;
+  }
+  .anillo__fondo {
+    stroke: var(--paper);
+  }
+  .anillo__avance {
+    stroke: var(--indigo3);
+    stroke-linecap: round;
+    transition: stroke-dashoffset 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .anillo__texto {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .anillo__porcentaje {
+    font-size: 2.5rem;
+    line-height: 3rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .anillo__clases {
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: var(--ink2);
+  }
+  .certificado__curso {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+  }
+  .certificado__sin {
+    margin-top: var(--e3);
+    color: var(--ink2);
+  }
+
+  /* ─── Esta semana ──────────────────────────────────────── */
+  .semana {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .semana__lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4); /* proximidad: cada entrega se separa por espacio, sin líneas */
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .semana__lista[hidden] {
+    display: none;
+  }
+  .semana :global(.tarea) {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--e3);
+  }
+  .semana :global(.tarea__fecha) {
+    font-weight: 600;
+  }
+  .semana :global(.tarea__textos) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .semana :global(.tarea__titulo) {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+  }
+  .semana :global(.tarea__curso) {
+    color: var(--ink2);
+  }
+
+  /* ─── Tus otros cursos ─────────────────────────────────── */
+  .otros {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .otros__titulo {
+    font-size: var(--t-h2);
+    line-height: var(--lh-h2);
+    font-weight: 800;
+  }
+  .otros__lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .otros :global(.otro__fila) {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--e3);
+    margin-bottom: var(--e2);
+  }
+  .otros :global(.otro__titulo) {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+  }
+  .otros :global(.otro__porcentaje) {
+    flex: none;
+    font-weight: 600;
+  }
+  .otros :global(.barra) {
+    height: 10px;
+    border-radius: 5px;
+    background: var(--paper);
+    overflow: hidden;
+  }
+  .otros :global(.barra__avance) {
+    height: 100%;
+    border-radius: 5px;
+    background: var(--indigo3);
+    transition: width 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  @media (max-width: 1099px) {
+    .rejilla {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--e4);
+    }
+  }
+  @media (max-width: 600px) {
+    .ruta {
+      grid-auto-flow: row;
+      gap: var(--e3);
+    }
+    .ruta :global(.paso) {
+      flex-direction: row;
+      text-align: left;
+      gap: var(--e3);
+    }
+    .ruta :global(.paso + .paso)::before {
+      display: none;
+    }
+    .ruta :global(.paso__circulo) {
+      width: 40px;
+      height: 40px;
+      margin: 0;
+      flex: none;
+    }
+    .semana :global(.tarea) {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .semana :global(.tarea__fecha) {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

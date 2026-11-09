@@ -1,0 +1,284 @@
+---
+// Barra superior de las páginas con menú lateral: título (h1) y, a la derecha,
+// el buscador con sugerencias y búsquedas recientes (referencia 04b-inicio-buscador).
+// Ranuras: "migas" (ruta sobre el título) y "acciones" (a la derecha).
+import Icono from './Icono.astro';
+import InterruptorSonido from './InterruptorSonido.astro';
+
+interface Props {
+  titulo: string;
+  buscador?: boolean;
+  notificaciones?: boolean;
+  /** Interruptor "Sonido y vibración" (páginas con BotonMultimodal, §5.8). */
+  sonido?: boolean;
+}
+const { titulo, buscador = false, notificaciones = false, sonido = false } = Astro.props;
+---
+
+<header class="barra">
+  <div class="barra__titulos">
+    <slot name="migas" />
+    <h1 class="barra__titulo" tabindex="-1" data-titulo-pagina>{titulo}</h1>
+  </div>
+
+  <div class="barra__acciones">
+    {
+      buscador && (
+        <div class="buscador" data-buscador>
+          <form class="buscador__control" role="search" action="/catalogo" method="get" data-buscador-form>
+            <label for="buscar" class="solo-lector">Buscar cursos</label>
+            <Icono nombre="buscar" class="buscador__lupa" />
+            <input
+              id="buscar"
+              name="q"
+              type="text"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-controls="buscar-lista"
+              aria-describedby="buscar-ayuda"
+              autocomplete="off"
+              spellcheck="false"
+              enterkeyhint="search"
+              maxlength="80"
+              placeholder="Buscar cursos"
+              data-buscar
+            />
+          </form>
+          <p id="buscar-ayuda" class="solo-lector">
+            Escribe para ver sugerencias. Usa las flechas para moverte y Enter para elegir.
+          </p>
+
+          <div class="buscador__panel" data-panel hidden>
+            <ul id="buscar-lista" role="listbox" aria-label="Sugerencias y búsquedas recientes" class="buscador__lista" data-lista />
+            <div class="buscador__pie" data-pie hidden>
+              <span class="nota terciario" data-pie-texto>Tus últimas 3 búsquedas</span>
+              <button type="button" class="enlace" data-borrar-historial>Borrar historial</button>
+            </div>
+          </div>
+          <p class="solo-lector" aria-live="polite" data-anuncio-buscador />
+
+          <template data-plantilla="icono-curso"><Icono nombre="libro" /></template>
+          <template data-plantilla="icono-tema"><Icono nombre="buscar" /></template>
+          <template data-plantilla="icono-reciente"><Icono nombre="historial" /></template>
+        </div>
+      )
+    }
+    {
+      notificaciones && (
+        <a class="barra__campana" href="/notificaciones" aria-label="Notificaciones">
+          <Icono nombre="campana" tamano={24} />
+        </a>
+      )
+    }
+    <slot name="acciones" />
+    {sonido && <InterruptorSonido />}
+  </div>
+</header>
+
+<script>
+  // Solo actúa si la página tiene buscador.
+  import '../scripts/buscador';
+</script>
+
+<style>
+  .barra {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--e3) var(--e4);
+  }
+  .barra__titulos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+    min-width: 0;
+  }
+  .barra__titulo {
+    font-size: 2.5rem;
+    line-height: 3rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    outline: none;
+  }
+  .barra__acciones {
+    display: flex;
+    align-items: center;
+    gap: var(--e3);
+    flex: 0 1 auto;
+  }
+
+  /* ─── Buscador ────────────────────────────────────────── */
+  .buscador {
+    position: relative;
+    width: min(440px, 100%);
+  }
+  .buscador__control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 0 var(--e3);
+    border: 2px solid transparent;
+    border-radius: var(--radio-control);
+    background: var(--white); /* sobre el fondo gris de la app, la región es blanca */
+    transition:
+      border-color var(--t-rapido) ease-out,
+      box-shadow var(--t-rapido) ease-out;
+  }
+  .buscador__control:has(input:focus) {
+    border-color: var(--indigo3);
+    box-shadow: var(--anillo);
+  }
+  .buscador__control :global(.buscador__lupa) {
+    flex: none;
+    color: var(--ink2);
+  }
+  .buscador input {
+    flex: 1;
+    min-width: 0;
+    height: 48px;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    color: var(--ink);
+    outline: none;
+  }
+  .buscador input::placeholder {
+    color: var(--ink3);
+    opacity: 1;
+  }
+  .buscador__panel {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + var(--e2));
+    left: 0;
+    right: 0;
+    padding: var(--e2);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+    box-shadow: var(--sombra-2); /* elevación solo porque flota sobre la página */
+    animation: aparecer var(--t-medio) ease-out;
+  }
+  .buscador__panel[hidden] {
+    display: none;
+  }
+  .buscador__lista {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .buscador__lista :global(.buscador__grupo) {
+    padding: 12px var(--e3) var(--e1);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: var(--ink3);
+  }
+  .buscador__lista :global(.buscador__grupo + .buscador__grupo),
+  .buscador__lista :global([role='option'] + .buscador__grupo) {
+    margin-top: var(--e2);
+  }
+  .buscador__lista :global([role='option']) {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 0 var(--e3);
+    border-radius: var(--radio-control);
+    color: var(--ink);
+    cursor: pointer;
+    transition: background-color var(--t-rapido) ease-out;
+  }
+  .buscador__lista :global([role='option'] svg) {
+    flex: none;
+    color: var(--ink2);
+  }
+  .buscador__lista :global([role='option']:hover) {
+    background: var(--paper);
+  }
+  .buscador__lista :global([role='option'][aria-selected='true']) {
+    background: var(--indigo-t);
+  }
+  .buscador__lista :global([role='option'][aria-selected='true'] svg) {
+    color: var(--indigo3);
+  }
+  .buscador__lista :global(.opcion__texto) {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .buscador__lista :global(.opcion__texto strong) {
+    font-weight: 800;
+  }
+  .buscador__lista :global(.opcion__tipo) {
+    flex: none;
+    font-size: var(--t-pequeno);
+    color: var(--ink3);
+  }
+  /* Auditoría AA: ink3 sobre indigo-t da 4,08:1; en la opción activa se usa ink2 (7:1). */
+  .buscador__lista :global([role="option"][aria-selected="true"] .opcion__tipo) {
+    color: var(--ink2);
+  }
+  .buscador__lista :global(.buscador__nota) {
+    display: flex;
+    align-items: center;
+    gap: var(--e2);
+    padding: 12px var(--e3);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: var(--ink2);
+  }
+  .buscador__pie[hidden] {
+    display: none;
+  }
+  .buscador__pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e3);
+    padding: var(--e2) var(--e3) var(--e1);
+  }
+  .buscador__pie .enlace {
+    min-height: 40px;
+  }
+
+  .barra__campana {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radio-control);
+    background: var(--white);
+    color: var(--ink);
+    transition: transform var(--t-rapido) ease-out, box-shadow 120ms ease-out;
+  }
+  .barra__campana:hover {
+    transform: scale(1.02);
+    box-shadow: var(--sombra-2);
+  }
+  .barra__campana:active {
+    transform: scale(0.97);
+    transition-duration: 40ms;
+  }
+
+  @media (max-width: 1199px) {
+    .barra__titulo {
+      font-size: var(--t-h1);
+      line-height: var(--lh-h1);
+    }
+  }
+  @media (max-width: 899px) {
+    .barra__acciones {
+      flex: 1 1 100%;
+      flex-wrap: wrap;
+    }
+    .buscador {
+      flex: 1;
+      width: auto;
+    }
+  }
+</style>

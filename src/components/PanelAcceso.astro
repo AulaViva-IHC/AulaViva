@@ -1,0 +1,213 @@
+---
+// Panel índigo de las pantallas de acceso (login y registro), referencia 03-iniciar-sesion:
+// logo, mensaje, ruta de avance y la tarjeta "Esta semana" con su semáforo.
+// "Esta semana" se carga aparte (src/scripts/esta-semana.ts): si falla, solo esa parte
+// muestra "No se pudo cargar esta parte" (estado parcial) y el formulario sigue funcionando.
+// En móvil (< 900 px) el panel se reduce a una franja con el logo.
+import Logo from './Logo.astro';
+import Badge from './Badge.astro';
+import EstadoParcial from './EstadoParcial.astro';
+import InterruptorSonido from './InterruptorSonido.astro';
+
+interface Props {
+  titulo: string;
+  texto: string;
+  /** Texto del estado parcial: qué se puede seguir haciendo. */
+  textoParcial: string;
+}
+const { titulo, texto, textoParcial } = Astro.props;
+---
+
+<aside class="panel oscuro" aria-label="Sobre AulaViva">
+  <div class="panel__cabeza">
+    <Logo tono="claro" />
+    <InterruptorSonido tono="oscuro" />
+  </div>
+
+  <div class="panel__cuerpo">
+    <div class="panel__mensaje">
+      <span class="panel__raya" aria-hidden="true"></span>
+      <h2 class="display panel__titulo">{titulo}</h2>
+      <p class="panel__texto">{texto}</p>
+    </div>
+
+    <svg class="ruta" viewBox="0 0 840 200" aria-hidden="true" focusable="false">
+      <path
+        d="M30 172 C 110 160, 160 150, 210 136 S 320 98, 385 100 S 500 82, 560 70 S 680 58, 760 58"
+        fill="none"
+        stroke="#BFE9E2"
+        stroke-width="5"
+        stroke-linecap="round"
+        stroke-dasharray="0 16"></path>
+      {
+        [
+          [30, 172],
+          [210, 136],
+          [385, 100],
+        ].map(([x, y]) => (
+          <g>
+            <circle cx={x} cy={y} r="20" fill="#4B44B8" />
+            <path
+              d={`M${x - 8} ${y} l5.5 5.5 L${x + 9} ${y - 7}`}
+              fill="none"
+              stroke="#fff"
+              stroke-width="3.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </g>
+        ))
+      }
+      <circle cx="560" cy="70" r="24" fill="#FFD23F"></circle>
+      <circle cx="560" cy="70" r="8" fill="#17153B"></circle>
+      <circle cx="760" cy="58" r="20" fill="#2A2477" stroke="#4B44B8" stroke-width="3"></circle>
+    </svg>
+  </div>
+
+  <section class="semana" aria-labelledby="semana-titulo" aria-busy="true" data-semana>
+    <h3 id="semana-titulo" class="semana__titulo">Esta semana</h3>
+
+    <ul class="semana__lista" data-semana-cargando aria-hidden="true">
+      {
+        [0, 1, 2].map(() => (
+          <li class="semana__fila">
+            <span class="skeleton semana__sk-texto" />
+            <span class="skeleton semana__sk-badge" />
+          </li>
+        ))
+      }
+    </ul>
+
+    <ul class="semana__lista" data-semana-lista hidden></ul>
+
+    <EstadoParcial tono="oscuro" texto={textoParcial} data-semana-error hidden />
+
+    <template data-plantilla="tarea-rojo">
+      <li class="semana__fila"><span class="semana__tarea" data-tarea></span><Badge tono="rojo">Vence hoy</Badge></li>
+    </template>
+    <template data-plantilla="tarea-naranja">
+      <li class="semana__fila"><span class="semana__tarea" data-tarea></span><Badge tono="naranja">En 2 días</Badge></li>
+    </template>
+    <template data-plantilla="tarea-verde">
+      <li class="semana__fila"><span class="semana__tarea" data-tarea></span><Badge tono="verde">En 4 días</Badge></li>
+    </template>
+  </section>
+</aside>
+
+<script>
+  import { iniciarEstaSemana } from '../scripts/esta-semana';
+  iniciarEstaSemana();
+</script>
+
+<style>
+  .panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--e6);
+    padding: var(--e6) var(--e7);
+    background: var(--indigo);
+    color: var(--white);
+  }
+  .panel__cabeza {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--e2) var(--e3);
+  }
+  .panel__cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e6);
+  }
+  .panel__mensaje {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .panel__raya {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--yellow);
+  }
+  .panel__titulo {
+    max-width: 14ch;
+    color: var(--white);
+  }
+  .panel__texto {
+    max-width: 46ch;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    color: rgb(255 255 255 / 0.8);
+  }
+  .ruta {
+    width: 100%;
+    max-width: 520px;
+    height: auto;
+  }
+
+  .semana {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+    padding: var(--e4);
+    border-radius: var(--radio-tarjeta);
+    background: var(--indigo2);
+  }
+  .semana__titulo {
+    font-size: var(--t-cuerpo);
+    line-height: var(--lh-cuerpo);
+    font-weight: 700;
+  }
+  .semana__lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .semana__lista[hidden] {
+    display: none;
+  }
+  .semana__fila {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e3);
+    min-height: 40px;
+  }
+  .semana__tarea {
+    color: rgb(255 255 255 / 0.9);
+  }
+  .semana__sk-texto {
+    width: 60%;
+    height: 16px;
+  }
+  .semana__sk-badge {
+    width: 96px;
+    height: 32px;
+    border-radius: 999px;
+  }
+
+  @media (max-width: 899px) {
+    .panel {
+      padding: var(--e3) var(--e4);
+    }
+    .panel__cuerpo,
+    .semana {
+      display: none;
+    }
+  }
+  @media (min-width: 900px) and (max-width: 1199px) {
+    .panel {
+      padding: var(--e5);
+    }
+    .panel__titulo {
+      font-size: var(--t-h1);
+      line-height: var(--lh-h1);
+    }
+  }
+</style>

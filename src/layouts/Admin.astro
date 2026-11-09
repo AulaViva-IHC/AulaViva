@@ -1,0 +1,15 @@
+---
+// Layout del administrador: el mismo menú lateral con las secciones de admin.
+// El middleware ya exige rol admin en /admin/*.
+import App from './App.astro';
+
+interface Props {
+  titulo: string;
+  activo: string;
+}
+const { titulo, activo } = Astro.props;
+---
+
+<App titulo={titulo} activo={activo} menu="admin">
+  <slot />
+</App>

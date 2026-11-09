@@ -1,0 +1,199 @@
+---
+// Indicador de progreso de formularios largos (Chunking · Ley de Miller):
+// "Paso X de N" con el nombre y el estado de cada paso, siempre con texto.
+// Estados por paso (data-estado): completado · actual · pendiente. Los cambia el script de la página.
+// Los pasos ya alcanzados son botones para volver a ellos.
+import Icono from './Icono.astro';
+
+interface Props {
+  pasos: string[];
+  actual?: number;
+}
+const { pasos, actual = 1 } = Astro.props;
+---
+
+<ol class="stepper" aria-label={`Progreso: paso ${actual} de ${pasos.length}`} data-stepper>
+  {
+    pasos.map((nombre, i) => {
+      const n = i + 1;
+      const estado = n < actual ? 'completado' : n === actual ? 'actual' : 'pendiente';
+      return (
+        <li class="stepper__paso" data-estado={estado} data-paso-stepper={n}>
+          <button type="button" class="stepper__boton" disabled={estado === 'pendiente'} aria-current={estado === 'actual' ? 'step' : undefined}>
+            <span class="stepper__circulo" aria-hidden="true">
+              <span class="stepper__numero">{n}</span>
+              <Icono nombre="check" tamano={22} class="stepper__check" />
+            </span>
+            <span class="stepper__textos">
+              <span class="stepper__nombre">{nombre}</span>
+              <span class="stepper__estado" data-estado-texto>
+                {estado === 'completado' ? 'Completado' : estado === 'actual' ? 'En curso' : 'Pendiente'}
+              </span>
+            </span>
+          </button>
+        </li>
+      );
+    })
+  }
+</ol>
+
+<style>
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: var(--e3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .stepper__paso {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    gap: var(--e3);
+    min-width: 0;
+  }
+  .stepper__paso:last-child {
+    flex: 0 0 auto;
+  }
+  /* Conector al siguiente paso: índigo si este paso ya se completó */
+  .stepper__paso:not(:last-child)::after {
+    content: '';
+    flex: 1;
+    min-width: var(--e3);
+    height: 4px;
+    border-radius: 2px;
+    background: var(--paper);
+    transition: background-color var(--t-medio) ease-out;
+  }
+  .stepper__paso[data-estado='completado']:not(:last-child)::after {
+    background: var(--indigo);
+  }
+  .stepper__boton {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: var(--e1);
+    border: 0;
+    border-radius: var(--radio-tarjeta);
+    background: none;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color var(--t-rapido) ease-out,
+      transform var(--t-rapido) ease-out;
+  }
+  .stepper__boton:not(:disabled):hover {
+    background: var(--paper);
+  }
+  .stepper__boton:not(:disabled):active {
+    transform: scale(0.97);
+  }
+  .stepper__boton:disabled {
+    cursor: default;
+  }
+  .stepper__circulo {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--paper);
+    color: var(--ink3);
+    font-size: 1.125rem;
+    font-weight: 800;
+    transition:
+      background-color var(--t-medio) ease-out,
+      box-shadow var(--t-medio) ease-out;
+  }
+  .stepper__circulo :global(.stepper__check) {
+    display: none;
+  }
+  .stepper__paso[data-estado='completado'] .stepper__circulo {
+    background: var(--indigo);
+    color: var(--white);
+  }
+  .stepper__paso[data-estado='completado'] .stepper__numero {
+    display: none;
+  }
+  .stepper__paso[data-estado='completado'] .stepper__circulo :global(.stepper__check) {
+    display: block;
+  }
+  .stepper__paso[data-estado='actual'] .stepper__circulo {
+    background: var(--yellow);
+    color: var(--ink);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--yellow) 30%, var(--white));
+  }
+  .stepper__textos {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .stepper__nombre {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .stepper__estado {
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: var(--ink3);
+  }
+  .stepper__paso[data-estado='completado'] .stepper__estado {
+    color: var(--grn);
+  }
+  .stepper__paso[data-estado='actual'] .stepper__estado {
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  @media (max-width: 1599px) {
+    .stepper__circulo {
+      width: 48px;
+      height: 48px;
+    }
+    .stepper__nombre {
+      font-size: var(--t-cuerpo);
+    }
+  }
+  @media (max-width: 1299px) {
+    .stepper__circulo {
+      width: 44px;
+      height: 44px;
+    }
+    .stepper__nombre {
+      font-size: var(--t-cuerpo);
+    }
+  }
+  /* En pantallas angostas solo se ve el nombre del paso actual */
+  @media (max-width: 899px) {
+    .stepper {
+      gap: var(--e2);
+    }
+    .stepper__paso,
+    .stepper__paso:last-child {
+      flex: 0 0 auto;
+    }
+    .stepper__paso[data-estado='actual'] {
+      flex: 1 1 auto;
+    }
+    /* Auditoría (WCAG 1.4.10 Reflow): el nombre largo se parte en dos líneas en vez de montarse sobre los círculos. */
+    .stepper__paso[data-estado='actual'] .stepper__nombre {
+      white-space: normal;
+    }
+    .stepper__paso:not(:last-child)::after {
+      display: none;
+    }
+    .stepper__paso:not([data-estado='actual']) .stepper__textos {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+  }
+</style>

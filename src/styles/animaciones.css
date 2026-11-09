@@ -1,0 +1,98 @@
+/* AulaViva · Bucle perceptual (CLAUDE.md §5.4)
+   0 ms hover: crece 2 % y sube la sombra
+   < 50 ms clic: se hunde a 97 % y oscurece
+   50 ms procesando: indicador giratorio + micro barra
+   200 ms listo: éxito (verde con check) o error (sacudida corta) */
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes micro-barra {
+  0% { transform: scaleX(0); }
+  60% { transform: scaleX(0.7); }
+  100% { transform: scaleX(0.92); }
+}
+
+@keyframes sacudida {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@keyframes exito-elastico {
+  0% { transform: scale(0.97); }
+  55% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pulso {
+  0% { box-shadow: 0 0 0 0 rgb(22 101 52 / 0.35); }
+  100% { box-shadow: 0 0 0 12px rgb(22 101 52 / 0); }
+}
+
+@keyframes brillo {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Cambio de paso en formularios largos: el nuevo paso entra deslizándose */
+@keyframes entra-der {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes entra-izq {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: none; }
+}
+
+.anima-sacudida { animation: sacudida 320ms ease-in-out; }
+.anima-aparecer { animation: aparecer var(--t-medio) ease-out; }
+.anima-entra-der { animation: entra-der 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.anima-entra-izq { animation: entra-izq 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+.girador {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2.5px solid currentColor;
+  border-right-color: transparent;
+  animation: girar 700ms linear infinite;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--paper) 30%, #e9e9f1 50%, var(--paper) 70%);
+  background-size: 300% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+}
+.oscuro .skeleton {
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.08) 30%, rgb(255 255 255 / 0.16) 50%, rgb(255 255 255 / 0.08) 70%);
+  background-size: 300% 100%;
+}
+
+/* Movimiento reducido: solo cambios de color */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-property: color, background-color, border-color, opacity !important;
+    scroll-behavior: auto !important;
+  }
+  .girador {
+    animation: none !important;
+    border-right-color: currentColor;
+    opacity: 0.6;
+  }
+  .skeleton {
+    animation: none !important;
+  }
+}

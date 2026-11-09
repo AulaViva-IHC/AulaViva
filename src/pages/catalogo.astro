@@ -1,0 +1,15 @@
+---
+// "Catálogo" todavía no existe: página Próximamente con el mismo layout.
+import Proximamente from '../components/Proximamente.astro';
+
+const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 80);
+const detalle = q ? `Buscaste: “${q}”` : undefined;
+---
+
+<Proximamente
+  titulo="Catálogo"
+  activo="catalogo"
+  texto="Aquí podrás explorar los cursos por categoría e inscribirte. Llega en la Fase 3."
+  icono="cuadricula"
+  detalle={detalle}
+/>

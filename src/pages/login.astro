@@ -1,0 +1,192 @@
+---
+// Iniciar sesión · referencias/pantallas/03-iniciar-sesion.png
+// Izquierda: panel índigo (PanelAcceso). Derecha: pestañas y formulario.
+// La lógica del navegador está en src/scripts/login.ts.
+import Acceso from '../layouts/Acceso.astro';
+import Campo from '../components/Campo.astro';
+import Boton from '../components/Boton.astro';
+import BotonMultimodal from '../components/BotonMultimodal.astro';
+import Badge from '../components/Badge.astro';
+import Icono from '../components/Icono.astro';
+import { rutaSegura } from '../lib/auth';
+
+// Solo en desarrollo: /login?simular=… fuerza un estado (lo usa /estados).
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error-red', 'error-credenciales', 'bloqueo', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+
+// Si llega desde un curso (?curso=slug) se muestra el aviso y luego vuelve a ese curso.
+// En la Fase 3 el nombre saldrá del catálogo real.
+const NOMBRES_CURSO: Record<string, string> = {
+  'diseno-de-interfaces-con-figma': 'Diseño de interfaces con Figma',
+  'python-desde-cero': 'Python desde cero',
+  'analisis-de-datos-con-excel': 'Análisis de datos con Excel',
+};
+const slug = Astro.url.searchParams.get('curso') ?? '';
+const cursoValido = /^[a-z0-9-]{1,80}$/.test(slug);
+const nombreCurso = cursoValido
+  ? (NOMBRES_CURSO[slug] ?? slug.replace(/-/g, ' ').replace(/^./, (l) => l.toUpperCase()))
+  : '';
+const volver =
+  rutaSegura(Astro.url.searchParams.get('volver')) ?? (nombreCurso ? `/cursos/${slug}` : '');
+const sufijo = Astro.url.search && !simular ? Astro.url.search : '';
+---
+
+<Acceso
+  titulo="Iniciar sesión"
+  pestana="login"
+  simular={simular}
+  panel={{
+    titulo: 'Retoma justo donde te quedaste',
+    texto: 'Tu Inicio te muestra el módulo en el que vas, tu próximo certificado y lo que vence esta semana.',
+    textoParcial: 'Puedes iniciar sesión igual; las entregas aparecerán al reconectar.',
+  }}
+>
+  {
+    nombreCurso && (
+      <p slot="antes" class="aviso aviso--info">
+        <Icono nombre="info" />
+        <span>
+          Inicia sesión para inscribirte en <strong>{nombreCurso}</strong>. Luego volverás al curso.
+        </span>
+      </p>
+    )
+  }
+
+  <section class="acceso__seccion" aria-labelledby="titulo-login">
+    <div class="acceso__encabezado">
+      <h1 class="acceso__titulo" id="titulo-login" data-titulo>Hola de nuevo</h1>
+      <p class="secundario">Ingresa con tu correo y tu contraseña.</p>
+    </div>
+
+    <div class="aviso aviso--error aviso-red" data-aviso-red hidden>
+      <Icono nombre="sin-conexion" />
+      <div class="aviso-red__texto">
+        <p class="aviso__titulo" data-aviso-red-titulo>Sin conexión a internet</p>
+        <p data-aviso-red-detalle>Revisa tu wifi o tus datos móviles e inténtalo de nuevo.</p>
+      </div>
+      <Boton variante="secundario" data-reintentar textoCargando="Reintentando…">
+        <Icono nombre="reintentar" tamano={18} />
+        Reintentar
+      </Boton>
+    </div>
+
+    <div class="aviso aviso--advertencia" data-aviso-bloqueo hidden>
+      <Icono nombre="candado" />
+      <div>
+        <p class="aviso__titulo">Demasiados intentos fallidos</p>
+        <p>Por seguridad pausamos el ingreso. Vuelve a intentarlo en <strong data-cuenta>5:00</strong>.</p>
+      </div>
+    </div>
+
+    <form class="acceso__form" novalidate data-form-login data-volver={volver}>
+      <Campo
+        id="correo"
+        name="correo"
+        etiqueta="Correo electrónico"
+        type="email"
+        autocomplete="username"
+        inputmode="email"
+        autocapitalize="none"
+        spellcheck="false"
+        placeholder="nombre@correo.com"
+        required
+        ayuda="Recordamos el último correo usado en este dispositivo."
+      >
+        <span slot="extra" data-sugerido hidden><Badge tono="sugerido">Sugerido</Badge></span>
+        <span slot="antes" class="avatar" data-avatar aria-hidden="true" hidden></span>
+        <button slot="despues" type="button" class="enlace accion-campo" data-otro-correo hidden>
+          Usar otro correo
+        </button>
+      </Campo>
+
+      <div class="grupo-password">
+        <Campo
+          id="password"
+          name="password"
+          etiqueta="Contraseña"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Tu contraseña"
+          required
+        >
+          <a slot="extra" href="/recuperar">¿Olvidaste tu contraseña?</a>
+          <button
+            slot="despues"
+            type="button"
+            class="ver-password"
+            aria-label="Mostrar contraseña"
+            aria-pressed="false"
+            aria-controls="password"
+            data-ver-password
+          >
+            <Icono nombre="ojo" class="icono-ver" />
+            <Icono nombre="ojo-cerrado" class="icono-ocultar" />
+          </button>
+        </Campo>
+        <p class="mayus" aria-live="polite" data-mayus></p>
+      </div>
+
+      <BotonMultimodal
+        variante="principal"
+        tipo="submit"
+        bloque
+        textoCargando="Ingresando…"
+        textoExito="¡Listo!"
+        class="acceso__enviar"
+        modo="completo"
+        anuncioExito="Sesión iniciada. Entrando a AulaViva."
+        data-enviar
+      >
+        Iniciar sesión
+      </BotonMultimodal>
+      <p class="solo-lector" aria-live="assertive" data-anuncio></p>
+    </form>
+
+    <p class="acceso__pie">
+      ¿No tienes cuenta? <a href={`/registro${sufijo}`} class="enlace--fuerte">Crea una gratis</a>
+    </p>
+  </section>
+</Acceso>
+
+<script>
+  import '../scripts/login';
+</script>
+
+<style>
+  .avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--yellow);
+    color: var(--ink);
+    font-size: var(--t-nota);
+    font-weight: 800;
+  }
+  .avatar[hidden],
+  .accion-campo[hidden],
+  [data-sugerido][hidden] {
+    display: none;
+  }
+  .accion-campo {
+    flex: none;
+    min-height: 40px;
+    padding: 0 12px;
+  }
+  .acceso__form :global(input[readonly]) {
+    cursor: default;
+    text-overflow: ellipsis;
+  }
+  .enlace--fuerte {
+    font-weight: 700;
+  }
+  @media (max-width: 420px) {
+    .accion-campo {
+      padding: 0 var(--e2);
+      font-size: var(--t-pequeno);
+    }
+  }
+</style>

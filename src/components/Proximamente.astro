@@ -1,0 +1,74 @@
+---
+// Página "Próximamente" para las secciones que aún no existen.
+// Con sesión usa el mismo layout con menú lateral; sin sesión, la cabecera pública.
+// Estado vacío con una sola acción para salir de él.
+import App from '../layouts/App.astro';
+import Publico from '../layouts/Publico.astro';
+import Topbar from './Topbar.astro';
+import Tarjeta from './Tarjeta.astro';
+import EstadoVacio from './EstadoVacio.astro';
+import Boton from './Boton.astro';
+import Icono, { type NombreIcono } from './Icono.astro';
+import { destinoPorRol } from '../lib/auth';
+
+interface Props {
+  titulo: string;
+  activo: string;
+  /** Qué hará esta sección y en qué fase llega. */
+  texto: string;
+  icono?: NombreIcono;
+  /** Nota extra, p. ej. lo que se buscó. */
+  detalle?: string;
+}
+
+const { titulo, activo, texto, icono = 'reloj', detalle } = Astro.props;
+const usuario = Astro.locals.usuario;
+const volver = usuario ? destinoPorRol(usuario) : '/login';
+const textoVolver = usuario ? 'Volver al inicio' : 'Iniciar sesión';
+---
+
+{
+  usuario ? (
+    <App titulo={titulo} activo={activo}>
+      <Topbar titulo={titulo} />
+      <Tarjeta>
+        <EstadoVacio titulo="Próximamente" texto={texto} icono={icono}>
+          {detalle && <p class="detalle">{detalle}</p>}
+          <Boton variante="principal" href={volver} textoCargando="Volviendo…">
+            <Icono nombre="flecha-izq" tamano={18} />
+            {textoVolver}
+          </Boton>
+        </EstadoVacio>
+      </Tarjeta>
+    </App>
+  ) : (
+    <Publico titulo={titulo}>
+      <main class="publico">
+        <h1 class="h1">{titulo}</h1>
+        <Tarjeta>
+          <EstadoVacio titulo="Próximamente" texto={texto} icono={icono}>
+            {detalle && <p class="detalle">{detalle}</p>}
+            <Boton variante="principal" href={volver} textoCargando="Abriendo…">
+              {textoVolver}
+            </Boton>
+          </EstadoVacio>
+        </Tarjeta>
+      </main>
+    </Publico>
+  )
+}
+
+<style>
+  .publico {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+    max-width: 880px;
+    margin: 0 auto;
+    padding: var(--e6) var(--e3);
+  }
+  .detalle {
+    margin-bottom: var(--e3);
+    font-weight: 600;
+  }
+</style>

@@ -1,0 +1,83 @@
+---
+// Estado parcial (UI Stack): una parte no cargó; el resto de la pantalla sigue funcionando.
+// "No se pudo cargar esta parte" + "Reconectar" (data-accion="reconectar").
+// tono "oscuro" para usarlo sobre el panel índigo.
+import Icono from './Icono.astro';
+import Boton from './Boton.astro';
+import BotonMultimodal from './BotonMultimodal.astro';
+
+interface Props {
+  texto?: string;
+  tono?: 'claro' | 'oscuro';
+  /** Botón con respuesta visual, auditiva y háptica (§5.8): éxito o error según el resultado. */
+  multimodal?: boolean;
+  class?: string;
+  hidden?: boolean;
+  [atributo: `data-${string}`]: string | boolean | undefined;
+}
+const {
+  texto = 'El resto de la página funciona; esta parte aparecerá al reconectar.',
+  tono = 'claro',
+  multimodal = false,
+  class: clase,
+  ...resto
+} = Astro.props;
+---
+
+<div class:list={['parcial', `parcial--${tono}`, clase]} role="status" {...resto}>
+  <span class="parcial__icono"><Icono nombre="sin-conexion" tamano={20} /></span>
+  <div>
+    <p class="parcial__titulo">No se pudo cargar esta parte</p>
+    <p class="parcial__texto">{texto}</p>
+  </div>
+  {
+    multimodal ? (
+      <BotonMultimodal variante="secundario" data-accion="reconectar" textoCargando="Reconectando…" textoExito="¡Conectado!" modo="completo">
+        <Icono nombre="reintentar" tamano={18} />
+        Reconectar
+      </BotonMultimodal>
+    ) : (
+      <Boton variante="secundario" data-accion="reconectar" textoCargando="Reconectando…">
+        <Icono nombre="reintentar" tamano={18} />
+        Reconectar
+      </Boton>
+    )
+  }
+</div>
+
+<style>
+  .parcial {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--e2) var(--e3);
+    align-items: start;
+  }
+  .parcial[hidden] {
+    display: none;
+  }
+  .parcial__icono {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--org-t);
+    color: var(--org);
+  }
+  .parcial__titulo {
+    font-weight: 700;
+  }
+  .parcial__texto {
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: var(--ink2);
+  }
+  .parcial--oscuro .parcial__texto {
+    color: rgb(255 255 255 / 0.8);
+  }
+  .parcial :global(.boton) {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 40px;
+  }
+</style>

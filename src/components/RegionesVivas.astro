@@ -1,0 +1,10 @@
+---
+// Regiones aria-live de la página (una vez por documento, en Publico.astro).
+// retroalimentar() (src/scripts/multimodal.ts) escribe aquí el resultado de una acción:
+//   polite    → éxitos ("Sesión iniciada", "Curso publicado")
+//   assertive → errores (interrumpen la lectura en curso)
+// Siempre en el DOM y vacías al cargar: así el lector detecta cada cambio.
+---
+
+<div class="solo-lector" aria-live="polite" aria-atomic="true" data-vivo="polite"></div>
+<div class="solo-lector" aria-live="assertive" aria-atomic="true" data-vivo="assertive"></div>

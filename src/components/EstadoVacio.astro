@@ -1,0 +1,47 @@
+---
+// Estado vacío (UI Stack): explica por qué no hay nada y ofrece UNA acción para salir de él
+// (va en el slot; normalmente un <Boton variante="principal">).
+import Icono, { type NombreIcono } from './Icono.astro';
+
+interface Props {
+  titulo: string;
+  texto: string;
+  icono?: NombreIcono;
+  class?: string;
+}
+const { titulo, texto, icono = 'libro', class: clase } = Astro.props;
+---
+
+<div class:list={['vacio', clase]}>
+  <span class="vacio__icono"><Icono nombre={icono} tamano={28} /></span>
+  <h2 class="h2">{titulo}</h2>
+  <p class="secundario vacio__texto">{texto}</p>
+  <div class="vacio__accion"><slot /></div>
+</div>
+
+<style>
+  .vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--e2);
+    padding: var(--e5) var(--e3);
+    text-align: center;
+  }
+  .vacio__icono {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: var(--e2);
+    border-radius: 50%;
+    background: var(--indigo-t);
+    color: var(--indigo3);
+  }
+  .vacio__texto {
+    max-width: 46ch;
+  }
+  .vacio__accion {
+    margin-top: var(--e3);
+  }
+</style>

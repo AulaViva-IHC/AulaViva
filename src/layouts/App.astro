@@ -1,0 +1,83 @@
+---
+// Layout con menú lateral índigo para quien inició sesión.
+// El menú (estudiante o admin) sale del rol del usuario, salvo que se indique.
+import Publico from './Publico.astro';
+import Sidebar, { type Menu } from '../components/Sidebar.astro';
+
+interface Props {
+  titulo: string;
+  activo: string;
+  menu?: Menu;
+  simular?: string;
+}
+
+const { titulo, activo, simular } = Astro.props;
+const usuario = Astro.locals.usuario!;
+const menu: Menu = Astro.props.menu ?? (usuario.rol === 'admin' ? 'admin' : 'estudiante');
+---
+
+<Publico titulo={titulo} cabecera={false} simular={simular}>
+  <a class="saltar" href="#contenido">Saltar al contenido</a>
+  <div class="app">
+    <Sidebar menu={menu} activo={activo} usuario={usuario} />
+    <main class="app__principal" id="contenido" tabindex="-1">
+      <slot />
+    </main>
+  </div>
+</Publico>
+
+<style>
+  .app {
+    display: grid;
+    grid-template-columns: 296px minmax(0, 1fr);
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .app__principal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e5);
+    min-width: 0;
+    padding: var(--e5) var(--e6) var(--e6);
+    outline: none;
+  }
+  .saltar {
+    position: absolute;
+    left: var(--e3);
+    top: -100px;
+    z-index: 50;
+    padding: 12px var(--e3);
+    border-radius: var(--radio-control);
+    background: var(--yellow);
+    color: var(--ink);
+  }
+  .saltar:focus {
+    top: var(--e3);
+  }
+  @media (max-width: 1599px) {
+    .app {
+      grid-template-columns: 264px minmax(0, 1fr);
+    }
+    .app__principal {
+      padding: var(--e5) 40px var(--e6);
+    }
+  }
+  @media (max-width: 1199px) {
+    .app {
+      grid-template-columns: 248px minmax(0, 1fr);
+    }
+    .app__principal {
+      padding: var(--e5) var(--e4) var(--e6);
+    }
+  }
+  @media (max-width: 899px) {
+    .app {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto 1fr;
+    }
+    .app__principal {
+      gap: var(--e4);
+      padding: var(--e4) var(--e3) var(--e6);
+    }
+  }
+</style>

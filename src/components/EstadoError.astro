@@ -1,0 +1,75 @@
+---
+// Estado de error (UI Stack): qué pasó + "Reintentar".
+// El botón lleva data-accion="reintentar"; el script de la página decide qué reintentar.
+// `variante`: "principal" cuando el error ocupa la pantalla (es la única acción);
+// "secundario" cuando convive con la acción principal.
+import Icono from './Icono.astro';
+import Boton from './Boton.astro';
+import BotonMultimodal from './BotonMultimodal.astro';
+
+interface Props {
+  titulo?: string;
+  texto?: string;
+  variante?: 'principal' | 'secundario';
+  /** Botón con respuesta visual, auditiva y háptica (§5.8): éxito o error según el resultado. */
+  multimodal?: boolean;
+  class?: string;
+  hidden?: boolean;
+  [atributo: `data-${string}`]: string | boolean | undefined;
+}
+const {
+  titulo = 'No pudimos cargar esta página',
+  texto = 'Revisa tu conexión a internet y vuelve a intentarlo.',
+  variante = 'principal',
+  multimodal = false,
+  class: clase,
+  ...resto
+} = Astro.props;
+---
+
+<div class:list={['error', clase]} role="alert" {...resto}>
+  <span class="error__icono"><Icono nombre="sin-conexion" tamano={28} /></span>
+  <h2 class="h2" data-error-titulo>{titulo}</h2>
+  <p class="secundario error__texto" data-error-texto>{texto}</p>
+  {
+    multimodal ? (
+      <BotonMultimodal variante={variante} data-accion="reintentar" textoCargando="Reintentando…" textoExito="¡Cargado!" modo="completo">
+        <Icono nombre="reintentar" tamano={18} />
+        Reintentar
+      </BotonMultimodal>
+    ) : (
+      <Boton variante={variante} data-accion="reintentar" textoCargando="Reintentando…">
+        <Icono nombre="reintentar" tamano={18} />
+        Reintentar
+      </Boton>
+    )
+  }
+</div>
+
+<style>
+  .error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--e2);
+    padding: var(--e5) var(--e3);
+    text-align: center;
+  }
+  .error[hidden] {
+    display: none;
+  }
+  .error__icono {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: var(--e2);
+    border-radius: 50%;
+    background: var(--red-t);
+    color: var(--red);
+  }
+  .error__texto {
+    max-width: 46ch;
+    margin-bottom: var(--e3);
+  }
+</style>

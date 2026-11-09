@@ -1,0 +1,1187 @@
+---
+// Crear curso en 4 pasos · referencias/pantallas/admin-01 a admin-04 (solo rol admin).
+// Chunking: un paso por tarea y máximo 6 campos a la vista en cada uno.
+// Los editores de módulo, clase y pregunta existen UNA sola vez y se mueven al elemento
+// abierto (solo una clase o pregunta abierta a la vez). Lógica: src/scripts/crear-curso.ts.
+import Admin from '../../../layouts/Admin.astro';
+import Topbar from '../../../components/Topbar.astro';
+import Tarjeta from '../../../components/Tarjeta.astro';
+import Stepper from '../../../components/Stepper.astro';
+import Campo from '../../../components/Campo.astro';
+import Boton from '../../../components/Boton.astro';
+import BotonMultimodal from '../../../components/BotonMultimodal.astro';
+import Badge from '../../../components/Badge.astro';
+import Icono, { type NombreIcono } from '../../../components/Icono.astro';
+import { listarInstructores, ultimoInstructor } from '../../../lib/repositorio';
+import { CATEGORIAS, NIVELES, LIMITES, hoyEnLima, type CategoriaId } from '../../../lib/validacion-curso';
+
+const instructores = await listarInstructores();
+const sugeridoInstructor = await ultimoInstructor();
+const hoy = hoyEnLima();
+
+const ICONOS_CATEGORIA: Record<CategoriaId, NombreIcono> = {
+  tecnologia: 'codigo',
+  diseno: 'pluma',
+  negocios: 'grafico',
+  'habilidades-blandas': 'chat',
+};
+const PASOS = ['Datos generales', 'Contenido', 'Evaluación', 'Revisar y publicar'];
+const SUBIDAS = [
+  { tipo: 'video', etiqueta: 'Video', texto: 'Subir video', accept: '.mp4,.webm,.mov,video/*' },
+  { tipo: 'subtitulos', etiqueta: 'Subtítulos (.vtt)', texto: 'Subir subtítulos', accept: '.vtt,text/vtt' },
+  { tipo: 'documento', etiqueta: 'Documento', texto: 'Subir documento', accept: '.pdf,.docx,.pptx' },
+];
+---
+
+<Admin titulo="Crear curso" activo="cursos">
+  <Topbar titulo="Crear curso" sonido>
+    <nav slot="migas" class="migas" aria-label="Ruta">
+      <a href="/admin/cursos">Cursos</a>
+      <Icono nombre="chevron" tamano={16} class="migas__flecha" />
+      <span aria-current="page" data-miga>Crear curso · Datos generales</span>
+    </nav>
+    <Badge slot="acciones" tono="neutro" icono="guardar" data-estado-borrador>Borrador sin guardar</Badge>
+  </Topbar>
+
+  <Tarjeta como="div" class="crear__stepper">
+    <Stepper pasos={PASOS} actual={1} />
+  </Tarjeta>
+
+  <div
+    class="crear"
+    data-crear
+    data-hoy={hoy}
+    data-instructor-sugerido={sugeridoInstructor}
+    data-instructores={JSON.stringify(instructores)}
+  >
+    <form class="crear__form" novalidate data-form-curso>
+      <Tarjeta como="div" class="crear__tarjeta">
+        <div class="aviso aviso--info aviso-borrador" data-aviso-borrador hidden>
+          <Icono nombre="info" />
+          <p data-aviso-borrador-texto></p>
+          <button type="button" class="enlace" data-aviso-borrador-accion></button>
+        </div>
+
+        <!-- ═══ Paso 1 · Datos generales ═══ -->
+        <section class="paso" data-paso="1" aria-labelledby="paso-1-titulo">
+          <div class="paso__encabezado">
+            <p class="ceja">Paso 1 de 4</p>
+            <h2 class="h2" id="paso-1-titulo" tabindex="-1">Datos generales</h2>
+            <p class="secundario">Lo que verá el estudiante en el catálogo.</p>
+          </div>
+
+          <Campo id="titulo" etiqueta="Título del curso" maxlength={LIMITES.titulo} placeholder="Ej.: Diseño de interfaces con Figma" data-ruta="titulo" />
+
+          <Campo id="descripcion" como="textarea" rows={3} etiqueta="Descripción" maxlength={LIMITES.descripcion} placeholder="En una o dos frases: qué aprenderá el estudiante." data-ruta="descripcion">
+            <span slot="extra" class="nota terciario" data-contador>0 / {LIMITES.descripcion}</span>
+          </Campo>
+
+          <fieldset class="grupo" data-campo aria-describedby="categoria-ayuda categoria-error">
+            <legend class="grupo__etiqueta">Categoría</legend>
+            <div class="categorias">
+              {
+                CATEGORIAS.map((c) => (
+                  <label class="categoria">
+                    <input type="radio" name="categoria" value={c.id} class="solo-lector" data-ruta="categoria" />
+                    <Icono nombre={ICONOS_CATEGORIA[c.id]} tamano={24} />
+                    <span>{c.texto}</span>
+                  </label>
+                ))
+              }
+            </div>
+            <p class="ayuda" id="categoria-ayuda">4 categorías principales; los temas se buscan después escribiendo.</p>
+            <p class="error-grupo" id="categoria-error" aria-live="polite"><Icono nombre="alerta" tamano={16} /><span data-mensaje></span></p>
+          </fieldset>
+
+          <div class="fila fila--2">
+            <Campo como="select" id="nivel" etiqueta="Nivel" data-ruta="nivel">
+              {NIVELES.map((n) => <option value={n.id}>{n.texto}</option>)}
+            </Campo>
+            <Campo id="horas" type="number" inputmode="numeric" min={LIMITES.horas[0]} max={LIMITES.horas[1]} etiqueta="Horas académicas" placeholder="Ej.: 24" ayuda="Aparecen en el certificado." data-ruta="horas" />
+          </div>
+
+          <div class="grupo" data-campo>
+            <span class="grupo__etiqueta" id="imagen-etiqueta">Imagen de portada</span>
+            <label class="subida subida--ancha" data-subida="imagen">
+              <input type="file" id="imagen" class="solo-lector" accept=".jpg,.jpeg,.png,image/jpeg,image/png" aria-labelledby="imagen-etiqueta imagen-texto" aria-describedby="imagen-error" data-archivo="imagen" data-ruta="imagen" />
+              <Icono nombre="subir" />
+              <span id="imagen-texto" data-subida-texto>Subir imagen (JPG o PNG)</span>
+            </label>
+            <p class="error-grupo" id="imagen-error" aria-live="polite"><Icono nombre="alerta" tamano={16} /><span data-mensaje></span></p>
+          </div>
+        </section>
+
+        <!-- ═══ Paso 2 · Contenido ═══ -->
+        <section class="paso" data-paso="2" aria-labelledby="paso-2-titulo" hidden>
+          <div class="paso__encabezado">
+            <p class="ceja">Paso 2 de 4</p>
+            <h2 class="h2" id="paso-2-titulo" tabindex="-1">Contenido</h2>
+            <p class="secundario">Ordena los módulos y sus clases. Abre solo la clase que estás editando.</p>
+          </div>
+          <p class="error-grupo error-grupo--suelto" aria-live="polite" data-error-general="modulos"><Icono nombre="alerta" tamano={16} /><span data-mensaje></span></p>
+          <ol class="modulos" aria-label="Módulos del curso" data-modulos></ol>
+          <div>
+            <Boton variante="secundario" data-agregar-modulo>
+              <Icono nombre="mas" tamano={18} />
+              Agregar módulo
+            </Boton>
+          </div>
+        </section>
+
+        <!-- ═══ Paso 3 · Evaluación ═══ -->
+        <section class="paso" data-paso="3" aria-labelledby="paso-3-titulo" hidden>
+          <div class="paso__encabezado">
+            <p class="ceja">Paso 3 de 4</p>
+            <h2 class="h2" id="paso-3-titulo" tabindex="-1">Evaluación</h2>
+            <p class="secundario">Configura cómo se aprueba y escribe las preguntas una por una.</p>
+          </div>
+
+          <div class="region reglas" data-reglas>
+            <div class="reglas__resumen">
+              <div>
+                <p class="reglas__titulo">
+                  Reglas de aprobación
+                  <Badge tono="sugerido" data-reglas-sugerido>Sugerido</Badge>
+                </p>
+                <p class="secundario" data-reglas-texto>Nota mínima 14 de 20 · 3 intentos · 30 minutos</p>
+              </div>
+              <button type="button" class="enlace" aria-expanded="false" aria-controls="reglas-campos" data-cambiar-reglas>Cambiar</button>
+            </div>
+            <div class="fila fila--3" id="reglas-campos" data-reglas-campos hidden>
+              <Campo id="nota" type="number" inputmode="numeric" min={LIMITES.nota[0]} max={LIMITES.nota[1]} etiqueta="Nota mínima" ayuda="Sobre 20." sobreGris data-ruta="evaluacion.notaMinima" />
+              <Campo id="intentos" type="number" inputmode="numeric" min={LIMITES.intentos[0]} max={LIMITES.intentos[1]} etiqueta="Intentos permitidos" ayuda="Vale el mejor intento." sobreGris data-ruta="evaluacion.intentos" />
+              <Campo id="tiempo" type="number" inputmode="numeric" min={LIMITES.tiempo[0]} max={LIMITES.tiempo[1]} etiqueta="Tiempo límite (min)" ayuda="Por intento." sobreGris data-ruta="evaluacion.tiempoMin" />
+            </div>
+          </div>
+
+          <p class="error-grupo error-grupo--suelto" aria-live="polite" data-error-general="evaluacion.preguntas"><Icono nombre="alerta" tamano={16} /><span data-mensaje></span></p>
+          <ol class="preguntas" aria-label="Preguntas de la evaluación" data-preguntas></ol>
+          <div>
+            <Boton variante="secundario" data-agregar-pregunta>
+              <Icono nombre="mas" tamano={18} />
+              Agregar pregunta
+            </Boton>
+          </div>
+        </section>
+
+        <!-- ═══ Paso 4 · Revisar y publicar ═══ -->
+        <section class="paso" data-paso="4" aria-labelledby="paso-4-titulo" hidden>
+          <div class="paso__encabezado">
+            <p class="ceja">Paso 4 de 4</p>
+            <h2 class="h2" id="paso-4-titulo" tabindex="-1">Revisar y publicar</h2>
+            <p class="secundario">Llenamos lo que ya sabemos. Solo confirma.</p>
+          </div>
+
+          <ul class="resumen" aria-label="Resumen del curso">
+            {
+              ['Datos generales', 'Contenido', 'Evaluación'].map((titulo, i) => (
+                <li class="resumen__fila" data-resumen={i + 1} data-ok="true">
+                  <span class="resumen__icono" aria-hidden="true">
+                    <Icono nombre="check" tamano={20} class="resumen__check" />
+                    <Icono nombre="alerta" tamano={20} class="resumen__alerta" />
+                  </span>
+                  <div class="resumen__textos">
+                    <p class="resumen__titulo">{titulo}</p>
+                    <p class="secundario" data-resumen-texto></p>
+                  </div>
+                  <button type="button" class="enlace resumen__editar" data-editar={i + 1} aria-label={`Editar ${titulo.toLowerCase()}`}>Editar</button>
+                </li>
+              ))
+            }
+          </ul>
+
+          <div class="fila fila--3 sugeridos">
+            <Campo id="instructor" etiqueta="Instructor" list="lista-instructores" autocomplete="off" maxlength={LIMITES.instructor} ayuda="Escribe para buscar. Sugerimos tu último instructor." data-ruta="instructor">
+              <span slot="extra" data-sugerido="instructor"><Badge tono="sugerido">Sugerido</Badge></span>
+              <span slot="antes" class="avatar-mini" aria-hidden="true" data-avatar-instructor></span>
+            </Campo>
+            <Campo id="requisitos" etiqueta="Requisitos previos" maxlength={LIMITES.requisitos} ayuda="El más usado en cursos de este nivel." data-ruta="requisitos">
+              <span slot="extra" data-sugerido="requisitos"><Badge tono="sugerido">Sugerido</Badge></span>
+            </Campo>
+            <Campo id="fecha" type="date" min={hoy} etiqueta="Fecha de publicación" ayuda="Se llena con la fecha actual." data-ruta="fechaPublicacion">
+              <span slot="extra" data-sugerido="fechaPublicacion"><Badge tono="sugerido">Sugerido</Badge></span>
+            </Campo>
+          </div>
+          <datalist id="lista-instructores">
+            {instructores.map((nombre) => <option value={nombre} />)}
+          </datalist>
+
+          <p class="aviso aviso--error" data-error-media hidden><Icono nombre="alerta" /><span data-error-media-texto></span></p>
+          <p class="aviso aviso--advertencia">
+            <Icono nombre="alerta" />
+            <span>Al publicar, el curso aparecerá en el catálogo. Si después tiene inscritos, no se podrá eliminar, solo deshabilitar.</span>
+          </p>
+          <div class="aviso aviso--error aviso-red" data-aviso-red hidden>
+            <Icono nombre="sin-conexion" />
+            <div class="aviso-red__texto">
+              <p class="aviso__titulo" data-aviso-red-titulo>Sin conexión a internet</p>
+              <p data-aviso-red-detalle>El curso no se publicó. Tu trabajo sigue aquí; inténtalo de nuevo.</p>
+            </div>
+            <Boton variante="secundario" data-reintentar textoCargando="Reintentando…">
+              <Icono nombre="reintentar" tamano={18} />
+              Reintentar
+            </Boton>
+          </div>
+        </section>
+
+        <!-- ═══ Publicado (éxito) ═══ -->
+        <section class="publicado" data-publicado hidden aria-labelledby="publicado-titulo">
+          <span class="publicado__icono"><Icono nombre="check" tamano={32} /></span>
+          <h2 class="h2" id="publicado-titulo" tabindex="-1">Curso publicado</h2>
+          <p class="secundario" data-publicado-texto></p>
+          <Boton variante="principal" href="/admin/cursos/nuevo" textoCargando="Abriendo…">
+            <Icono nombre="mas" tamano={18} />
+            Crear otro curso
+          </Boton>
+        </section>
+
+        <!-- Avisos con "Deshacer" (quitar clase, módulo, pregunta o borrador) -->
+        <div class="aviso aviso--info deshacer" data-deshacer hidden>
+          <Icono nombre="info" />
+          <p data-deshacer-texto></p>
+          <button type="button" class="enlace" data-deshacer-boton>Deshacer</button>
+        </div>
+
+        <div class="pie" data-pie>
+          <div class="pie__izq">
+            <a class="enlace pie__cancelar" href="/admin/cursos" data-cancelar>Cancelar</a>
+            <BotonMultimodal variante="secundario" modo="toque" data-anterior hidden>
+              <Icono nombre="flecha-izq" tamano={18} />
+              Anterior
+            </BotonMultimodal>
+          </div>
+          <span class="pie__paso" data-pie-paso>Paso 1 de 4</span>
+          <div class="pie__der">
+            <BotonMultimodal
+              variante="secundario"
+              textoCargando="Guardando…"
+              textoExito="Guardado"
+              modo="exito-suave"
+              anuncioExito="Borrador guardado en este dispositivo."
+              data-guardar
+            >
+              <Icono nombre="guardar" tamano={18} />
+              Guardar borrador
+            </BotonMultimodal>
+            <BotonMultimodal variante="principal" modo="toque" data-siguiente>
+              <span data-siguiente-texto>Siguiente: Contenido</span>
+              <Icono nombre="flecha-der" tamano={18} />
+            </BotonMultimodal>
+            <BotonMultimodal
+              variante="principal"
+              textoCargando="Publicando…"
+              textoExito="¡Publicado!"
+              modo="completo"
+              anuncioExito="Curso publicado."
+              data-publicar
+              hidden
+            >
+              <Icono nombre="check" tamano={18} />
+              Publicar curso
+            </BotonMultimodal>
+          </div>
+        </div>
+        <p class="solo-lector" aria-live="polite" data-anuncio></p>
+      </Tarjeta>
+
+      <!-- Editores únicos: se mueven al módulo, clase o pregunta abiertos -->
+      <div hidden data-almacen>
+        <div class="editor-modulo" data-editor-modulo>
+          <Campo id="modulo-titulo" etiqueta="Título del módulo" maxlength={LIMITES.tituloModulo} placeholder="Ej.: Fundamentos del diseño de interfaces" sobreGris data-editor-campo="titulo" />
+          <button type="button" class="enlace enlace--quitar" data-quitar-modulo>Quitar este módulo</button>
+        </div>
+
+        <div class="editor-clase" data-editor-clase>
+          <div class="fila fila--clase">
+            <Campo id="clase-titulo" etiqueta="Título de la clase" maxlength={LIMITES.tituloClase} placeholder="Ej.: ¿Qué es una interfaz?" data-editor-campo="titulo" />
+            <Campo id="clase-duracion" type="number" inputmode="numeric" min={LIMITES.duracion[0]} max={LIMITES.duracion[1]} etiqueta="Duración (min)" placeholder="12" data-editor-campo="duracionMin" />
+          </div>
+          <div class="fila fila--3">
+            {
+              SUBIDAS.map((s) => (
+                <div class="grupo" data-campo>
+                  <span class="grupo__etiqueta" id={`clase-${s.tipo}-etiqueta`}>{s.etiqueta}</span>
+                  <label class="subida" data-subida={s.tipo}>
+                    <input
+                      type="file"
+                      id={`clase-${s.tipo}`}
+                      class="solo-lector"
+                      accept={s.accept}
+                      aria-labelledby={`clase-${s.tipo}-etiqueta clase-${s.tipo}-texto`}
+                      aria-describedby={`clase-${s.tipo}-error`}
+                      data-archivo={s.tipo}
+                      data-editor-campo={s.tipo}
+                    />
+                    <Icono nombre="subir" />
+                    <span id={`clase-${s.tipo}-texto`} data-subida-texto>{s.texto}</span>
+                  </label>
+                  <p class="error-grupo" id={`clase-${s.tipo}-error`} aria-live="polite"><Icono nombre="alerta" tamano={16} /><span data-mensaje></span></p>
+                </div>
+              ))
+            }
+          </div>
+          <button type="button" class="enlace enlace--quitar" data-quitar-clase>Quitar esta clase</button>
+        </div>
+
+        <div class="editor-pregunta" data-editor-pregunta>
+          <Campo id="pregunta-enunciado" como="textarea" rows={2} etiqueta="Enunciado" maxlength={LIMITES.enunciado} placeholder="Ej.: ¿Qué heurística pide mostrar siempre lo que está pasando?" sobreGris data-editor-campo="enunciado" />
+          <fieldset class="grupo opciones" data-campo aria-describedby="opciones-error">
+            <legend class="grupo__etiqueta">Opciones (marca la correcta)</legend>
+            {
+              [0, 1, 2, 3].map((k) => (
+                <div class="opcion" data-opcion={k}>
+                  <input type="radio" name="correcta" value={k} id={`correcta-${k}`} aria-label={`Marcar la opción ${'ABCD'[k]} como correcta`} data-correcta />
+                  <label class="opcion__letra" for={`opcion-${k}`}>{'ABCD'[k]}</label>
+                  <input type="text" id={`opcion-${k}`} class="opcion__texto" maxlength={LIMITES.opcion} placeholder={`Escribe la opción ${'ABCD'[k]}`} data-opcion-texto={k} />
+                  <span class="opcion__correcta">Correcta</span>
+                </div>
+              ))
+            }
+            <p class="error-grupo" id="opciones-error" aria-live="polite"><Icono nombre="alerta" tamano={16} /><span data-mensaje></span></p>
+          </fieldset>
+          <button type="button" class="enlace enlace--quitar" data-quitar-pregunta>Quitar esta pregunta</button>
+        </div>
+      </div>
+    </form>
+
+    <aside class="crear__lado" aria-label="Ayuda del paso">
+      <Tarjeta como="div" tono="oscura" class="ayuda-paso">
+        <Icono nombre="info" tamano={28} class="ayuda-paso__icono" />
+        <h2 class="ayuda-paso__titulo" data-ayuda-titulo>Un paso, una tarea</h2>
+        <p class="ayuda-paso__texto" data-ayuda-texto>
+          Cada paso pide solo lo necesario. La categoría se elige entre 4 opciones, no en una lista larga.
+        </p>
+      </Tarjeta>
+
+      <Tarjeta como="div" class="lado-resumen" data-lado="2" hidden>
+        <h2 class="lado__titulo">Resumen del contenido</h2>
+        <dl class="cifras">
+          <div><dt>Módulos</dt><dd data-cifra="modulos">0</dd></div>
+          <div><dt>Clases</dt><dd data-cifra="clases">0</dd></div>
+          <div><dt>Videos con subtítulos</dt><dd data-cifra="media">0 de 0</dd></div>
+        </dl>
+      </Tarjeta>
+
+      <Tarjeta como="div" class="lado-resumen" data-lado="3" hidden>
+        <h2 class="lado__titulo">Preguntas</h2>
+        <ol class="lista-preguntas" data-lista-preguntas></ol>
+      </Tarjeta>
+    </aside>
+  </div>
+
+  <template data-plantilla="icono-arrastre"><Icono nombre="arrastre" tamano={20} /></template>
+  <template data-plantilla="icono-chevron"><Icono nombre="chevron" tamano={22} /></template>
+  <template data-plantilla="icono-alerta"><Icono nombre="alerta" tamano={16} /></template>
+  <template data-plantilla="icono-check"><Icono nombre="check" tamano={18} /></template>
+  <template data-plantilla="badge-editando"><Badge tono="lila">Editando</Badge></template>
+</Admin>
+
+<script>
+  import '../../../scripts/crear-curso';
+</script>
+
+<style>
+  .migas {
+    display: flex;
+    align-items: center;
+    gap: var(--e2);
+    color: var(--ink2);
+  }
+  .migas a {
+    color: var(--ink2);
+    font-weight: 500;
+  }
+  .migas :global(.migas__flecha) {
+    transform: rotate(-90deg);
+  }
+  .migas [aria-current] {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .crear__stepper {
+    padding: var(--e4) var(--e5);
+  }
+
+  .crear {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: var(--e5);
+    align-items: start;
+  }
+  @media (max-width: 1599px) {
+    .crear {
+      grid-template-columns: minmax(0, 1fr) 320px;
+    }
+  }
+  .crear__form {
+    min-width: 0;
+  }
+  .crear__tarjeta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e5);
+    overflow: hidden; /* la transición deslizante no se sale de la tarjeta */
+    container-type: inline-size;
+  }
+  /* Si el pie no cabe en una fila, "Paso X de 4" se oculta: ya está sobre el título del paso */
+  @container (max-width: 760px) {
+    .pie__paso {
+      display: none;
+    }
+  }
+  .ceja {
+    color: var(--indigo3);
+    font-weight: 700;
+  }
+
+  /* ─── Pasos ─────────────────────────────────────────────── */
+  .paso {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4); /* 24 px entre grupos */
+  }
+  .paso[hidden],
+  .publicado[hidden] {
+    display: none;
+  }
+  .paso__encabezado {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+  }
+  .paso__encabezado h2 {
+    outline: none;
+  }
+  .fila {
+    display: grid;
+    gap: var(--e3); /* 16 px entre campos de una fila */
+    align-items: start;
+  }
+  .fila--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fila--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fila--clase { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .fila[hidden] { display: none; }
+
+  /* Grupos que no son <Campo> (radios, archivos) con la misma proximidad */
+  .grupo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .grupo__etiqueta {
+    padding: 0;
+    font-weight: 600;
+  }
+  .ayuda {
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: var(--ink3);
+  }
+  .crear :global(.error-grupo) {
+    display: none;
+    gap: 6px;
+    align-items: flex-start;
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    font-weight: 500;
+    color: var(--red);
+  }
+  .crear :global(.error-grupo svg) {
+    flex: none;
+    margin-top: 2px;
+  }
+  .crear :global(.is-error > .error-grupo),
+  .crear :global(.error-grupo.is-visible) {
+    display: flex;
+  }
+
+  /* ─── Categorías: 4 tarjetas (Hick) ─────────────────────── */
+  .categorias {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--e3);
+  }
+  .categoria {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 72px;
+    padding: 12px var(--e3);
+    border: 2px solid transparent;
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+    color: var(--ink);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      transform var(--t-rapido) ease-out,
+      box-shadow 120ms ease-out,
+      background-color 120ms ease-out;
+  }
+  .categoria :global(svg) {
+    flex: none;
+    color: var(--indigo3);
+  }
+  .categoria:hover {
+    transform: scale(1.02);
+    box-shadow: var(--sombra-2);
+  }
+  .categoria:active {
+    transform: scale(0.97);
+    transition-duration: 40ms;
+  }
+  .categoria:has(input:checked) {
+    background: var(--indigo-t);
+    color: var(--indigo3);
+    font-weight: 700;
+  }
+  .categoria:has(input:focus-visible) {
+    border-color: var(--indigo3);
+    box-shadow: var(--anillo);
+  }
+  :global(.is-error) .categoria {
+    border-color: var(--red);
+  }
+
+  /* ─── Subir archivos ───────────────────────────────────── */
+  .subida {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--e2);
+    min-height: var(--alto-control);
+    padding: 0 12px;
+    border: 2px solid transparent;
+    border-radius: var(--radio-control);
+    background: var(--paper);
+    color: var(--indigo3);
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    transition:
+      transform var(--t-rapido) ease-out,
+      box-shadow 120ms ease-out;
+  }
+  .subida--ancha {
+    min-height: 64px;
+  }
+  .subida:hover {
+    transform: scale(1.02);
+    box-shadow: var(--sombra-2);
+  }
+  .subida:active {
+    transform: scale(0.97);
+    transition-duration: 40ms;
+  }
+  .subida:has(input:focus-visible) {
+    border-color: var(--indigo3);
+    box-shadow: var(--anillo);
+  }
+  .subida[data-lleno] {
+    background: var(--grn-t);
+    color: var(--grn);
+  }
+  .subida span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  :global(.is-error) > .subida {
+    border-color: var(--red);
+  }
+
+  /* ─── Paso 2: módulos y clases (región común con fondo, sin bordes) ── */
+  .modulos,
+  .preguntas {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .modulos :global(.modulo),
+  .preguntas :global(.pregunta),
+  .region {
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+  }
+  .modulos :global(.modulo[data-abierto]) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+    padding: var(--e4);
+  }
+  .modulos :global(.cabecera),
+  .preguntas :global(.cabecera) {
+    display: flex;
+    align-items: center;
+    gap: var(--e2);
+  }
+  .modulos :global(.modulo:not([data-abierto]) > .cabecera),
+  .preguntas :global(.pregunta:not([data-abierto]) > .cabecera) {
+    padding: var(--e2) var(--e3) var(--e2) var(--e2);
+  }
+  .modulos :global(.alternar),
+  .preguntas :global(.alternar) {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--e3);
+    min-width: 0;
+    min-height: 56px;
+    padding: var(--e1) var(--e2);
+    border: 0;
+    border-radius: var(--radio-control);
+    background: none;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color var(--t-rapido) ease-out,
+      transform var(--t-rapido) ease-out;
+  }
+  .modulos :global(.alternar:hover),
+  .preguntas :global(.alternar:hover) {
+    background: rgb(23 21 59 / 0.04);
+  }
+  .modulos :global(.alternar:active),
+  .preguntas :global(.alternar:active) {
+    transform: scale(0.99);
+  }
+  .modulos :global(.alternar__textos),
+  .preguntas :global(.alternar__textos) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .modulos :global(.alternar__titulo),
+  .preguntas :global(.alternar__titulo) {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .modulos :global(.alternar__sub),
+  .preguntas :global(.alternar__sub) {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: var(--ink2);
+  }
+  .modulos :global(.alternar__sub[data-error]),
+  .preguntas :global(.alternar__sub[data-error]) {
+    color: var(--red);
+    font-weight: 600;
+  }
+  .modulos :global(.alternar__cuenta) {
+    flex: none;
+    font-size: var(--t-pequeno);
+    color: var(--ink3);
+  }
+  .modulos :global(.alternar__flecha),
+  .preguntas :global(.alternar__flecha) {
+    flex: none;
+    color: var(--ink2);
+    transition: transform var(--t-medio) ease-out;
+  }
+  .modulos :global([aria-expanded='true'] .alternar__flecha),
+  .preguntas :global([aria-expanded='true'] .alternar__flecha) {
+    transform: rotate(180deg);
+  }
+  .modulos :global(.numero) {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radio-control);
+    background: var(--indigo);
+    color: var(--white);
+    font-weight: 800;
+  }
+  .modulos :global(.asa),
+  .preguntas :global(.asa) {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radio-control);
+    background: none;
+    color: var(--ink3);
+    cursor: grab;
+    transition: background-color var(--t-rapido) ease-out;
+  }
+  .modulos :global(.asa:hover),
+  .preguntas :global(.asa:hover) {
+    background: rgb(23 21 59 / 0.06);
+    color: var(--ink);
+  }
+  .modulos :global(.asa:active) {
+    cursor: grabbing;
+  }
+  .modulos :global([data-arrastrando]) {
+    opacity: 0.5;
+  }
+  .modulos :global([data-destino]) {
+    box-shadow: inset 0 3px 0 var(--indigo3);
+  }
+
+  .modulos :global(.clases) {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* Dentro del módulo (gris), cada clase es una tarjeta blanca */
+  .modulos :global(.clase) {
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+  .modulos :global(.clase > .cabecera) {
+    padding: var(--e2) var(--e3) var(--e2) var(--e2);
+  }
+  .modulos :global(.clase[data-abierto]) {
+    padding-bottom: var(--e4);
+  }
+  .modulos :global(.clase[data-abierto] .editor-clase) {
+    padding: var(--e2) var(--e4) 0;
+  }
+
+  .editor-modulo,
+  .editor-clase,
+  .editor-pregunta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .enlace--quitar {
+    align-self: flex-start;
+    min-height: 40px;
+    color: var(--red);
+  }
+
+  /* ─── Paso 3: reglas y preguntas ───────────────────────── */
+  .reglas {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+    padding: var(--e4);
+  }
+  .reglas__resumen {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e3);
+  }
+  .reglas__titulo {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--e2);
+    font-weight: 700;
+  }
+  .reglas__resumen .enlace {
+    min-height: 40px;
+  }
+  .preguntas :global(.pregunta[data-abierto]) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+    padding: var(--e3) var(--e4) var(--e4);
+  }
+  .opciones {
+    gap: 12px;
+  }
+  .opcion {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 0 var(--e3);
+    border: 2px solid transparent;
+    border-radius: var(--radio-control);
+    background: var(--white); /* dentro de la región gris */
+    transition: background-color var(--t-rapido) ease-out;
+  }
+  .opcion:has([data-correcta]:checked) {
+    background: var(--indigo-t);
+  }
+  .opcion:has(.opcion__texto:focus) {
+    border-color: var(--indigo3);
+    box-shadow: var(--anillo);
+  }
+  .opcion:has(.opcion__texto[aria-invalid='true']) {
+    border-color: var(--red);
+  }
+  .opcion input[type='radio'] {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    accent-color: var(--indigo3);
+    cursor: pointer;
+  }
+  .opcion__letra {
+    font-weight: 800;
+    cursor: text;
+  }
+  .opcion__texto {
+    min-width: 0;
+    height: 48px;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    color: var(--ink);
+    outline: none;
+  }
+  .opcion__texto::placeholder {
+    color: var(--ink3);
+  }
+  /* Auditoría AA: ink3 sobre indigo-t da 4,08:1; en la opción correcta se usa ink2. */
+  .opcion:has([data-correcta]:checked) .opcion__texto::placeholder {
+    color: var(--ink2);
+  }
+  .opcion__correcta {
+    visibility: hidden;
+    font-size: var(--t-pequeno);
+    font-weight: 700;
+    color: var(--indigo3);
+  }
+  .opcion:has([data-correcta]:checked) .opcion__correcta {
+    visibility: visible;
+  }
+
+  /* ─── Paso 4: resumen y sugeridos ──────────────────────── */
+  .resumen {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .resumen__fila {
+    display: flex;
+    align-items: center;
+    gap: var(--e3);
+    padding: var(--e3) var(--e4) var(--e3) var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+  }
+  .resumen__icono {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--grn-t);
+    color: var(--grn);
+  }
+  .resumen__icono :global(.resumen__alerta),
+  .resumen__fila[data-ok='false'] .resumen__icono :global(.resumen__check) {
+    display: none;
+  }
+  .resumen__fila[data-ok='false'] .resumen__icono {
+    background: var(--org-t);
+    color: var(--org);
+  }
+  .resumen__fila[data-ok='false'] .resumen__icono :global(.resumen__alerta) {
+    display: block;
+  }
+  .resumen__fila[data-ok='false'] [data-resumen-texto] {
+    color: var(--org);
+    font-weight: 600;
+  }
+  .resumen__textos {
+    flex: 1;
+    min-width: 0;
+  }
+  .resumen__titulo {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    font-weight: 600;
+  }
+  .resumen__editar {
+    min-height: 40px;
+    padding: 0 var(--e2);
+  }
+  .avatar-mini {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--lila);
+    color: var(--ink);
+    font-size: 0.6875rem;
+    font-weight: 800;
+  }
+  .avatar-mini:empty {
+    display: none;
+  }
+  .sugeridos [data-sugerido][hidden] {
+    display: none;
+  }
+  .aviso-red {
+    flex-wrap: wrap;
+  }
+  .aviso-red__texto {
+    flex: 1;
+    min-width: 200px;
+  }
+  .aviso-red :global(.boton) {
+    min-height: 40px;
+    margin-left: auto;
+  }
+  .aviso__titulo {
+    font-weight: 700;
+  }
+
+  /* ─── Publicado ────────────────────────────────────────── */
+  .publicado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--e2);
+    padding: var(--e5) 0;
+    text-align: center;
+  }
+  .publicado h2 {
+    outline: none;
+  }
+  .publicado p {
+    max-width: 52ch;
+    margin-bottom: var(--e3);
+  }
+  .publicado__icono {
+    display: grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    margin-bottom: var(--e2);
+    border-radius: 50%;
+    background: var(--grn-t);
+    color: var(--grn);
+    animation: exito-elastico 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .aviso-borrador,
+  .deshacer {
+    align-items: center;
+  }
+  .aviso-borrador p,
+  .deshacer p {
+    flex: 1;
+  }
+  .aviso-borrador .enlace,
+  .deshacer .enlace {
+    min-height: 40px;
+    padding: 0 var(--e2);
+  }
+
+  /* ─── Pie: Anterior · Paso X de 4 · Guardar borrador · Siguiente ── */
+  .pie {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-top: var(--e3); /* proximidad: el pie se separa por espacio, sin línea */
+  }
+  .pie[hidden] {
+    display: none;
+  }
+  .pie__izq {
+    display: flex;
+    align-items: center;
+    gap: var(--e3);
+  }
+  .pie__cancelar {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--alto-control);
+    padding: 0 var(--e2);
+  }
+  .pie__cancelar[hidden] {
+    display: none;
+  }
+  .pie__paso {
+    color: var(--ink2);
+    white-space: nowrap;
+  }
+  .pie__der {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-left: auto;
+  }
+  .pie :global(.boton) {
+    padding: 0 20px; /* misma variante de botón; solo más compacto para que el pie quepa en una fila */
+  }
+  .pie :global(.boton[hidden]) {
+    display: none;
+  }
+
+  /* ─── Columna de ayuda ─────────────────────────────────── */
+  .crear__lado {
+    position: sticky;
+    top: var(--e4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .ayuda-paso {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ayuda-paso :global(.ayuda-paso__icono) {
+    color: var(--yellow);
+  }
+  .ayuda-paso__titulo {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+  }
+  .ayuda-paso__texto {
+    color: rgb(255 255 255 / 0.82);
+  }
+  .lado-resumen {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  .lado__titulo {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    font-weight: 700;
+  }
+  .cifras {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+  }
+  .cifras div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--e3);
+  }
+  .cifras dt {
+    color: var(--ink2);
+  }
+  .cifras dd {
+    margin: 0;
+    font-weight: 700;
+  }
+  .lista-preguntas {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lista-preguntas :global(button) {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 var(--e2);
+    border: 0;
+    border-radius: var(--radio-control);
+    background: none;
+    color: var(--ink);
+    font-size: 1.0625rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--t-rapido) ease-out;
+  }
+  .lista-preguntas :global(button:hover) {
+    background: var(--paper);
+  }
+  .lista-preguntas :global(.cuadro) {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radio-control);
+    background: var(--paper);
+    color: var(--ink2);
+    font-weight: 800;
+  }
+  .lista-preguntas :global([data-estado='lista'] .cuadro) {
+    background: var(--indigo);
+    color: var(--white);
+  }
+  .lista-preguntas :global([data-estado='editando'] .cuadro) {
+    background: var(--yellow);
+    color: var(--ink);
+  }
+  .lista-preguntas :global([data-estado='incompleta'] .cuadro) {
+    background: var(--org-t);
+    color: var(--org);
+  }
+
+  @media (max-width: 1299px) {
+    .crear {
+      grid-template-columns: minmax(0, 1fr) 280px;
+    }
+    .categorias {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 1099px) {
+    .crear {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .crear__lado {
+      position: static;
+      order: -1;
+    }
+    .lado-resumen {
+      display: none;
+    }
+  }
+  @media (max-width: 700px) {
+    .fila--2,
+    .fila--3,
+    .fila--clase {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .crear__stepper {
+      padding: var(--e3);
+    }
+    .pie__der {
+      width: 100%;
+      margin-left: 0;
+    }
+    .pie__der :global(.boton) {
+      flex: 1 1 100%;
+    }
+    .modulos :global(.modulo[data-abierto]),
+    .preguntas :global(.pregunta[data-abierto]) {
+      padding: var(--e3);
+    }
+    .modulos :global(.clase[data-abierto] .editor-clase) {
+      padding: var(--e2) var(--e3) 0;
+    }
+  }
+</style>

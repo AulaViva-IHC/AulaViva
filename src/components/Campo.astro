@@ -1,0 +1,184 @@
+---
+// Campo de formulario: etiqueta a 8 px, relleno gris sin borde
+// (borde índigo en foco, rojo en error), ayuda y error enlazados con aria-describedby.
+// `como`: "input" (por defecto), "textarea" o "select" (las <option> van en el slot por defecto).
+// Ranuras: "extra" (a la derecha de la etiqueta), "antes" y "despues" (dentro del campo).
+// `sobreGris`: dentro de una región gris el relleno del campo es blanco (sigue sin borde).
+import type { HTMLAttributes } from 'astro/types';
+import Icono from './Icono.astro';
+
+type Props = {
+  id: string;
+  etiqueta: string;
+  ayuda?: string;
+  como?: 'input' | 'textarea' | 'select';
+  rows?: number;
+  sobreGris?: boolean;
+} & Omit<HTMLAttributes<'input'>, 'id'>;
+
+const { id, etiqueta, ayuda, como = 'input', rows = 3, sobreGris = false, type = 'text', class: clase, ...resto } = Astro.props;
+const idAyuda = `${id}-ayuda`;
+const idError = `${id}-error`;
+const describe = [ayuda && idAyuda, idError].filter(Boolean).join(' ');
+const atributos = resto as Record<string, unknown>;
+---
+
+<div class:list={['campo', `campo--${como}`, sobreGris && 'campo--sobre-gris', clase]} data-campo>
+  <div class="campo__cabecera">
+    <label for={id}>{etiqueta}</label>
+    <slot name="extra" />
+  </div>
+  <div class="campo__control">
+    <slot name="antes" />
+    {como === 'input' && <input id={id} type={type} aria-describedby={describe} {...atributos} />}
+    {como === 'textarea' && <textarea id={id} rows={rows} aria-describedby={describe} {...atributos} />}
+    {
+      como === 'select' && (
+        <select id={id} aria-describedby={describe} {...atributos}>
+          <slot />
+        </select>
+      )
+    }
+    {como === 'select' && <Icono nombre="chevron" class="campo__flecha" />}
+    <slot name="despues" />
+  </div>
+  {ayuda && <p class="campo__ayuda" id={idAyuda} data-ayuda>{ayuda}</p>}
+  <p class="campo__error" id={idError} aria-live="polite">
+    <Icono nombre="alerta" tamano={16} class="campo__error-icono" />
+    <span data-mensaje></span>
+  </p>
+</div>
+
+<style>
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2); /* proximidad: etiqueta a 8 px de su campo */
+    min-width: 0;
+  }
+  .campo__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--e1) var(--e3);
+    min-height: var(--lh-cuerpo);
+  }
+  label {
+    font-weight: 600;
+  }
+  .campo__control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: var(--alto-control);
+    padding: 0 var(--e1) 0 var(--e3);
+    background: var(--paper);
+    border: 2px solid transparent;
+    border-radius: var(--radio-control);
+    transition:
+      border-color var(--t-rapido) ease-out,
+      box-shadow var(--t-rapido) ease-out,
+      background-color var(--t-rapido) ease-out;
+  }
+  .campo--sobre-gris .campo__control {
+    background: var(--white);
+  }
+  .campo__control:has(:is(input, textarea, select):focus) {
+    border-color: var(--indigo3);
+    box-shadow: var(--anillo);
+  }
+  input,
+  textarea,
+  select {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    color: var(--ink);
+    outline: none;
+  }
+  textarea {
+    height: auto;
+    min-height: 96px;
+    padding: 10px 0;
+    resize: vertical;
+  }
+  .campo--textarea .campo__control {
+    align-items: stretch;
+    padding-right: var(--e3);
+  }
+  select {
+    appearance: none;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+  .campo--select .campo__control {
+    padding-right: 0;
+  }
+  .campo__control :global(.campo__flecha) {
+    position: absolute;
+    right: 14px;
+    pointer-events: none;
+    color: var(--ink2);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--ink3);
+    opacity: 1;
+  }
+  input:-webkit-autofill {
+    -webkit-box-shadow: inset 0 0 0 100px var(--paper);
+    -webkit-text-fill-color: var(--ink);
+  }
+  .campo__ayuda {
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: var(--ink3);
+  }
+  .campo__ayuda[hidden] {
+    display: none;
+  }
+  .campo__error {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    font-weight: 500;
+    color: var(--red);
+  }
+  .campo__error :global(.campo__error-icono) {
+    flex: none;
+    margin-top: 2px;
+    display: none;
+  }
+  .campo:not(.is-error) .campo__error {
+    /* vacío pero presente: aria-live necesita el nodo en el DOM */
+    margin-top: calc(var(--e2) * -1);
+  }
+
+  /* Error: borde rojo y mensaje que dice qué hacer */
+  .campo.is-error .campo__control {
+    border-color: var(--red);
+  }
+  .campo.is-error .campo__control:has(:is(input, textarea, select):focus) {
+    box-shadow: 0 0 0 4px var(--red-t);
+  }
+  .campo.is-error :global(.campo__error-icono) {
+    display: block;
+  }
+
+  .campo:has(:is(input, textarea, select):disabled) .campo__control {
+    color: var(--ink3);
+    cursor: not-allowed;
+  }
+  :is(input, textarea, select):disabled {
+    color: var(--ink3);
+    cursor: not-allowed;
+  }
+</style>

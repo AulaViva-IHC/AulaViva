@@ -1,0 +1,74 @@
+---
+// Botón multimodal · Redundancia sensorial (CLAUDE.md §5.8, Act. 12).
+// Es el mismo <Boton> (misma apariencia, variantes y bucle perceptual) con respuesta
+// visual, auditiva, háptica y para lector de pantalla sincronizadas por
+// retroalimentar() de src/scripts/multimodal.ts.
+//
+// modo:
+//   "toque"       → solo respuesta al presionar (hundirse + vibración 10 ms). Para navegar.
+//   "exito-suave" → el éxito suena y vibra más suave (acciones frecuentes: guardar borrador).
+//   "completo"    → éxito o error completos (enviar, publicar, reintentar).
+// anuncioExito / anuncioError: lo que oye el lector de pantalla (aria-live polite / assertive).
+// Con `href` sigue siendo un enlace <a> (navegar es función de enlace, WCAG 4.1.2).
+import type { ComponentProps } from 'astro/types';
+import Boton from './Boton.astro';
+
+type Props = ComponentProps<typeof Boton> & {
+  modo?: 'toque' | 'exito-suave' | 'completo';
+  anuncioExito?: string;
+  anuncioError?: string;
+};
+
+const { modo = 'completo', anuncioExito, anuncioError, class: clase, ...resto } = Astro.props;
+---
+
+<Boton
+  {...resto}
+  class:list={['boton-mm', clase]}
+  data-multimodal={modo}
+  data-anuncio-exito={anuncioExito}
+  data-anuncio-error={anuncioError}
+>
+  <slot />
+</Boton>
+
+<script>
+  import { iniciarMultimodal } from '../scripts/multimodal';
+  iniciarMultimodal();
+</script>
+
+<style>
+  /* Botón físico: al presionar se hunde con sombra interior; al soltar rebota. */
+  :global(.boton.boton-mm[data-estado='normal'][data-presion='abajo']:not(:disabled)) {
+    transform: scale(0.97);
+    box-shadow: inset 0 2px 6px rgb(23 21 59 / 0.28);
+    transition-duration: 40ms;
+  }
+  :global(.boton--principal.boton-mm[data-estado='normal'][data-presion='abajo']) {
+    background: var(--yellow-d);
+  }
+  :global(.boton--secundario.boton-mm[data-estado='normal'][data-presion='abajo']) {
+    background: var(--mint-d);
+  }
+  :global(.boton.boton-mm[data-estado='normal'][data-presion='rebote']) {
+    animation: rebote 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes rebote {
+    0% { transform: scale(0.97); }
+    60% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+
+  /* Movimiento reducido: solo cambios de color (el error se tiñe de rojo en lugar de sacudirse). */
+  @media (prefers-reduced-motion: reduce) {
+    :global(.boton.boton-mm[data-presion]) {
+      transform: none !important;
+      animation: none !important;
+    }
+    :global(.boton.boton-mm[data-estado='error']) {
+      background: var(--red-t);
+      color: var(--red);
+    }
+  }
+</style>

@@ -1,0 +1,36 @@
+---
+// Región común (Gestalt): agrupa con FONDO, nunca con bordes ni sombras.
+//   tono "blanca" (tarjeta sobre el fondo gris de la app) · "gris" (región dentro de una tarjeta)
+//   · "oscura" (panel índigo de ayuda).
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = {
+  como?: 'section' | 'article' | 'div' | 'aside';
+  tono?: 'blanca' | 'gris' | 'oscura';
+} & HTMLAttributes<'section'>;
+
+const { como: Etiqueta = 'section', tono = 'blanca', class: clase, ...resto } = Astro.props;
+---
+
+<Etiqueta class:list={['tarjeta', `tarjeta--${tono}`, tono === 'oscura' && 'oscuro', clase]} {...resto}>
+  <slot />
+</Etiqueta>
+
+<style>
+  .tarjeta {
+    min-width: 0;
+    padding: var(--e5);
+    border-radius: var(--radio-tarjeta);
+  }
+  .tarjeta[hidden] {
+    display: none;
+  }
+  .tarjeta--blanca { background: var(--white); }
+  .tarjeta--gris { background: var(--paper); }
+  .tarjeta--oscura { background: var(--indigo); color: var(--white); }
+  @media (max-width: 600px) {
+    .tarjeta {
+      padding: var(--e4);
+    }
+  }
+</style>

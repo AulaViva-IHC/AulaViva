@@ -1,0 +1,202 @@
+---
+// Layout de las pantallas de acceso (Iniciar sesión y Crear cuenta): dos columnas,
+// panel índigo a la izquierda y tarjeta blanca con pestañas a la derecha.
+// Las pestañas son enlaces a /login y /registro (conservan ?volver y ?curso).
+// Aquí viven también los estilos de formulario que comparten ambas pantallas.
+import Publico from './Publico.astro';
+import PanelAcceso from '../components/PanelAcceso.astro';
+
+interface Props {
+  titulo: string;
+  pestana: 'login' | 'registro';
+  simular?: string;
+  panel: { titulo: string; texto: string; textoParcial: string };
+}
+
+const { titulo, pestana, simular, panel } = Astro.props;
+
+// Conservar a dónde volver al cambiar de pestaña.
+const conservar = new URLSearchParams();
+for (const clave of ['volver', 'curso']) {
+  const valor = Astro.url.searchParams.get(clave);
+  if (valor) conservar.set(clave, valor);
+}
+const sufijo = conservar.size ? `?${conservar}` : '';
+---
+
+<Publico titulo={titulo} cabecera={false} simular={simular}>
+  <div class="acceso">
+    <PanelAcceso {...panel} />
+
+    <main class="acceso__principal">
+      <div class="acceso__columna">
+        <slot name="antes" />
+        <nav class="pestanas" aria-label="Acceso a tu cuenta">
+          <a class="pestana" href={`/login${sufijo}`} aria-current={pestana === 'login' ? 'page' : undefined}>Iniciar sesión</a>
+          <a class="pestana" href={`/registro${sufijo}`} aria-current={pestana === 'registro' ? 'page' : undefined}>Crear cuenta</a>
+        </nav>
+        <slot />
+      </div>
+    </main>
+  </div>
+</Publico>
+
+<style>
+  .acceso {
+    display: grid;
+    grid-template-columns: minmax(0, 44fr) minmax(0, 56fr);
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .acceso__principal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--e6) var(--e4);
+    background: var(--white);
+  }
+  .acceso__columna {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e5);
+    width: 100%;
+    max-width: 464px;
+  }
+
+  /* Pestañas: la línea inferior marca la pestaña activa (no divide regiones) */
+  .pestanas {
+    display: flex;
+    gap: var(--e5);
+    box-shadow: inset 0 -2px 0 var(--paper);
+  }
+  .pestana {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--alto-control);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--ink3);
+    text-decoration: none;
+    transition: color var(--t-rapido) ease-out;
+  }
+  .pestana:hover {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .pestana[aria-current='page'] {
+    color: var(--ink);
+  }
+  .pestana[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--ink);
+  }
+
+  /* ─── Estilos compartidos por login y registro ───────────── */
+  .acceso :global(.acceso__seccion) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .acceso :global(.acceso__encabezado) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+  }
+  .acceso :global(.acceso__titulo) {
+    font-size: var(--t-h1);
+    line-height: var(--lh-h1);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .acceso :global(.acceso__form) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4); /* 24 px entre grupos */
+  }
+  .acceso :global(.acceso__enviar) {
+    margin-top: var(--e2);
+  }
+  .acceso :global(.aviso__titulo) {
+    font-weight: 700;
+  }
+  .acceso :global(.aviso-red) {
+    flex-wrap: wrap;
+  }
+  .acceso :global(.aviso-red__texto) {
+    flex: 1;
+    min-width: 200px;
+  }
+  .acceso :global(.aviso-red .boton) {
+    min-height: 40px;
+    margin-left: auto;
+  }
+  .acceso :global(.grupo-password) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+  }
+  .acceso :global(.ver-password) {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radio-control);
+    background: none;
+    color: var(--ink2);
+    cursor: pointer;
+    transition:
+      background-color var(--t-rapido) ease-out,
+      transform var(--t-rapido) ease-out;
+  }
+  .acceso :global(.ver-password:hover) {
+    background: var(--indigo-t);
+  }
+  .acceso :global(.ver-password:active) {
+    transform: scale(0.97);
+  }
+  .acceso :global(.ver-password .icono-ocultar),
+  .acceso :global(.ver-password[aria-pressed='true'] .icono-ver) {
+    display: none;
+  }
+  .acceso :global(.ver-password[aria-pressed='true'] .icono-ocultar) {
+    display: block;
+  }
+  .acceso :global(.mayus) {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    font-weight: 600;
+    color: var(--org);
+  }
+  .acceso :global(.mayus:empty) {
+    display: none;
+  }
+  .acceso :global(.acceso__pie) {
+    text-align: center;
+    color: var(--ink2);
+  }
+
+  /* ─── Móvil: el panel se reduce a una franja con el logo ── */
+  @media (max-width: 899px) {
+    .acceso {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto 1fr;
+    }
+    .acceso__principal {
+      align-items: flex-start;
+      padding: var(--e5) var(--e3) var(--e6);
+    }
+  }
+</style>

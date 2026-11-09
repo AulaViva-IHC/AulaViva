@@ -1,0 +1,105 @@
+/* AulaViva · Estilos base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  font-size: var(--t-cuerpo);
+  line-height: var(--lh-cuerpo);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+.display { font-size: var(--t-display); line-height: var(--lh-display); font-weight: 800; letter-spacing: -0.03em; }
+.h1 { font-size: var(--t-h1); line-height: var(--lh-h1); font-weight: 800; letter-spacing: -0.02em; }
+.h2 { font-size: var(--t-h2); line-height: var(--lh-h2); font-weight: 700; letter-spacing: -0.01em; }
+.pequeno { font-size: var(--t-pequeno); line-height: var(--lh-pequeno); }
+.nota { font-size: var(--t-nota); line-height: var(--lh-nota); }
+.secundario { color: var(--ink2); }
+.terciario { color: var(--ink3); }
+
+a {
+  color: var(--indigo3);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 2px;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font: inherit;
+}
+
+/* Foco visible solo con teclado: anillo índigo de 4 px */
+:focus-visible {
+  outline: 4px solid var(--foco);
+  outline-offset: 2px;
+}
+/* Sobre fondos oscuros el anillo es amarillo para mantener el contraste */
+.oscuro {
+  --foco: var(--yellow);
+}
+
+/* Botón con aspecto de enlace (acciones terciarias) */
+.enlace {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--indigo3);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.enlace:hover {
+  text-decoration: underline;
+}
+
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Aviso en región común (fondo, sin borde) */
+.aviso {
+  display: flex;
+  gap: var(--e2);
+  align-items: flex-start;
+  padding: var(--e3);
+  border-radius: var(--radio-tarjeta);
+  font-size: var(--t-pequeno);
+  line-height: var(--lh-pequeno);
+}
+.aviso > svg { flex: none; margin-top: 1px; }
+.aviso--info { background: var(--mint); color: var(--ink); }
+.aviso--error { background: var(--red-t); color: var(--red); }
+.aviso--advertencia { background: var(--org-t); color: var(--org); }
+.aviso[hidden] { display: none; }
+
+/* Skeleton */
+.skeleton {
+  display: block;
+  border-radius: var(--radio-control);
+  background: var(--paper);
+}

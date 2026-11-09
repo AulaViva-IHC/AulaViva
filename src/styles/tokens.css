@@ -1,0 +1,59 @@
+/* AulaViva · Tokens del sistema de diseño (CLAUDE.md §4) */
+:root {
+  /* Color */
+  --ink: #17153b;
+  --ink2: #4b4a63;
+  --ink3: #6e6d85;
+  --paper: #f4f4f8;
+  --white: #ffffff;
+  --indigo: #1b1750;
+  --indigo2: #2a2477;
+  --indigo3: #3b34b0;
+  --indigo-t: #e8e6f7;
+  --yellow: #ffd23f;
+  --yellow-d: #e6b800;
+  --mint: #dff3f0;
+  --mint-d: #c6e9e3; /* menta presionada */
+  --lila: #d9ccf7;
+  --red-t: #fde2e2;
+  --red: #9b1c1c;
+  --org-t: #ffedd5;
+  --org: #9a3412;
+  --grn-t: #dcfce7;
+  --grn: #166534;
+
+  /* Tipografía: tamaño / alto de línea */
+  --fuente: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --t-display: 3.5rem;   --lh-display: 4rem;     /* 56/64 */
+  --t-h1: 2rem;          --lh-h1: 2.5rem;        /* 32/40 */
+  --t-h2: 1.5rem;        --lh-h2: 2rem;          /* 24/32 */
+  --t-cuerpo: 1rem;      --lh-cuerpo: 1.5rem;    /* 16/24 */
+  --t-pequeno: 0.875rem; --lh-pequeno: 1.25rem;  /* 14/20 */
+  --t-nota: 0.8125rem;   --lh-nota: 1rem;        /* 13/16 */
+
+  /* Rejilla de 8 px */
+  --e1: 4px;
+  --e2: 8px;
+  --e3: 16px;
+  --e4: 24px;
+  --e5: 32px;
+  --e6: 48px;
+  --e7: 64px;
+
+  /* Forma */
+  --alto-control: 48px;
+  --radio-control: 6px;
+  --radio-tarjeta: 8px;
+
+  /* Elevación (solo como respuesta a la interacción) */
+  --sombra-1: 0 1px 2px rgb(23 21 59 / 0.08);
+  --sombra-2: 0 4px 12px rgb(23 21 59 / 0.16);
+
+  /* Foco: anillo índigo de 4 px */
+  --anillo: 0 0 0 4px var(--indigo-t);
+  --foco: var(--indigo3);
+
+  /* Tiempos del bucle perceptual */
+  --t-rapido: 80ms;
+  --t-medio: 200ms;
+}

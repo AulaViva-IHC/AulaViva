@@ -1,0 +1,278 @@
+---
+// Menú lateral índigo (referencias 04-inicio y admin-01). Máximo 5 destinos (Hick):
+// el estudiante y el administrador tienen cada uno su menú.
+// En pantallas < 900 px se convierte en una franja con el logo y un botón "Menú".
+import Logo from './Logo.astro';
+import Icono, { type NombreIcono } from './Icono.astro';
+import { iniciales } from '../lib/validacion';
+
+export type Menu = 'estudiante' | 'admin';
+
+interface Props {
+  menu: Menu;
+  activo: string;
+  usuario: { nombre: string; rol: string };
+}
+
+const { menu, activo, usuario } = Astro.props;
+
+const MENUS: Record<Menu, { id: string; texto: string; href: string; icono: NombreIcono }[]> = {
+  estudiante: [
+    { id: 'inicio', texto: 'Inicio', href: '/inicio', icono: 'casa' },
+    { id: 'mis-cursos', texto: 'Mis cursos', href: '/mis-cursos', icono: 'libro' },
+    { id: 'catalogo', texto: 'Catálogo', href: '/catalogo', icono: 'cuadricula' },
+    { id: 'certificados', texto: 'Mis certificados', href: '/certificados', icono: 'medalla' },
+    { id: 'verificar', texto: 'Verificar certificado', href: '/verificar', icono: 'escudo' },
+  ],
+  admin: [
+    { id: 'panel', texto: 'Panel', href: '/admin', icono: 'cuadricula' },
+    { id: 'cursos', texto: 'Cursos', href: '/admin/cursos/nuevo', icono: 'libro' },
+    { id: 'usuarios', texto: 'Usuarios', href: '/admin/usuarios', icono: 'usuarios' },
+    { id: 'certificados', texto: 'Certificados', href: '/admin/certificados', icono: 'medalla' },
+  ],
+};
+const items = MENUS[menu];
+const subtitulo = menu === 'admin' ? 'Panel de AulaViva' : 'Estudiante';
+const inicio = menu === 'admin' ? '/admin/cursos/nuevo' : '/inicio';
+---
+
+<aside class="lateral oscuro" aria-label="Menú principal" data-lateral>
+  <div class="lateral__franja">
+    <Logo tono="claro" href={inicio} />
+    <button type="button" class="lateral__abrir" aria-expanded="false" aria-controls="menu-lateral" data-abrir-menu>
+      <Icono nombre="menu" class="icono-abrir" />
+      <Icono nombre="cerrar" class="icono-cerrar" />
+      <span>Menú</span>
+    </button>
+  </div>
+
+  <div class="lateral__cuerpo" id="menu-lateral">
+    <nav aria-label="Secciones">
+      <ul class="lateral__lista">
+        {
+          items.map((item) => (
+            <li>
+              <a href={item.href} class="lateral__item" aria-current={item.id === activo ? 'page' : undefined}>
+                <Icono nombre={item.icono} tamano={22} />
+                {item.texto}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="lateral__pie">
+      <form method="post" action="/api/logout" data-salir>
+        <button type="submit" class="lateral__item lateral__salir" data-estado="normal">
+          <Icono nombre="salir" tamano={22} />
+          <span data-texto-salir>Cerrar sesión</span>
+          <span class="girador" aria-hidden="true"></span>
+        </button>
+      </form>
+      <div class="lateral__usuario">
+        <span class="lateral__avatar" aria-hidden="true">{iniciales(usuario.nombre)}</span>
+        <div class="lateral__datos">
+          <p class="lateral__nombre">{usuario.nombre}</p>
+          <p class="lateral__rol">{subtitulo}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<script>
+  // Menú en móvil y "Cerrando sesión…" sin doble envío.
+  for (const lateral of document.querySelectorAll<HTMLElement>('[data-lateral]')) {
+    const abrir = lateral.querySelector<HTMLButtonElement>('[data-abrir-menu]')!;
+    abrir.addEventListener('click', () => {
+      const abierto = abrir.getAttribute('aria-expanded') === 'true';
+      abrir.setAttribute('aria-expanded', String(!abierto));
+    });
+    lateral.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && abrir.getAttribute('aria-expanded') === 'true') {
+        abrir.setAttribute('aria-expanded', 'false');
+        abrir.focus();
+      }
+    });
+
+    const form = lateral.querySelector<HTMLFormElement>('[data-salir]')!;
+    form.addEventListener('submit', (e) => {
+      const boton = form.querySelector<HTMLButtonElement>('button')!;
+      if (boton.dataset.estado === 'cargando') {
+        e.preventDefault();
+        return;
+      }
+      boton.dataset.estado = 'cargando';
+      boton.setAttribute('aria-busy', 'true');
+      form.querySelector('[data-texto-salir]')!.textContent = 'Cerrando sesión…';
+    });
+  }
+</script>
+
+<style>
+  .lateral {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    padding: var(--e5) var(--e3) var(--e3);
+    background: var(--indigo);
+    color: var(--white);
+  }
+  .lateral__franja {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--e2);
+  }
+  .lateral__abrir {
+    display: none;
+  }
+  .lateral__cuerpo {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--e4);
+    margin-top: var(--e5);
+    min-height: 0;
+  }
+  .lateral__lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lateral__item {
+    display: flex;
+    align-items: center;
+    gap: var(--e3);
+    width: 100%;
+    min-height: 56px;
+    padding: 0 var(--e3);
+    border: 0;
+    border-radius: var(--radio-tarjeta);
+    background: transparent;
+    color: rgb(255 255 255 / 0.82);
+    font-size: 1.0625rem;
+    font-weight: 500;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color var(--t-rapido) ease-out,
+      color var(--t-rapido) ease-out,
+      transform var(--t-rapido) ease-out;
+  }
+  /* Bucle perceptual: 0 ms hover (fondo), < 50 ms clic (se hunde) */
+  .lateral__item:hover {
+    background: rgb(255 255 255 / 0.08);
+    color: var(--white);
+    text-decoration: none;
+  }
+  .lateral__item:active {
+    transform: scale(0.97);
+    transition-duration: 40ms;
+  }
+  .lateral__item[aria-current='page'] {
+    background: var(--indigo2);
+    color: var(--white);
+    font-weight: 700;
+  }
+  .lateral__item[aria-current='page'] :global(svg) {
+    color: var(--yellow);
+  }
+  .lateral__salir .girador {
+    display: none;
+    margin-left: auto;
+  }
+  .lateral__salir[data-estado='cargando'] {
+    cursor: progress;
+  }
+  .lateral__salir[data-estado='cargando'] .girador {
+    display: block;
+  }
+
+  .lateral__pie {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  .lateral__usuario {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--indigo2);
+  }
+  .lateral__avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--yellow);
+    color: var(--ink);
+    font-weight: 800;
+  }
+  .lateral__datos {
+    min-width: 0;
+  }
+  .lateral__nombre {
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lateral__rol {
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: rgb(255 255 255 / 0.75);
+  }
+
+  /* ─── Móvil: franja con logo y botón "Menú" ─────────────── */
+  @media (max-width: 899px) {
+    .lateral {
+      z-index: 20;
+      height: auto;
+      padding: 12px var(--e3);
+    }
+    .lateral__franja {
+      padding: 0;
+    }
+    .lateral__abrir {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--e2);
+      min-height: var(--alto-control);
+      padding: 0 var(--e3);
+      border: 0;
+      border-radius: var(--radio-control);
+      background: var(--indigo2);
+      color: var(--white);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .lateral__abrir :global(.icono-cerrar),
+    .lateral__abrir[aria-expanded='true'] :global(.icono-abrir) {
+      display: none;
+    }
+    .lateral__abrir[aria-expanded='true'] :global(.icono-cerrar) {
+      display: block;
+    }
+    .lateral__cuerpo {
+      display: none;
+      margin-top: var(--e3);
+    }
+    .lateral:has([aria-expanded='true']) .lateral__cuerpo {
+      display: flex;
+    }
+  }
+</style>

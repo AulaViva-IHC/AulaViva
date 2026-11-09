@@ -1,0 +1,51 @@
+---
+// Recuperar contraseña: página simple, todavía sin envío real de correo.
+import Publico from '../layouts/Publico.astro';
+import Icono from '../components/Icono.astro';
+---
+
+<Publico titulo="Recuperar contraseña">
+  <a slot="cabecera" href="/login">Iniciar sesión</a>
+  <main class="contenido">
+    <section class="tarjeta">
+      <h1 class="h1">Recupera tu contraseña</h1>
+      <p class="secundario">
+        Muy pronto podrás pedir aquí un enlace para crear una contraseña nueva. Mientras tanto,
+        escribe a soporte de AulaViva desde el correo con el que te registraste.
+      </p>
+      <p class="aviso aviso--info">
+        <Icono nombre="info" />
+        <span>Por seguridad, nunca te pediremos tu contraseña actual por correo.</span>
+      </p>
+      <a class="volver" href="/login">
+        <Icono nombre="flecha-izq" tamano={18} />
+        Volver a iniciar sesión
+      </a>
+    </section>
+  </main>
+</Publico>
+
+<style>
+  .contenido {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: var(--e6) var(--e3);
+  }
+  .tarjeta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+    padding: var(--e5);
+    background: var(--white);
+    border-radius: var(--radio-tarjeta);
+  }
+  .tarjeta h1 + p {
+    margin-top: calc(var(--e2) - var(--e4));
+  }
+  .volver {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--e2);
+    align-self: flex-start;
+  }
+</style>

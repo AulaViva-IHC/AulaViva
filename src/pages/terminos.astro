@@ -1,0 +1,45 @@
+---
+// Términos de uso y privacidad (versión corta para el proyecto del curso).
+import Publico from '../layouts/Publico.astro';
+import Tarjeta from '../components/Tarjeta.astro';
+---
+
+<Publico titulo="Términos y privacidad">
+  <a slot="cabecera" href="/registro">Crear cuenta</a>
+  <main class="contenido">
+    <h1 class="h1">Términos de uso y privacidad</h1>
+    <Tarjeta class="texto">
+      <h2 class="h2">Qué datos guardamos</h2>
+      <p class="secundario">
+        Tu nombre (para tus certificados), tu correo (para iniciar sesión) y tu avance en los cursos.
+        Tu contraseña se guarda cifrada; nadie puede leerla.
+      </p>
+      <h2 class="h2">Para qué los usamos</h2>
+      <p class="secundario">
+        Solo para darte acceso a tus cursos y emitir certificados verificables. La verificación pública
+        muestra únicamente tu nombre, el curso y la fecha de emisión.
+      </p>
+      <h2 class="h2">Tus derechos</h2>
+      <p class="secundario">Puedes pedir que corrijamos o borremos tus datos escribiendo a soporte de AulaViva.</p>
+    </Tarjeta>
+  </main>
+</Publico>
+
+<style>
+  .contenido {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--e6) var(--e3);
+  }
+  .contenido :global(.texto) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+  }
+  .contenido :global(.texto h2:not(:first-child)) {
+    margin-top: var(--e3);
+  }
+</style>

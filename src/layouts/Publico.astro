@@ -1,0 +1,73 @@
+---
+// Layout público: <head> común y, opcionalmente, la cabecera con el logo.
+// El login no usa cabecera (tiene su propio panel índigo).
+import '@fontsource-variable/inter';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/animaciones.css';
+import Logo from '../components/Logo.astro';
+import RegionesVivas from '../components/RegionesVivas.astro';
+
+interface Props {
+  titulo: string;
+  descripcion?: string;
+  cabecera?: boolean;
+  /** Estado forzado por ?simular= (solo desarrollo, lo usa /estados). */
+  simular?: string;
+}
+
+const {
+  titulo,
+  descripcion = 'AulaViva: cursos virtuales con certificación verificable.',
+  cabecera = true,
+  simular = '',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={descripcion} />
+    <meta name="theme-color" content="#1B1750" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>{titulo} · AulaViva</title>
+  </head>
+  <body data-simular={simular || undefined}>
+    {
+      cabecera && (
+        <header class="cabecera">
+          <Logo />
+          <div class="cabecera__acciones">
+            <slot name="cabecera" />
+          </div>
+        </header>
+      )
+    }
+    <slot />
+    <RegionesVivas />
+  </body>
+</html>
+
+<style>
+  .cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e3);
+    min-height: 72px;
+    padding: var(--e3) var(--e5);
+    background: var(--white);
+  }
+  .cabecera__acciones {
+    display: flex;
+    align-items: center;
+    gap: var(--e3);
+  }
+  @media (max-width: 600px) {
+    .cabecera {
+      padding: var(--e3);
+    }
+  }
+</style>

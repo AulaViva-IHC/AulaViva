@@ -1,0 +1,318 @@
+---
+// Crear cuenta · mismo diseño de dos columnas que el login (layout Acceso).
+// 4 campos + la casilla de términos (Ley de Miller). Prevención de errores:
+// validación al salir de cada campo, requisitos de contraseña en vivo, medidor de seguridad,
+// Bloq Mayús, mostrar/ocultar y el botón explica qué falta mientras no se puede enviar.
+// La lógica del navegador está en src/scripts/registro.ts.
+import Acceso from '../layouts/Acceso.astro';
+import Campo from '../components/Campo.astro';
+import Boton from '../components/Boton.astro';
+import BotonMultimodal from '../components/BotonMultimodal.astro';
+import Icono from '../components/Icono.astro';
+import { rutaSegura } from '../lib/auth';
+import { REQUISITOS_PASSWORD } from '../lib/validacion';
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error-red', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const volver = rutaSegura(Astro.url.searchParams.get('volver')) ?? '';
+const sufijo = Astro.url.search && !simular ? Astro.url.search : '';
+---
+
+<Acceso
+  titulo="Crear cuenta"
+  pestana="registro"
+  simular={simular}
+  panel={{
+    titulo: 'Aprende a tu ritmo y certifícate',
+    texto: 'Crea tu cuenta gratis: verás tus clases, lo que vence esta semana y tu próximo certificado en un solo lugar.',
+    textoParcial: 'Puedes crear tu cuenta igual; esta parte aparecerá al reconectar.',
+  }}
+>
+  <section class="acceso__seccion" aria-labelledby="titulo-registro">
+    <div class="acceso__encabezado">
+      <h1 class="acceso__titulo" id="titulo-registro">Crea tu cuenta</h1>
+      <p class="secundario">Es gratis y solo te pedimos lo necesario.</p>
+    </div>
+
+    <div class="aviso aviso--error aviso-red" data-aviso-red hidden>
+      <Icono nombre="sin-conexion" />
+      <div class="aviso-red__texto">
+        <p class="aviso__titulo" data-aviso-red-titulo>Sin conexión a internet</p>
+        <p data-aviso-red-detalle>Revisa tu wifi o tus datos móviles. Tus datos siguen aquí.</p>
+      </div>
+      <Boton variante="secundario" data-reintentar textoCargando="Reintentando…">
+        <Icono nombre="reintentar" tamano={18} />
+        Reintentar
+      </Boton>
+    </div>
+
+    <div class="aviso aviso--advertencia" data-aviso-limite hidden>
+      <Icono nombre="candado" />
+      <div>
+        <p class="aviso__titulo">Demasiados intentos</p>
+        <p>Por seguridad pausamos los registros desde esta conexión. Vuelve a intentarlo en <strong data-cuenta>15:00</strong>.</p>
+      </div>
+    </div>
+
+    <form class="acceso__form" novalidate data-form-registro data-volver={volver}>
+      <Campo
+        id="nombre"
+        name="nombre"
+        etiqueta="Nombre completo"
+        autocomplete="name"
+        autocapitalize="words"
+        maxlength="100"
+        placeholder="Nombre y apellidos"
+        required
+        ayuda="Así aparecerá en tus certificados."
+      />
+
+      <Campo
+        id="correo"
+        name="correo"
+        etiqueta="Correo electrónico"
+        type="email"
+        autocomplete="email"
+        inputmode="email"
+        autocapitalize="none"
+        spellcheck="false"
+        maxlength="190"
+        placeholder="nombre@correo.com"
+        required
+      />
+
+      <div class="grupo-password">
+        <Campo
+          id="password"
+          name="password"
+          etiqueta="Contraseña"
+          type="password"
+          autocomplete="new-password"
+          maxlength="200"
+          placeholder="Crea una contraseña"
+          required
+          aria-describedby="password-error medidor-texto requisitos"
+        >
+          <button slot="despues" type="button" class="ver-password" aria-label="Mostrar contraseña" aria-pressed="false" aria-controls="password" data-ver="password">
+            <Icono nombre="ojo" class="icono-ver" />
+            <Icono nombre="ojo-cerrado" class="icono-ocultar" />
+          </button>
+        </Campo>
+
+        <div class="medidor" data-medidor data-nivel="0">
+          <span class="medidor__barras" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span class="medidor__texto" id="medidor-texto" data-medidor-texto>Seguridad: escribe tu contraseña</span>
+        </div>
+        <ul class="requisitos" id="requisitos" aria-label="Tu contraseña necesita">
+          {
+            REQUISITOS_PASSWORD.map((r) => (
+              <li class="requisito" data-requisito={r.id} data-cumple="false">
+                <span class="requisito__icono" aria-hidden="true"><Icono nombre="check" tamano={14} /></span>
+                {r.texto}
+                <span class="solo-lector" data-requisito-estado>: pendiente</span>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="mayus" aria-live="polite" data-mayus="password"></p>
+      </div>
+
+      <div class="grupo-password">
+        <Campo
+          id="confirmacion"
+          name="confirmacion"
+          etiqueta="Confirmar contraseña"
+          type="password"
+          autocomplete="new-password"
+          maxlength="200"
+          placeholder="Escríbela otra vez"
+          required
+        >
+          <button slot="despues" type="button" class="ver-password" aria-label="Mostrar contraseña" aria-pressed="false" aria-controls="confirmacion" data-ver="confirmacion">
+            <Icono nombre="ojo" class="icono-ver" />
+            <Icono nombre="ojo-cerrado" class="icono-ocultar" />
+          </button>
+        </Campo>
+        <p class="mayus" aria-live="polite" data-mayus="confirmacion"></p>
+      </div>
+
+      <div class="casilla-grupo" data-campo>
+        <label class="casilla">
+          <input type="checkbox" id="terminos" name="terminos" aria-describedby="terminos-error" required />
+          <span>
+            Acepto los <a href="/terminos" target="_blank" rel="noopener">términos de uso y la política de privacidad</a>
+          </span>
+        </label>
+        <p class="casilla__error" id="terminos-error" aria-live="polite">
+          <Icono nombre="alerta" tamano={16} />
+          <span data-mensaje></span>
+        </p>
+      </div>
+
+      <div class="envio">
+        <BotonMultimodal
+          variante="principal"
+          tipo="submit"
+          bloque
+          textoCargando="Creando tu cuenta…"
+          textoExito="¡Cuenta creada!"
+          class="acceso__enviar"
+          modo="completo"
+          anuncioExito="Cuenta creada. Entrando a AulaViva."
+          aria-disabled="true"
+          aria-describedby="faltan"
+          data-enviar
+        >
+          Crear cuenta
+        </BotonMultimodal>
+        <p class="faltan" id="faltan" data-faltan>
+          Para crear tu cuenta falta: tu nombre completo, tu correo, una contraseña segura, confirmarla y aceptar los términos.
+        </p>
+      </div>
+      <p class="solo-lector" aria-live="assertive" data-anuncio></p>
+    </form>
+
+    <p class="acceso__pie">
+      ¿Ya tienes cuenta? <a href={`/login${sufijo}`} class="enlace--fuerte">Inicia sesión</a>
+    </p>
+  </section>
+</Acceso>
+
+<script>
+  import '../scripts/registro';
+</script>
+
+<style>
+  /* Medidor de seguridad: siempre con texto (nunca solo color) */
+  .medidor {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .medidor__barras {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--e1);
+    width: 120px;
+    flex: none;
+  }
+  .medidor__barras span {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--paper);
+    transition: background-color var(--t-medio) ease-out;
+  }
+  .medidor__texto {
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    font-weight: 600;
+    color: var(--ink3);
+  }
+  .medidor[data-nivel='1'] .medidor__barras span:nth-child(-n + 1) { background: var(--red); }
+  .medidor[data-nivel='2'] .medidor__barras span:nth-child(-n + 2) { background: var(--org); }
+  .medidor[data-nivel='3'] .medidor__barras span,
+  .medidor[data-nivel='4'] .medidor__barras span { background: var(--grn); }
+  .medidor[data-nivel='1'] .medidor__texto { color: var(--red); }
+  .medidor[data-nivel='2'] .medidor__texto { color: var(--org); }
+  .medidor[data-nivel='3'] .medidor__texto,
+  .medidor[data-nivel='4'] .medidor__texto { color: var(--grn); }
+
+  .requisitos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e2) var(--e3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .requisito {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: var(--ink3);
+    transition: color var(--t-medio) ease-out;
+  }
+  .requisito__icono {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--paper);
+    color: transparent;
+    transition:
+      background-color var(--t-medio) ease-out,
+      color var(--t-medio) ease-out;
+  }
+  .requisito[data-cumple='true'] {
+    color: var(--grn);
+    font-weight: 600;
+  }
+  .requisito[data-cumple='true'] .requisito__icono {
+    background: var(--grn-t);
+    color: var(--grn);
+  }
+
+  /* Casilla de términos: 24 px, foco índigo */
+  .casilla-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+  }
+  .casilla {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .casilla input {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    accent-color: var(--indigo3);
+    cursor: pointer;
+  }
+  .casilla__error {
+    display: none;
+    gap: 6px;
+    align-items: flex-start;
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    font-weight: 500;
+    color: var(--red);
+  }
+  .casilla__error :global(svg) {
+    flex: none;
+    margin-top: 2px;
+  }
+  .casilla-grupo.is-error .casilla__error {
+    display: flex;
+  }
+  .casilla-grupo.is-error .casilla input {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
+  }
+
+  .envio {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+  }
+  .faltan {
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: var(--ink2);
+    text-align: center;
+  }
+  .faltan[data-listo] {
+    color: var(--grn);
+    font-weight: 600;
+  }
+  .enlace--fuerte {
+    font-weight: 700;
+  }
+</style>
