@@ -64,13 +64,6 @@ npm run dev
 
 Abre **http://localhost:4321**.
 
-## Usuarios de prueba
-
-| Rol | Correo | Contraseña |
-| --- | --- | --- |
-| Estudiante | `gbarreto@correo.com` | `Aulaviva2026!` |
-| Administrador | `admin@aulaviva.pe` | `Admin2026!` |
-
 ## Hoja de ruta
 - [x] Iniciar sesión, crear cuenta, inicio del estudiante y crear curso
 - [x] Retroalimentación multimodal (visual, sonora y háptica)
