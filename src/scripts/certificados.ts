@@ -6,7 +6,7 @@
 //   Copiar enlace  (éxito suave; si el navegador no deja copiar, muestra el enlace seleccionado)
 //   Verificar      (abre /verificar?codigo=…)
 import { ponerEstado, estaOcupado } from './boton';
-import { procesar, retroalimentar } from './multimodal';
+import { iniciarProgreso, procesar, retroalimentar } from './multimodal';
 import { $, $$, anunciar, completarCarga, enfocar, ESPERA_EXITO_MS, esperar, pedirJSON, plantilla, simulacion } from './util';
 
 interface Cert {
@@ -162,6 +162,8 @@ async function cargarProgreso(reintento = false): Promise<boolean> {
 // ─── Certificados ───────────────────────────────────────────────────
 async function cargar(reintento = false): Promise<boolean> {
   raiz.setAttribute('aria-busy', 'true');
+  // Firma de Progreso (Act. 14): carga automática → gotas solo si tarda más de 1 s, sin campanita al final.
+  const progreso = reintento ? null : iniciarProgreso(raiz, { automatico: true, texto: 'Cargando tus certificados' });
   if (simular === 'cargando') return new Promise(() => {});
   const inicio = performance.now();
   try {
@@ -205,6 +207,7 @@ async function cargar(reintento = false): Promise<boolean> {
     else anunciar(anuncio, 'No pudimos cargar tus certificados. Pulsa Reintentar.');
     return false;
   } finally {
+    progreso?.detener(); // el resultado ya se anuncia arriba
     raiz.setAttribute('aria-busy', 'false');
   }
 }

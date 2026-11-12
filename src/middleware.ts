@@ -5,7 +5,7 @@ import { destinoPorRol } from './lib/auth';
 import { buscarUsuarioPorId } from './lib/repositorio';
 
 // Páginas que exigen sesión (las APIs privadas revisan la sesión por su cuenta y responden 401).
-const PRIVADAS = ['/inicio', '/mis-cursos', '/certificados', '/clase', '/evaluacion', '/resultado', '/notificaciones', '/admin'];
+const PRIVADAS = ['/inicio', '/mis-cursos', '/certificados', '/clase', '/evaluacion', '/resultado', '/notificaciones', '/actividad-14', '/admin'];
 // Con sesión no tiene sentido verlas: se va directo al inicio del rol.
 const SOLO_SIN_SESION = ['/login', '/registro'];
 // Solo en desarrollo: /estados muestra estas pantallas (y sus APIs) dentro de iframes sin
@@ -17,6 +17,7 @@ const SIMULABLES = [
   '/clase', '/api/indice', '/api/progreso', '/api/materiales',
   '/evaluacion', '/api/evaluacion', '/resultado', '/api/resultado', '/api/perfil',
   '/certificados', '/api/certificados', '/notificaciones', '/api/notificaciones',
+  '/actividad-14', // Act. 14 (para auditar con Lighthouse sin iniciar sesión)
   // /verificar no está: en /estados se muestra la versión pública (10-verificar).
 ];
 

@@ -1,0 +1,783 @@
+---
+// Act. 14 · Matriz de firmas multimodales y prueba a ciegas (CLAUDE.md §5.9).
+// Cuatro estados del sistema que se reconocen SIN mirar la pantalla, solo por oído y tacto:
+// Éxito, Error, Cancelación y Progreso (motor en src/scripts/multimodal.ts).
+//   /actividad-14               → 4 demostraciones, interruptor de sonido y la matriz con "Escuchar"
+//   /actividad-14?prueba=ciegas → prueba a ciegas: señales al azar sin decir cuál suena,
+//                                  matriz de confusión real (solo respuestas reales, guardadas en este navegador)
+// El interruptor "Sonido: activado / silenciado" existe SOLO aquí (WCAG 1.4.2); su preferencia
+// la respeta retroalimentar() en todo el sitio. Lógica del navegador: src/scripts/actividad-14.ts.
+import App from '../layouts/App.astro';
+import Topbar from '../components/Topbar.astro';
+import Tarjeta from '../components/Tarjeta.astro';
+import Boton from '../components/Boton.astro';
+import BotonMultimodal from '../components/BotonMultimodal.astro';
+import Icono, { type NombreIcono } from '../components/Icono.astro';
+import Campo from '../components/Campo.astro';
+import EstadoVacio from '../components/EstadoVacio.astro';
+import Modal from '../components/Modal.astro';
+
+const ciegas = Astro.url.searchParams.get('prueba') === 'ciegas';
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && ['ideal'].includes(pedido) ? pedido : '';
+const RONDAS = 3; // cada firma sale 3 veces → 12 señales
+
+interface FilaMatriz {
+  id: 'exito' | 'error' | 'cancelacion' | 'progreso';
+  nombre: string;
+  icono: NombreIcono;
+  visual: string;
+  apodo: string;
+  direccion: string;
+  notas: string;
+  timbre: string;
+  duracion: string;
+  haptico: string;
+  patron: string;
+  lector: string;
+  porque: string;
+}
+
+const MATRIZ: FilaMatriz[] = [
+  {
+    id: 'exito',
+    nombre: 'Éxito',
+    icono: 'check',
+    visual: 'El botón se pone verde con check y dice «¡Listo!».',
+    apodo: 'Campanita de logro',
+    direccion: 'Sube (arpegio)',
+    notas: 'Re5 → La5 → Re6',
+    timbre: 'Campana de madera',
+    duracion: '≈ 380 ms',
+    haptico: 'Dos toques cortos y uno largo',
+    patron: '[18, 40, 18, 40, 60]',
+    lector: 'aria-live polite: «Inscripción confirmada».',
+    porque: 'Subir se siente como «logrado». Es el acorde de Re mayor y termina en la tónica aguda, así que suena cerrado y resuelto.',
+  },
+  {
+    id: 'error',
+    nombre: 'Error',
+    icono: 'alerta',
+    visual: 'Sacudida corta y mensaje rojo con icono en el campo que hay que corregir.',
+    apodo: 'Golpe disonante',
+    direccion: 'Cae un 15 %',
+    notas: 'Re3 + Mi♭3 a la vez (segunda menor)',
+    timbre: 'Triangular, grave',
+    duracion: '≈ 420 ms',
+    haptico: 'Tres golpes largos',
+    patron: '[120, 60, 120, 60, 120]',
+    lector: 'aria-live assertive: interrumpe y dice qué corregir.',
+    porque: 'Es la única firma disonante y la más grave: suena a alarma. El tono que cae y la vibración más fuerte se distinguen incluso con el teléfono en el bolsillo.',
+  },
+  {
+    id: 'cancelacion',
+    nombre: 'Cancelación',
+    icono: 'deshacer',
+    visual: 'Aparece una señal con la flecha de deshacer y el texto «Operación cancelada».',
+    apodo: 'Soplido que se apaga',
+    direccion: 'Baja suave',
+    notas: 'Ruido de 1200 → 400 Hz + La4 → Fa#4',
+    timbre: 'Soplido (ruido filtrado) + madera',
+    duracion: '≈ 320 ms',
+    haptico: 'Un solo pulso',
+    patron: '[90]',
+    lector: 'aria-live polite: «Operación cancelada».',
+    porque: 'Baja pero es consonante: «se apagó, no pasó nada malo». Es la única firma con soplido y con un solo pulso, así que no se confunde con el error.',
+  },
+  {
+    id: 'progreso',
+    nombre: 'Progreso',
+    icono: 'reloj',
+    visual: 'Giro + texto «Cargando… 40 %» y barra de avance. Si no hay botón, una señal con reloj.',
+    apodo: 'Gotas de madera',
+    direccion: 'Sube con el avance',
+    notas: 'Una gota cada 400 ms, de Re5 (0 %) a Re6 (100 %); al terminar, la campanita',
+    timbre: 'Clic de madera muy corto',
+    duracion: 'Mientras dure (gota de 70 ms)',
+    haptico: 'Un toque mínimo cada 2 gotas',
+    patron: '[8] cada 2 gotas',
+    lector: 'aria-live polite cada 25 % (no en cada gota).',
+    porque: 'El ritmo regular dice «sigue trabajando» y el tono que sube dice cuánto falta, sin mirar. En las cargas automáticas solo suena si tardan más de 1 s.',
+  },
+];
+
+const RESPUESTAS = MATRIZ.map(({ id, nombre, icono }, i) => ({ id, nombre, icono, tecla: i + 1 }));
+---
+
+<App titulo={ciegas ? 'Prueba a ciegas' : 'Firmas multimodales'} activo="actividad-14" simular={simular}>
+  {
+    !ciegas ? (
+      <>
+        <Topbar titulo="Firmas multimodales">
+          <Fragment slot="bajada">Act. 14 · Éxito, Error, Cancelación y Progreso se reconocen solo por oído y tacto.</Fragment>
+          <Boton slot="acciones" variante="secundario" aria-pressed="true" data-sonido>
+            <span class="sonido__icono sonido__icono--on"><Icono nombre="sonido" tamano={20} /></span>
+            <span class="sonido__icono sonido__icono--off"><Icono nombre="silencio" tamano={20} /></span>
+            <span data-sonido-texto>Sonido: activado</span>
+          </Boton>
+        </Topbar>
+        <p class="solo-lector" aria-live="polite" data-anuncio-sonido />
+
+        <Tarjeta aria-labelledby="demo-titulo">
+          <h2 class="h2" id="demo-titulo">Prueba cada firma</h2>
+          <p class="secundario intro">
+            Cada acción dispara a la vez su señal visual, su sonido, su vibración y su anuncio para el lector de pantalla.
+          </p>
+          <ul class="demos">
+            <li class="demo">
+              <h3 class="demo__titulo"><Icono nombre="check" tamano={20} />Éxito</h3>
+              <p class="demo__texto">Campanita que sube: Re5 → La5 → Re6.</p>
+              <BotonMultimodal
+                variante="secundario"
+                modo="completo"
+                textoCargando="Confirmando…"
+                textoExito="¡Inscrito!"
+                anuncioExito="Inscripción confirmada."
+                data-demo="exito"
+              >
+                Confirmar inscripción
+              </BotonMultimodal>
+            </li>
+            <li class="demo">
+              <h3 class="demo__titulo"><Icono nombre="alerta" tamano={20} />Error</h3>
+              <p class="demo__texto">Golpe grave y disonante que cae.</p>
+              <BotonMultimodal variante="secundario" modo="completo" textoCargando="Enviando…" data-demo="error">
+                Enviar con datos inválidos
+              </BotonMultimodal>
+              <p class="aviso aviso--error" id="demo-error" data-demo-error hidden>
+                <Icono nombre="alerta" tamano={16} />
+                <span>El correo «ana@» está incompleto. Escribe el dominio, por ejemplo ana@correo.com.</span>
+              </p>
+            </li>
+            <li class="demo">
+              <h3 class="demo__titulo"><Icono nombre="deshacer" tamano={20} />Cancelación</h3>
+              <p class="demo__texto">Soplido que se apaga, con un solo pulso.</p>
+              <BotonMultimodal variante="secundario" modo="completo" data-demo="cancelacion">
+                Cancelar operación
+              </BotonMultimodal>
+            </li>
+            <li class="demo">
+              <h3 class="demo__titulo"><Icono nombre="reloj" tamano={20} />Progreso</h3>
+              <p class="demo__texto">Gotas que suben de tono de 0 a 100 % y terminan en Éxito.</p>
+              <BotonMultimodal
+                variante="secundario"
+                modo="completo"
+                textoCargando="Cargando mis datos…"
+                textoExito="¡Datos listos!"
+                data-demo="progreso"
+              >
+                Cargar mis datos
+              </BotonMultimodal>
+              <div class="demo__avance" data-demo-avance hidden>
+                <span
+                  class="progreso"
+                  role="progressbar"
+                  aria-label="Avance de la carga de datos"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuenow="0"
+                  data-demo-barra
+                >
+                  <span class="progreso__avance demo__relleno" data-demo-relleno />
+                </span>
+                <span class="pequeno secundario" aria-hidden="true" data-demo-porcentaje>0 %</span>
+              </div>
+            </li>
+          </ul>
+        </Tarjeta>
+
+        <Tarjeta aria-labelledby="matriz-titulo">
+          <h2 class="h2" id="matriz-titulo">Matriz de firmas</h2>
+          <p class="secundario intro">
+            Todo en Re mayor con timbre de campana de madera (ataque de 5 ms, volumen máximo 0,15, nada dura más de 2 s).
+            Cada estado se distingue por al menos dos canales además del color (WCAG 1.4.1).
+          </p>
+          <div class="tabla-scroll" role="region" aria-labelledby="matriz-titulo" tabindex="0">
+            <table class="tabla matriz">
+              <caption class="solo-lector">Canales de cada firma: visual, auditivo, háptico y lector de pantalla, con su justificación</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Estado</th>
+                  <th scope="col">Visual</th>
+                  <th scope="col">Auditivo</th>
+                  <th scope="col">Háptico</th>
+                  <th scope="col">Lector de pantalla</th>
+                  <th scope="col">Por qué así</th>
+                  <th scope="col"><span class="solo-lector">Escuchar</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  MATRIZ.map((f) => (
+                    <tr>
+                      <th scope="row">
+                        <span class="matriz__estado"><Icono nombre={f.icono} tamano={20} />{f.nombre}</span>
+                      </th>
+                      <td>{f.visual}</td>
+                      <td>
+                        <strong>{f.apodo}</strong>
+                        <dl class="matriz__datos">
+                          <div><dt>Dirección</dt><dd>{f.direccion}</dd></div>
+                          <div><dt>Notas</dt><dd>{f.notas}</dd></div>
+                          <div><dt>Timbre</dt><dd>{f.timbre}</dd></div>
+                          <div><dt>Duración</dt><dd>{f.duracion}</dd></div>
+                        </dl>
+                      </td>
+                      <td>
+                        {f.haptico}
+                        <code class="matriz__patron">{f.patron}</code>
+                      </td>
+                      <td>{f.lector}</td>
+                      <td>{f.porque}</td>
+                      <td>
+                        <Boton variante="secundario" data-escuchar={f.id}>
+                          <Icono nombre="sonido" tamano={18} />
+                          Escuchar<span class="solo-lector"> la firma de {f.nombre}</span>
+                        </Boton>
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </Tarjeta>
+
+        <Tarjeta tono="oscura" aria-labelledby="ciegas-titulo" class="invitacion">
+          <div>
+            <h2 class="h2" id="ciegas-titulo">Prueba a ciegas</h2>
+            <p class="invitacion__texto">
+              ¿Se reconocen sin mirar? Pide a alguien que escuche {RONDAS * 4} señales al azar y elija qué estado es.
+            </p>
+          </div>
+          <Boton variante="principal" href="/actividad-14?prueba=ciegas">Hacer la prueba a ciegas</Boton>
+        </Tarjeta>
+      </>
+    ) : (
+      <>
+        <Topbar titulo="Prueba a ciegas">
+          <nav slot="migas" class="migas" aria-label="Ruta">
+            <a href="/actividad-14">Firmas multimodales</a>
+            <Icono nombre="chevron" tamano={16} class="migas__flecha" />
+            <span aria-current="page">Prueba a ciegas</span>
+          </nav>
+          <Fragment slot="bajada">Escucha y siente cada señal y elige qué estado es. Nunca se muestra cuál suena.</Fragment>
+        </Topbar>
+
+        <div class="ciegas" data-ciegas data-rondas={RONDAS}>
+          <!-- 1 · Antes de empezar -->
+          <Tarjeta aria-labelledby="preparar-titulo" data-vista="preparar">
+            <form class="preparar" novalidate data-form-preparar>
+              <h2 class="h2" id="preparar-titulo">Antes de empezar</h2>
+              <p class="secundario">
+                Son {RONDAS * 4} señales: {RONDAS} de cada estado (Éxito, Error, Cancelación y Progreso) en orden al azar.
+                No se dice si acertaste hasta el final. Usa audífonos o sube el volumen; en un celular también vibra.
+              </p>
+              <p class="aviso aviso--advertencia" data-aviso-silencio hidden>
+                <Icono nombre="silencio" tamano={20} />
+                <span>
+                  El sonido está silenciado en este dispositivo, así que tampoco vibra.
+                  <button type="button" class="enlace" data-activar-sonido>Activar sonido</button>
+                </span>
+              </p>
+              <Campo
+                id="participante"
+                etiqueta="Nombre del participante"
+                ayuda="Solo se guarda en este navegador, junto con sus respuestas."
+                autocomplete="off"
+                maxlength={60}
+                required
+              />
+              <BotonMultimodal variante="principal" tipo="submit" modo="toque" data-empezar>
+                Empezar prueba
+                <Icono nombre="flecha-der" tamano={18} />
+              </BotonMultimodal>
+            </form>
+          </Tarjeta>
+
+          <!-- 2 · Pantalla oscura: sin texto del estado que suena -->
+          <Tarjeta tono="oscura" aria-labelledby="ensayo-titulo" class="ensayo" data-vista="ensayo" hidden>
+            <div class="ensayo__cabecera">
+              <h2 class="h2" id="ensayo-titulo" tabindex="-1" data-ensayo-titulo>Señal 1 de {RONDAS * 4}</h2>
+              <button type="button" class="enlace enlace--claro" data-salir>Salir sin guardar</button>
+            </div>
+            <span class="progreso progreso--oscuro" aria-hidden="true">
+              <span class="progreso__avance ensayo__avance" data-ensayo-avance />
+            </span>
+            <BotonMultimodal variante="principal" modo="toque" class="ensayo__reproducir" data-reproducir>
+              <Icono nombre="sonido" tamano={20} />
+              <span data-reproducir-texto>Reproducir señal</span>
+            </BotonMultimodal>
+            <p class="ensayo__estado" aria-live="polite" data-ensayo-estado>Pulsa «Reproducir señal» cuando estés listo.</p>
+            <fieldset class="respuestas" aria-describedby="respuestas-ayuda">
+              <legend class="solo-lector">¿Qué estado escuchaste?</legend>
+              {
+                RESPUESTAS.map((r) => (
+                  <button type="button" class="respuesta" aria-disabled="true" data-respuesta={r.id}>
+                    <kbd class="respuesta__tecla" aria-hidden="true">{r.tecla}</kbd>
+                    <Icono nombre={r.icono} tamano={28} />
+                    <span class="respuesta__texto">{r.nombre}</span>
+                  </button>
+                ))
+              }
+              <p class="respuestas__ayuda" id="respuestas-ayuda">También puedes responder con las teclas 1 a 4.</p>
+            </fieldset>
+          </Tarjeta>
+
+          <!-- 3 · Resultado de este participante -->
+          <Tarjeta aria-labelledby="resultado-titulo" data-vista="resultado" hidden>
+            <h2 class="h2" id="resultado-titulo" tabindex="-1" data-resultado-titulo>Resultado</h2>
+            <p class="secundario" data-resultado-resumen></p>
+            <div data-matriz-participante></div>
+            <div class="acciones">
+              <BotonMultimodal variante="principal" modo="toque" data-nueva>
+                <Icono nombre="usuario-mas" tamano={18} />
+                Nueva prueba con otra persona
+              </BotonMultimodal>
+            </div>
+          </Tarjeta>
+
+          <!-- Acumulado de todas las pruebas guardadas en este navegador -->
+          <Tarjeta aria-labelledby="acumulado-titulo" data-acumulado>
+            <h2 class="h2" id="acumulado-titulo" tabindex="-1">Resultados acumulados</h2>
+            <div data-acumulado-vacio>
+              <EstadoVacio
+                icono="grafico"
+                titulo="Aún no hay pruebas guardadas"
+                texto="La matriz de confusión aparece cuando alguien termina la prueba. Solo se muestran respuestas reales."
+              >
+                <Boton variante="secundario" data-ir-preparar>Ir al nombre del participante</Boton>
+              </EstadoVacio>
+            </div>
+            <div data-acumulado-lleno hidden>
+              <p class="secundario" data-acumulado-resumen></p>
+              <div data-matriz-acumulada></div>
+              <div class="confusiones" data-confusiones></div>
+              <div class="acciones">
+                <BotonMultimodal
+                  variante="secundario"
+                  modo="exito-suave"
+                  textoCargando="Copiando…"
+                  textoExito="Copiado"
+                  anuncioExito="Resultados copiados como texto."
+                  data-copiar
+                >
+                  <Icono nombre="portapapeles" tamano={18} />
+                  Copiar resultados
+                </BotonMultimodal>
+                <Boton variante="secundario" data-exportar>
+                  <Icono nombre="descargar" tamano={18} />
+                  Exportar CSV
+                </Boton>
+                <button type="button" class="enlace enlace--peligro" data-borrar>Borrar resultados</button>
+              </div>
+              <div class="copiar-manual" data-copiar-manual hidden>
+                <label for="resultados-texto" class="pequeno">Tu navegador no dejó copiar. Selecciona el texto y cópialo con Ctrl + C:</label>
+                <textarea id="resultados-texto" rows="8" readonly data-copiar-texto></textarea>
+              </div>
+            </div>
+          </Tarjeta>
+        </div>
+
+        <Modal id="modal-borrar" titulo="¿Borrar todos los resultados?" icono="alerta">
+          <p data-borrar-texto>Se borrarán las pruebas guardadas en este navegador. No se puede deshacer.</p>
+          <p class="pequeno secundario">Si los necesitas, exporta el CSV antes.</p>
+          <label class="casilla">
+            <input type="checkbox" data-borrar-casilla />
+            <span>Entiendo que se borran y no se pueden recuperar</span>
+          </label>
+          <p class="pequeno secundario" aria-live="polite" data-borrar-cuenta></p>
+          <Fragment slot="acciones">
+            <BotonMultimodal
+              variante="secundario"
+              modo="completo"
+              textoCargando="Borrando…"
+              textoExito="Borrados"
+              anuncioExito="Resultados borrados."
+              aria-disabled="true"
+              data-borrar-confirmar
+            >
+              Borrar resultados
+            </BotonMultimodal>
+            <Boton variante="principal" data-cerrar-modal autofocus>Conservar resultados</Boton>
+          </Fragment>
+        </Modal>
+
+        <template data-plantilla="ic-check"><Icono nombre="check" tamano={16} /></template>
+        <template data-plantilla="ic-alerta"><Icono nombre="alerta" tamano={16} /></template>
+      </>
+    )
+  }
+</App>
+
+<script>
+  import '../scripts/actividad-14';
+</script>
+
+<style>
+  .migas {
+    display: flex;
+    align-items: center;
+    gap: var(--e2);
+    color: var(--ink2);
+  }
+  .migas a {
+    color: var(--ink2);
+    font-weight: 500;
+  }
+  .migas :global(.migas__flecha) {
+    transform: rotate(-90deg);
+  }
+  .migas [aria-current] {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .intro {
+    margin-top: var(--e1);
+    max-width: 72ch;
+  }
+
+  /* Interruptor de sonido: el icono acompaña al texto (nunca solo) */
+  .sonido__icono {
+    display: inline-flex;
+  }
+  [aria-pressed='true'] .sonido__icono--off,
+  [aria-pressed='false'] .sonido__icono--on {
+    display: none;
+  }
+
+  /* Demostraciones: región común gris, sin bordes */
+  .demos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--e3);
+    margin: var(--e4) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .demo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+  }
+  .demo__titulo {
+    display: flex;
+    align-items: center;
+    gap: var(--e1);
+    font-size: var(--t-cuerpo);
+    line-height: var(--lh-cuerpo);
+    font-weight: 700;
+  }
+  .demo__texto {
+    flex: 1;
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+  }
+  .demo__avance {
+    display: flex;
+    align-items: center;
+    gap: var(--e2);
+  }
+  .demo__avance[hidden] {
+    display: none;
+  }
+  .demo__avance .progreso {
+    flex: 1;
+    background: var(--white);
+  }
+  .demo__relleno {
+    transition: width 120ms linear;
+  }
+
+  /* Matriz de firmas */
+  .tabla-scroll {
+    margin-top: var(--e4);
+    overflow-x: auto;
+    border-radius: var(--radio-tarjeta);
+  }
+  .tabla {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 var(--e1);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+  }
+  .tabla th,
+  .tabla td {
+    padding: var(--e2);
+    text-align: left;
+    vertical-align: top;
+  }
+  .tabla thead th {
+    color: var(--ink2);
+    font-weight: 600;
+  }
+  .tabla tbody th,
+  .tabla tbody td {
+    background: var(--paper);
+  }
+  .tabla tbody th:first-child {
+    border-radius: var(--radio-control) 0 0 var(--radio-control);
+  }
+  .tabla tbody td:last-child {
+    border-radius: 0 var(--radio-control) var(--radio-control) 0;
+  }
+  .matriz {
+    min-width: 1080px;
+  }
+  .matriz__estado {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--e1);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .matriz__datos {
+    display: grid;
+    gap: 2px;
+    margin-top: var(--e1);
+  }
+  .matriz__datos div {
+    display: flex;
+    gap: var(--e1);
+  }
+  .matriz__datos dt {
+    color: var(--ink2);
+  }
+  .matriz__datos dt::after {
+    content: ':';
+  }
+  .matriz__patron {
+    display: block;
+    margin-top: var(--e1);
+    font-size: var(--t-nota);
+    color: var(--ink2);
+  }
+
+  /* Invitación a la prueba */
+  .invitacion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e3);
+  }
+  .invitacion__texto {
+    margin-top: var(--e1);
+    opacity: 0.9;
+  }
+
+  /* Prueba a ciegas */
+  .ciegas {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .preparar {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--e3);
+    max-width: 640px;
+  }
+  .preparar :global(.campo) {
+    align-self: stretch;
+  }
+  .ensayo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--e4);
+    min-height: 480px;
+    text-align: center;
+  }
+  .ensayo__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e2);
+    align-self: stretch;
+  }
+  .ensayo__cabecera h2 {
+    outline: none;
+  }
+  .enlace--claro {
+    color: var(--white);
+    text-decoration: underline;
+  }
+  .progreso--oscuro {
+    align-self: stretch;
+    background: var(--indigo2);
+  }
+  .ensayo__avance {
+    background: var(--yellow);
+  }
+  .ensayo__estado {
+    min-height: var(--lh-cuerpo);
+  }
+  .respuestas {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--e3);
+    align-self: stretch;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .respuesta {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--e1);
+    min-height: 136px;
+    padding: var(--e3);
+    border: 0;
+    border-radius: var(--radio-tarjeta);
+    background: var(--mint);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform var(--t-rapido) ease-out, background-color 120ms ease-out;
+  }
+  .respuesta:not([aria-disabled='true']):hover {
+    transform: scale(1.02);
+  }
+  .respuesta:not([aria-disabled='true']):active,
+  .respuesta[data-presion='abajo'] {
+    transform: scale(0.97);
+    background: var(--mint-d);
+  }
+  .respuesta[aria-disabled='true'] {
+    background: var(--indigo2);
+    color: var(--indigo-t);
+    cursor: not-allowed;
+  }
+  .respuesta__texto {
+    font-size: var(--t-h2);
+    line-height: var(--lh-h2);
+  }
+  .respuesta__tecla {
+    position: absolute;
+    top: var(--e1);
+    left: var(--e2);
+    font: inherit;
+    font-size: var(--t-pequeno);
+  }
+  .respuestas__ayuda {
+    grid-column: 1 / -1;
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+  }
+  .acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e2);
+    margin-top: var(--e3);
+  }
+  .enlace--peligro {
+    min-height: var(--alto-control);
+    padding: 0 var(--e2);
+    color: var(--red);
+  }
+  .confusiones {
+    margin-top: var(--e3);
+  }
+  .copiar-manual {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e1);
+    margin-top: var(--e3);
+  }
+  .copiar-manual[hidden] {
+    display: none;
+  }
+  .copiar-manual textarea {
+    padding: var(--e2);
+    border: 0;
+    border-radius: var(--radio-control);
+    background: var(--paper);
+    font: 13px/1.4 ui-monospace, monospace;
+  }
+  .casilla {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--e2);
+    min-height: var(--alto-control);
+    padding-top: 12px;
+    cursor: pointer;
+  }
+  .casilla input {
+    width: 20px;
+    height: 20px;
+    margin: 2px 0 0;
+    accent-color: var(--indigo3);
+  }
+
+  /* Matrices de confusión (las pinta el script) */
+  .ciegas :global(.confusion) {
+    min-width: 560px;
+    text-align: center;
+  }
+  .ciegas :global(.confusion th),
+  .ciegas :global(.confusion td) {
+    text-align: center;
+    vertical-align: middle;
+  }
+  .ciegas :global(.confusion tbody th) {
+    text-align: left;
+    white-space: nowrap;
+  }
+  .ciegas :global(.celda) {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 700;
+  }
+  .ciegas :global(td.celda--acierto) {
+    background: var(--grn-t);
+    color: var(--grn);
+  }
+  .ciegas :global(td.celda--confusion) {
+    background: var(--org-t);
+    color: var(--org);
+  }
+  .ciegas :global(.confusion tfoot td),
+  .ciegas :global(.confusion tfoot th) {
+    font-weight: 700;
+  }
+  .ciegas :global(.lista-confusiones) {
+    display: grid;
+    gap: var(--e1);
+    margin-top: var(--e1);
+    padding-left: var(--e3);
+  }
+
+  @media (max-width: 1199px) {
+    .demos {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 699px) {
+    .demos,
+    .respuestas {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .respuesta {
+      min-height: 112px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .respuesta {
+      transform: none !important;
+    }
+  }
+</style>
