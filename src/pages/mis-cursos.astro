@@ -1,11 +1,331 @@
 ---
-// "Mis cursos" todavía no existe: página Próximamente con el mismo layout.
-import Proximamente from '../components/Proximamente.astro';
+// Mis cursos · referencias/pantallas/05-mis-cursos.png
+// Pestañas "En curso" / "Completados" (Ley de Miller) con los cursos de /api/mis-cursos,
+// y el aviso "Tu certificado está listo" que se pide aparte (/api/certificado-listo).
+//   ideal    → todo cargó
+//   vacío    → sin cursos: "Explorar el catálogo"
+//   cargando → skeleton de 3 filas
+//   error    → no cargó la lista: qué pasó + "Reintentar"
+//   parcial  → la lista cargó pero el aviso del certificado no: "Reconectar"
+// Ley de Hick: solo el primer "Continuar" (el curso que viste último) es amarillo.
+// Lógica del navegador: src/scripts/mis-cursos.ts.
+import App from '../layouts/App.astro';
+import Topbar from '../components/Topbar.astro';
+import Tarjeta from '../components/Tarjeta.astro';
+import Boton from '../components/Boton.astro';
+import BotonMultimodal from '../components/BotonMultimodal.astro';
+import Badge from '../components/Badge.astro';
+import Icono from '../components/Icono.astro';
+import Pestanas from '../components/Pestanas.astro';
+import PortadaCurso from '../components/PortadaCurso.astro';
+import EstadoVacio from '../components/EstadoVacio.astro';
+import EstadoError from '../components/EstadoError.astro';
+import EstadoParcial from '../components/EstadoParcial.astro';
+import type { IconoCurso } from '../lib/repositorio';
+
+const usuario = Astro.locals.usuario!;
+if (usuario.rol === 'admin') return Astro.redirect('/admin/cursos/nuevo');
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chispa'];
 ---
 
-<Proximamente
-  titulo="Mis cursos"
-  activo="mis-cursos"
-  texto="Aquí verás todos tus cursos con su avance. Llega en la Fase 2."
-  icono="libro"
-/>
+<App titulo="Mis cursos" activo="mis-cursos" simular={simular}>
+  <Topbar titulo="Mis cursos" buscador notificaciones>
+    <Fragment slot="bajada">Continuar te lleva a la última clase que viste.</Fragment>
+  </Topbar>
+
+  <div class="mis-cursos" data-mis-cursos aria-busy="true">
+    <!-- Ideal (con skeleton mientras carga) -->
+    <div class="mis-cursos__contenido" data-region="contenido">
+      <Pestanas
+        etiqueta="Mis cursos"
+        pestanas={[
+          { id: 'en-curso', texto: 'En curso', contador: null },
+          { id: 'completados', texto: 'Completados', contador: null },
+        ]}
+      />
+
+      <div id="panel-en-curso" role="tabpanel" aria-labelledby="pestana-en-curso" tabindex="0" class="panel">
+        <ul class="lista" data-lista="en-curso" aria-label="Cursos en curso">
+          {
+            [0, 1, 2].map(() => (
+              <li class="mi-curso mi-curso--esqueleto" aria-hidden="true">
+                <span class="skeleton sk sk--portada" />
+                <span class="mi-curso__info">
+                  <span class="skeleton sk sk--etiquetas" />
+                  <span class="skeleton sk sk--titulo" />
+                  <span class="skeleton sk sk--linea" />
+                  <span class="skeleton sk sk--barra" />
+                </span>
+                <span class="skeleton sk sk--boton" />
+              </li>
+            ))
+          }
+        </ul>
+        <Tarjeta class="panel__vacio" data-vacio="en-curso" hidden>
+          <p>No tienes cursos en curso. Todos los que empezaste están en “Completados”.</p>
+          <a href="/catalogo">Elegir otro curso en el catálogo</a>
+        </Tarjeta>
+      </div>
+
+      <div id="panel-completados" role="tabpanel" aria-labelledby="pestana-completados" tabindex="0" class="panel" hidden>
+        <ul class="lista" data-lista="completados" aria-label="Cursos completados"></ul>
+        <Tarjeta class="panel__vacio" data-vacio="completados" hidden>
+          <p>Aún no terminas un curso. Cuando apruebes una evaluación, el curso aparecerá aquí con su certificado.</p>
+        </Tarjeta>
+      </div>
+
+      <!-- Aviso del certificado (se pide aparte: si falla, estado parcial) -->
+      <section class="aviso-cert oscuro" data-aviso-cert aria-labelledby="aviso-cert-titulo" hidden>
+        <span class="aviso-cert__icono" aria-hidden="true"><Icono nombre="medalla" tamano={30} /></span>
+        <div class="aviso-cert__textos">
+          <h2 class="aviso-cert__titulo" id="aviso-cert-titulo" tabindex="-1" data-aviso-cert-titulo></h2>
+          <p class="aviso-cert__texto" data-aviso-cert-texto></p>
+        </div>
+        <Boton variante="secundario" href="/certificados" textoCargando="Abriendo…" data-aviso-cert-enlace>Ver certificado</Boton>
+      </section>
+      <Tarjeta class="aviso-cert-error" data-aviso-cert-error hidden>
+        <EstadoParcial texto="Tus cursos se ven y puedes continuarlos; el aviso de tu certificado aparecerá al reconectar." multimodal />
+      </Tarjeta>
+    </div>
+
+    <!-- Vacío: aún no se inscribe en nada -->
+    <Tarjeta data-region="vacio" hidden>
+      <EstadoVacio
+        titulo="Aún no tienes cursos"
+        texto="Elige tu primer curso en el catálogo e inscríbete gratis. Aquí verás tu avance y la última clase que viste."
+        icono="libro"
+      >
+        <Boton variante="principal" href="/catalogo" textoCargando="Abriendo catálogo…">
+          <Icono nombre="cuadricula" tamano={18} />
+          Explorar el catálogo
+        </Boton>
+      </EstadoVacio>
+    </Tarjeta>
+
+    <!-- Error: no cargó la lista -->
+    <Tarjeta data-region="error" hidden>
+      <EstadoError
+        titulo="No pudimos cargar tus cursos"
+        texto="Revisa tu conexión a internet. Tu avance está guardado; vuelve a intentarlo."
+        multimodal
+      />
+    </Tarjeta>
+  </div>
+  <p class="solo-lector" aria-live="polite" data-anuncio-mis-cursos></p>
+
+  <!-- Plantillas -->
+  <template data-plantilla="mi-curso">
+    <li class="mi-curso">
+      <PortadaCurso tamano="mini" />
+      <div class="mi-curso__info">
+        <p class="mi-curso__etiquetas">
+          <Badge tono="neutro"><span data-categoria></span></Badge>
+          <Badge tono="neutro"><span data-clases></span></Badge>
+        </p>
+        <h2 class="mi-curso__titulo" data-titulo></h2>
+        <p class="mi-curso__clase" data-clase></p>
+        <div class="mi-curso__avance">
+          <span class="progreso" aria-hidden="true"><span class="progreso__avance" data-barra></span></span>
+          <span class="mi-curso__porcentaje" data-porcentaje></span>
+        </div>
+      </div>
+      <div class="mi-curso__acciones">
+        <BotonMultimodal variante="secundario" href="#" modo="toque" textoCargando="Abriendo clase…" data-continuar>
+          <Icono nombre="play" tamano={16} />
+          <span data-continuar-texto>Continuar</span><span class="solo-lector" data-continuar-curso></span>
+        </BotonMultimodal>
+        <span class="mi-curso__hace" data-hace></span>
+      </div>
+    </li>
+  </template>
+  {ICONOS.map((i) => <template data-plantilla={`icono-${i}`}><Icono nombre={i} tamano={28} /></template>)}
+  <template data-plantilla="aprobado"><Badge tono="verde">Aprobado</Badge></template>
+</App>
+
+<script>
+  import '../scripts/mis-cursos';
+</script>
+
+<style>
+  .mis-cursos,
+  .mis-cursos__contenido {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .mis-cursos__contenido[hidden] {
+    display: none;
+  }
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+    border-radius: var(--radio-control);
+  }
+  .panel[hidden] {
+    display: none;
+  }
+  .panel :global(.panel__vacio:not([hidden])) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+  }
+  .lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lista[hidden] {
+    display: none;
+  }
+
+  /* ─── Fila de curso ─── */
+  .lista :global(.mi-curso),
+  .mi-curso {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--e5);
+    padding: var(--e4);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+  .lista :global(.mi-curso__info),
+  .mi-curso__info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+    min-width: 0;
+  }
+  .lista :global(.mi-curso__etiquetas) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e2);
+  }
+  .lista :global(.mi-curso__etiquetas .badge) {
+    border-radius: var(--radio-control);
+  }
+  .lista :global(.mi-curso__titulo) {
+    font-size: var(--t-h2);
+    line-height: var(--lh-h2);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .lista :global(.mi-curso__clase) {
+    color: var(--ink2);
+  }
+  .lista :global(.mi-curso__avance) {
+    display: flex;
+    align-items: center;
+    gap: var(--e3);
+    margin-top: var(--e1);
+  }
+  .lista :global(.mi-curso__avance .progreso) {
+    flex: 1;
+  }
+  .lista :global(.mi-curso__porcentaje) {
+    flex: none;
+    font-weight: 700;
+  }
+  .lista :global(.mi-curso__acciones) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--e2);
+  }
+  .lista :global(.mi-curso__acciones .boton) {
+    min-width: 168px;
+  }
+  .lista :global(.mi-curso__hace) {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+  }
+
+  /* Skeleton */
+  .sk { display: block; }
+  .sk--portada { width: 100%; aspect-ratio: 1.55 / 1; border-radius: var(--radio-tarjeta); }
+  .sk--etiquetas { width: 180px; height: 28px; }
+  .sk--titulo { width: 60%; height: 30px; }
+  .sk--linea { width: 70%; height: 18px; }
+  .sk--barra { width: 100%; height: 10px; border-radius: 5px; margin-top: var(--e2); }
+  .sk--boton { width: 168px; height: 56px; }
+
+  /* ─── Aviso del certificado ─── */
+  .aviso-cert {
+    display: flex;
+    align-items: center;
+    gap: var(--e4);
+    padding: var(--e5);
+    border-radius: var(--radio-tarjeta);
+    background: var(--indigo);
+    color: var(--white);
+  }
+  .aviso-cert[hidden] {
+    display: none;
+  }
+  .aviso-cert__icono {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--yellow);
+    color: var(--ink);
+  }
+  .aviso-cert__textos {
+    flex: 1;
+    min-width: 0;
+  }
+  .aviso-cert__titulo {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+  }
+  .aviso-cert__texto {
+    color: rgb(255 255 255 / 0.85);
+  }
+
+  @media (max-width: 1199px) {
+    .lista :global(.mi-curso),
+    .mi-curso {
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: var(--e3) var(--e4);
+    }
+    .lista :global(.mi-curso__acciones),
+    .mi-curso > .sk--boton {
+      grid-column: 2;
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+      align-items: center;
+    }
+  }
+  @media (max-width: 679px) {
+    .lista :global(.mi-curso),
+    .mi-curso {
+      grid-template-columns: minmax(0, 1fr);
+      padding: var(--e3);
+    }
+    .lista :global(.mi-curso__acciones),
+    .mi-curso > .sk--boton {
+      grid-column: 1;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .lista :global(.mi-curso__hace) {
+      text-align: center;
+    }
+    .aviso-cert {
+      flex-wrap: wrap;
+      padding: var(--e4);
+    }
+  }
+</style>

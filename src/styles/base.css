@@ -103,3 +103,20 @@ button {
   border-radius: var(--radio-control);
   background: var(--paper);
 }
+
+/* Barra de progreso (Mis cursos, detalle del curso). El ancho del avance lo pone la página. */
+.progreso {
+  display: block;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.progreso__avance {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--indigo3);
+  transition: width 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}

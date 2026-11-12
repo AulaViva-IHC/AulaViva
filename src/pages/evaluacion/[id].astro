@@ -1,0 +1,503 @@
+---
+// Evaluación final · referencias/pantallas/07-evaluacion.png y modal-enviar-evaluacion.png
+// [id] = id del curso. Una pregunta a la vez (Ley de Miller), navegador 1–5, autoguardado de
+// cada respuesta con "Guardada" (Act. 10), "Intento X de 3" y el modal "Enviar evaluación"
+// que avisa si quedan preguntas sin responder.
+//   ideal    → preguntas y respuestas guardadas cargadas
+//   vacío    → no se puede rendir: faltan clases, sin intentos, ya aprobada o sin inscripción
+//   cargando → skeleton de la pregunta y del navegador
+//   error    → no cargó la evaluación: "Reintentar"
+//   parcial  → cargaron las preguntas pero no tus respuestas guardadas: "Reconectar"
+// Ley de Hick: la única acción amarilla es "Enviar evaluación". Lógica: src/scripts/evaluacion.ts.
+import App from '../../layouts/App.astro';
+import Tarjeta from '../../components/Tarjeta.astro';
+import Boton from '../../components/Boton.astro';
+import BotonMultimodal from '../../components/BotonMultimodal.astro';
+import Badge from '../../components/Badge.astro';
+import Icono from '../../components/Icono.astro';
+import Modal from '../../components/Modal.astro';
+import EstadoVacio from '../../components/EstadoVacio.astro';
+import EstadoError from '../../components/EstadoError.astro';
+import EstadoParcial from '../../components/EstadoParcial.astro';
+
+const usuario = Astro.locals.usuario!;
+if (usuario.rol === 'admin') return Astro.redirect('/admin/cursos/nuevo');
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const cursoId = Number(Astro.params.id) || 0;
+---
+
+<App titulo="Evaluación final" activo="mis-cursos" simular={simular}>
+  <div class="evaluacion" data-evaluacion data-curso={cursoId} aria-busy="true">
+    <!-- Contenido (con skeleton mientras carga) -->
+    <div class="evaluacion__contenido" data-region="contenido">
+      <header class="cabeza">
+        <div class="cabeza__titulos">
+          <p class="cabeza__ceja">Evaluación final</p>
+          <h1 class="cabeza__titulo" tabindex="-1" data-titulo-pagina>
+            <span class="skeleton sk sk--titulo" aria-hidden="true" data-titulo-esqueleto></span>
+            <span data-curso-titulo></span>
+          </h1>
+        </div>
+        <div class="cabeza__datos" data-datos hidden>
+          <Badge tono="neutro" icono="reintentar"><span data-intento></span></Badge>
+          <Badge tono="lila" icono="estrella"><span data-nota-minima></span></Badge>
+        </div>
+      </header>
+
+      <div class="avance">
+        <p class="avance__fila">
+          <span class="avance__pregunta" data-pregunta-de>Pregunta 1 de 5</span>
+          <span class="avance__respondidas" data-respondidas></span>
+        </p>
+        <span class="progreso" aria-hidden="true"><span class="progreso__avance" data-avance-barra></span></span>
+      </div>
+
+      <div class="rejilla">
+        <Tarjeta class="pregunta" aria-labelledby="pregunta-enunciado">
+          <div class="esqueleto" data-pregunta-cargando aria-hidden="true">
+            <span class="skeleton sk sk--etiqueta"></span>
+            <span class="skeleton sk sk--enunciado"></span>
+            <span class="skeleton sk sk--opcion"></span>
+            <span class="skeleton sk sk--opcion"></span>
+            <span class="skeleton sk sk--opcion"></span>
+            <span class="skeleton sk sk--opcion"></span>
+          </div>
+          <form class="pregunta__form" data-form hidden novalidate>
+            <p class="pregunta__fila">
+              <Badge tono="nuevo">Opción múltiple</Badge>
+              <span class="guardado" data-guardado aria-hidden="true"></span>
+            </p>
+            <fieldset class="pregunta__campo">
+              <legend class="pregunta__enunciado" id="pregunta-enunciado" tabindex="-1" data-enunciado></legend>
+              <div class="opciones" data-opciones></div>
+            </fieldset>
+            <p class="aviso aviso--error" role="alert" data-guardado-error hidden>
+              <Icono nombre="alerta" />
+              <span data-guardado-error-texto></span>
+              <button type="button" class="enlace" data-reguardar>Volver a guardar</button>
+            </p>
+            <div class="pregunta__nav">
+              <BotonMultimodal variante="secundario" modo="toque" data-anterior>
+                <Icono nombre="flecha-izq" tamano={18} />
+                Anterior
+              </BotonMultimodal>
+              <BotonMultimodal variante="secundario" modo="toque" data-siguiente>
+                <span data-siguiente-texto>Siguiente</span>
+                <Icono nombre="flecha-der" tamano={18} />
+              </BotonMultimodal>
+            </div>
+          </form>
+        </Tarjeta>
+
+        <Tarjeta como="aside" class="navegador" aria-labelledby="navegador-titulo">
+          <h2 class="navegador__titulo" id="navegador-titulo" tabindex="-1">Preguntas</h2>
+          <div class="navegador__botones" data-navegador role="group" aria-labelledby="navegador-titulo">
+            {[1, 2, 3, 4, 5].map(() => <span class="skeleton sk sk--num" aria-hidden="true" />)}
+          </div>
+          <ul class="leyenda" aria-label="Qué significa cada color">
+            <li><span class="muestra muestra--respondida" aria-hidden="true"></span>Respondida</li>
+            <li><span class="muestra muestra--pendiente" aria-hidden="true"></span>Sin responder</li>
+            <li><span class="muestra muestra--actual" aria-hidden="true"></span>Pregunta actual</li>
+          </ul>
+          <div class="navegador__parcial" data-respuestas-error hidden>
+            <EstadoParcial texto="Tus respuestas guardadas no cargaron. Puedes seguir respondiendo; al reconectar verás las anteriores." multimodal />
+          </div>
+          <BotonMultimodal variante="principal" bloque modo="toque" data-abrir-envio>
+            <Icono nombre="enviar" tamano={18} />
+            Enviar evaluación
+          </BotonMultimodal>
+        </Tarjeta>
+      </div>
+    </div>
+
+    <!-- Vacío: no se puede rendir ahora -->
+    <Tarjeta data-region="vacio" hidden>
+      <div class="vacio-evaluacion">
+        <EstadoVacio titulo="" texto="" icono="candado">
+          <Boton variante="principal" href="#" textoCargando="Abriendo…" data-vacio-accion>
+            <span data-vacio-accion-texto>Continuar curso</span>
+          </Boton>
+        </EstadoVacio>
+      </div>
+    </Tarjeta>
+
+    <!-- Error -->
+    <Tarjeta data-region="error" hidden>
+      <EstadoError
+        titulo="No pudimos cargar la evaluación"
+        texto="Revisa tu conexión a internet. Tus respuestas guardadas siguen ahí; vuelve a intentarlo."
+        multimodal
+      />
+    </Tarjeta>
+  </div>
+  <p class="solo-lector" aria-live="polite" data-anuncio-evaluacion></p>
+
+  <!-- Modal "Enviar evaluación" (modal-enviar-evaluacion.png) -->
+  <Modal id="modal-enviar" titulo="Te falta 1 pregunta" icono="alerta">
+    <p data-envio-texto>Las preguntas sin responder cuentan como incorrectas. ¿Quieres enviar la evaluación de todos modos?</p>
+    <p class="aviso aviso--error" role="alert" data-envio-error hidden>
+      <Icono nombre="alerta" />
+      <span data-envio-error-texto></span>
+    </p>
+    <Fragment slot="acciones">
+      <Boton variante="secundario" data-revisar>Revisar respuestas</Boton>
+      <BotonMultimodal
+        variante="principal"
+        modo="completo"
+        textoCargando="Enviando…"
+        textoExito="¡Enviada!"
+        anuncioExito="Evaluación enviada. Abriendo tu resultado."
+        data-enviar
+      >
+        Enviar evaluación
+      </BotonMultimodal>
+    </Fragment>
+  </Modal>
+
+  <template data-plantilla="ic-check"><Icono nombre="check" tamano={22} /></template>
+  <template data-plantilla="ic-guardada"><Icono nombre="check" tamano={16} /></template>
+</App>
+
+<script>
+  import '../../scripts/evaluacion';
+</script>
+
+<style>
+  .evaluacion,
+  .evaluacion__contenido {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .evaluacion__contenido[hidden] {
+    display: none;
+  }
+
+  /* Cabecera */
+  .cabeza {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--e3);
+  }
+  .cabeza__titulos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e1);
+  }
+  .cabeza__ceja {
+    color: var(--indigo3);
+    font-weight: 700;
+  }
+  .cabeza__titulo {
+    font-size: 2.5rem;
+    line-height: 3rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    outline: none;
+  }
+  .cabeza__datos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e2);
+  }
+  .cabeza__datos[hidden] {
+    display: none;
+  }
+  .cabeza__datos :global(.badge) {
+    min-height: 44px;
+    padding: var(--e2) var(--e3);
+    font-size: var(--t-cuerpo);
+  }
+
+  .avance {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .avance__fila {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--e2);
+  }
+  .avance__pregunta {
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+  .avance__respondidas {
+    color: var(--ink2);
+  }
+
+  .rejilla {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 400px;
+    gap: var(--e5);
+    align-items: start;
+  }
+
+  /* Pregunta */
+  :global(.pregunta) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .esqueleto {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  .esqueleto[hidden],
+  .pregunta__form[hidden] {
+    display: none;
+  }
+  .sk { display: block; }
+  .sk--titulo { width: min(520px, 80vw); height: 44px; }
+  .sk--etiqueta { width: 140px; height: 32px; }
+  .sk--enunciado { width: 90%; height: 64px; }
+  .sk--opcion { width: 100%; height: 72px; }
+  .sk--num { width: 64px; height: 64px; }
+  .pregunta__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .pregunta__fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e2);
+  }
+  .guardado {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    font-size: var(--t-pequeno);
+    font-weight: 700;
+    color: var(--ink2);
+  }
+  .guardado[data-estado='guardada'] {
+    color: var(--grn);
+    animation: aparecer var(--t-medio) ease-out;
+  }
+  .guardado :global(.girador) {
+    width: 14px;
+    height: 14px;
+    border-width: 2px;
+  }
+  .pregunta__campo {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  .pregunta__enunciado {
+    margin-bottom: var(--e4);
+    padding: 0;
+    font-size: 1.75rem;
+    line-height: 2.375rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    outline: none;
+  }
+  .opciones {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  /* Opción: relleno gris, sin borde; seleccionada → fondo de selección + check (Gestalt §5.5) */
+  .opciones :global(.opcion) {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--e3);
+    min-height: 72px;
+    padding: var(--e3) var(--e4);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+    font-size: 1.125rem;
+    cursor: pointer;
+    transition:
+      transform var(--t-rapido) ease-out,
+      background-color var(--t-rapido) ease-out,
+      box-shadow var(--t-rapido) ease-out;
+  }
+  .opciones :global(.opcion:hover) {
+    transform: scale(1.01);
+    box-shadow: var(--sombra-2);
+  }
+  .opciones :global(.opcion:active) {
+    transform: scale(0.98);
+    transition-duration: 40ms;
+  }
+  .opciones :global(.opcion input) {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .opciones :global(.opcion:has(input:focus-visible)) {
+    outline: 4px solid var(--foco);
+    outline-offset: 2px;
+  }
+  .opciones :global(.opcion__letra) {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radio-control);
+    background: var(--white);
+    font-weight: 800;
+  }
+  .opciones :global(.opcion__texto) {
+    flex: 1;
+  }
+  .opciones :global(.opcion__check) {
+    display: none;
+    color: var(--indigo3);
+  }
+  .opciones :global(.opcion:has(input:checked)) {
+    background: var(--indigo-t);
+    box-shadow: inset 0 0 0 2px var(--indigo3);
+    font-weight: 700;
+  }
+  .opciones :global(.opcion:has(input:checked) .opcion__letra) {
+    background: var(--indigo);
+    color: var(--white);
+  }
+  .opciones :global(.opcion:has(input:checked) .opcion__check) {
+    display: grid;
+  }
+  .pregunta__nav {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--e3);
+  }
+  [data-guardado-error] .enlace {
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  /* Navegador de preguntas */
+  :global(.navegador) {
+    position: sticky;
+    top: var(--e4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .navegador__titulo {
+    font-size: var(--t-h2);
+    line-height: var(--lh-h2);
+    font-weight: 800;
+    outline: none;
+  }
+  .navegador__botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .navegador__botones :global(.num) {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border: 0;
+    border-radius: var(--radio-control);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 1.25rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition:
+      transform var(--t-rapido) ease-out,
+      box-shadow var(--t-rapido) ease-out;
+  }
+  .navegador__botones :global(.num:hover) {
+    transform: scale(1.04);
+  }
+  .navegador__botones :global(.num:active) {
+    transform: scale(0.97);
+    transition-duration: 40ms;
+  }
+  .navegador__botones :global(.num[data-respondida]) {
+    background: var(--indigo);
+    color: var(--white);
+  }
+  .navegador__botones :global(.num[aria-current='step']) {
+    box-shadow:
+      0 0 0 3px var(--white),
+      0 0 0 6px var(--yellow-d);
+  }
+  .leyenda {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--ink2);
+  }
+  .leyenda li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .muestra {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+  }
+  .muestra--respondida { background: var(--indigo); }
+  .muestra--pendiente { background: var(--paper); box-shadow: inset 0 0 0 1px var(--ink3); }
+  .muestra--actual { box-shadow: inset 0 0 0 3px var(--yellow-d); }
+  .navegador__parcial {
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+  }
+  .navegador__parcial[hidden] {
+    display: none;
+  }
+
+  @media (max-width: 1099px) {
+    .rejilla {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    :global(.navegador) {
+      position: static;
+      order: -1;
+    }
+  }
+  @media (max-width: 599px) {
+    .cabeza__titulo {
+      font-size: var(--t-h1);
+      line-height: var(--lh-h1);
+    }
+    .pregunta__enunciado {
+      font-size: 1.375rem;
+      line-height: 1.875rem;
+    }
+    .opciones :global(.opcion) {
+      padding: var(--e3);
+      font-size: var(--t-cuerpo);
+    }
+    .navegador__botones :global(.num) {
+      width: 52px;
+      height: 52px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .opciones :global(.opcion:hover),
+    .opciones :global(.opcion:active),
+    .navegador__botones :global(.num:hover),
+    .navegador__botones :global(.num:active) {
+      transform: none;
+    }
+  }
+</style>

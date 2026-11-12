@@ -5,7 +5,7 @@
 //   error    → no cargó lo principal: qué pasó + "Reintentar"
 //   parcial  → lo principal cargó pero "Esta semana" no: "No se pudo cargar esta parte" + "Reconectar"
 import { ponerEstado, estaOcupado } from './boton';
-import { procesar, retroalimentar } from './multimodal';
+import { iniciarProgreso, procesar, retroalimentar } from './multimodal';
 import {
   $,
   $$,
@@ -157,6 +157,9 @@ async function cargarInicio(reintento = false): Promise<'ok' | 'vacio' | 'error'
     mostrarRegion('contenido');
     esqueletos(true);
   }
+  // Firma de Progreso (Act. 14): carga automática → gotas solo si tarda más de 1 s, sin campanita al final
+  // (el reintento ya tiene las gotas de su botón).
+  const progreso = reintento ? null : iniciarProgreso(raiz, { automatico: true, texto: 'Cargando tu Inicio' });
   if (simular === 'cargando') return new Promise(() => {}); // se queda cargando (solo /estados)
 
   const inicio = performance.now();
@@ -196,6 +199,7 @@ async function cargarInicio(reintento = false): Promise<'ok' | 'vacio' | 'error'
     else anunciar(anuncio, 'No pudimos cargar tu Inicio. Pulsa Reintentar.');
     return 'error';
   } finally {
+    progreso?.detener(); // el resultado ya se anuncia arriba
     raiz.setAttribute('aria-busy', 'false');
   }
 }

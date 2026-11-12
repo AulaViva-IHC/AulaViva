@@ -2,9 +2,10 @@
 // Etiqueta. El semáforo siempre lleva icono + texto, nunca solo color:
 //   rojo "Vence hoy" · naranja "En 2 días" · verde "En 4 días"
 // "sugerido" marca valores por defecto inteligentes; "neutro" informa sin urgencia.
+// "destacado" (amarillo) y "nuevo" (menta) son las etiquetas de los cursos del catálogo.
 import Icono, { type NombreIcono } from './Icono.astro';
 
-export type TonoBadge = 'rojo' | 'naranja' | 'verde' | 'sugerido' | 'lila' | 'neutro';
+export type TonoBadge = 'rojo' | 'naranja' | 'verde' | 'sugerido' | 'lila' | 'neutro' | 'destacado' | 'nuevo';
 
 interface Props {
   tono: TonoBadge;
@@ -46,4 +47,6 @@ const icono = iconoPropio ?? iconos[tono];
   .badge--sugerido { background: var(--mint); color: var(--grn); min-height: 24px; padding: 2px 10px; font-size: var(--t-nota); line-height: var(--lh-nota); }
   .badge--lila { background: var(--lila); color: var(--ink); }
   .badge--neutro { background: var(--paper); color: var(--ink2); }
+  .badge--destacado { background: var(--yellow); color: var(--ink); }
+  .badge--nuevo { background: var(--mint); color: var(--grn); }
 </style>

@@ -1,8 +1,700 @@
 ---
-// Portada. El catálogo público llega en la Fase 3; por ahora lleva al login
-// o, si ya hay sesión, al inicio que corresponde al rol.
+// Catálogo público (portada) · referencias/pantallas/01-catalogo.png
+// Encabezado con el curso destacado (/api/cursos/destacado, aparte: si falla, estado parcial),
+// 3 beneficios, el catálogo con filtros (CatalogoCursos), "Así aprendes" y los 5 pasos del certificado.
+// Ley de Hick: la única acción amarilla es "Ver el curso"; el resto es secundario.
+// Lógica del navegador: src/scripts/portada.ts (encabezado) y src/scripts/catalogo.ts (rejilla).
+import Publico from '../layouts/Publico.astro';
+import Boton from '../components/Boton.astro';
+import BotonMultimodal from '../components/BotonMultimodal.astro';
+import Badge from '../components/Badge.astro';
+import Icono, { type NombreIcono } from '../components/Icono.astro';
+import EstadoParcial from '../components/EstadoParcial.astro';
+import CatalogoCursos from '../components/CatalogoCursos.astro';
 import { destinoPorRol } from '../lib/auth';
 
-const { usuario } = Astro.locals;
-return Astro.redirect(usuario ? destinoPorRol(usuario) : '/login');
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const usuario = Astro.locals.usuario;
+
+const BENEFICIOS: { icono: NombreIcono; titulo: string; texto: string }[] = [
+  { icono: 'reloj', titulo: 'Aprende a tu ritmo', texto: 'Avanza cuando quieras, sin horarios fijos.' },
+  { icono: 'subtitulos', titulo: 'Clases con subtítulos', texto: 'Videos cortos con subtítulos y materiales.' },
+  { icono: 'medalla', titulo: 'Certificado con QR', texto: 'Cualquiera puede verificarlo con su código.' },
+];
+
+const CICLO: { id: string; titulo: string; texto: string; icono: NombreIcono }[] = [
+  { id: 'mira', titulo: 'Mira', texto: 'Videos cortos con subtítulos que explican el porqué y el cómo de cada tema.', icono: 'pantalla' },
+  { id: 'practica', titulo: 'Practica', texto: 'Ejercicios y documentos para aplicar lo aprendido en tu propio proyecto.', icono: 'lapiz' },
+  { id: 'certifica', titulo: 'Certifica', texto: 'Un certificado con código y QR que cualquiera puede comprobar.', icono: 'medalla' },
+  { id: 'evalua', titulo: 'Evalúa', texto: 'Una evaluación final con 3 intentos. Apruebas con 14 de 20.', icono: 'portapapeles' },
+];
+
+const PASOS: { texto: string; icono: NombreIcono }[] = [
+  { texto: 'Crea tu cuenta', icono: 'usuario-mas' },
+  { texto: 'Inscríbete en un curso', icono: 'libro' },
+  { texto: 'Completa las clases', icono: 'pantalla' },
+  { texto: 'Aprueba la evaluación', icono: 'portapapeles' },
+  { texto: 'Descarga tu certificado', icono: 'medalla' },
+];
 ---
+
+<Publico
+  titulo="Cursos con certificado verificable"
+  descripcion="Cursos cortos con clases en video, subtítulos y un certificado con código y QR que cualquiera puede verificar."
+  seccion="cursos"
+  simular={simular}
+>
+  <main id="contenido" tabindex="-1" class="portada-publica">
+    <h1 class="solo-lector">AulaViva: cursos virtuales con certificado verificable</h1>
+
+    <!-- Encabezado: curso destacado -->
+    <section class="heroe oscuro" aria-label="Curso destacado">
+      <div class="heroe__texto" data-destacado aria-busy="true">
+        <div class="heroe__esqueleto" data-destacado-cargando aria-hidden="true">
+          <span class="skeleton sk sk--etiqueta"></span>
+          <span class="skeleton sk sk--titulo"></span>
+          <span class="skeleton sk sk--titulo sk--corto"></span>
+          <span class="skeleton sk sk--linea"></span>
+          <span class="skeleton sk sk--linea sk--corto"></span>
+        </div>
+
+        <div class="heroe__contenido" data-destacado-contenido hidden>
+          <Badge tono="lila">Curso destacado</Badge>
+          <h2 class="heroe__titulo" data-destacado-titulo></h2>
+          <span class="heroe__linea" aria-hidden="true"></span>
+          <p class="heroe__bajada" data-destacado-descripcion></p>
+        </div>
+
+        <div class="heroe__contenido" data-destacado-error hidden>
+          <h2 class="heroe__titulo">Aprende con cursos cortos y certifícate</h2>
+          <span class="heroe__linea" aria-hidden="true"></span>
+          <EstadoParcial
+            tono="oscuro"
+            texto="El curso destacado aparecerá al reconectar; el catálogo de abajo funciona."
+            multimodal
+          />
+        </div>
+
+        <div class="heroe__acciones">
+          <span data-destacado-accion hidden>
+            <BotonMultimodal variante="principal" href="/#cursos" modo="toque" textoCargando="Abriendo curso…" data-destacado-enlace>
+              Ver el curso
+            </BotonMultimodal>
+          </span>
+          <Boton variante="secundario" href="#cursos" class="heroe__todos" textoCargando="Bajando…">Ver todos los cursos</Boton>
+        </div>
+      </div>
+
+      <div class="ilustracion" aria-hidden="true">
+        <svg class="ilustracion__montes" viewBox="0 0 440 300" preserveAspectRatio="xMidYMax meet" focusable="false">
+          <path class="monte monte--atras" d="M150 300 300 120 440 300Z" />
+          <path class="monte" d="M0 300 80 205 120 240 205 130 245 175 305 98 360 160 380 145 440 300Z" />
+          <path class="ilustracion__ruta" d="M30 282 C 90 260, 110 215, 150 200 S 200 160, 240 150 S 300 140, 330 110 S 380 60, 420 25" />
+          <circle cx="30" cy="282" r="8" fill="#FFD23F" />
+          <circle cx="240" cy="150" r="8" fill="#D9CCF7" />
+          <circle cx="430" cy="140" r="4" fill="#FFD23F" />
+        </svg>
+        <span class="chip chip--m1">Módulo 1</span>
+        <span class="chip chip--m4">Módulo 4</span>
+        <span class="chip chip--cert">Certificado</span>
+        <span class="ilustracion__check"><Icono nombre="check" tamano={22} /></span>
+        <div class="mini-cert">
+          <span class="mini-cert__cinta"></span>
+          <span class="mini-cert__ceja">Certificado de aprobación</span>
+          <span class="mini-cert__nombre">Gonzalo O. Barreto Geri</span>
+          <span class="mini-cert__raya"></span>
+          <span class="mini-cert__raya mini-cert__raya--corta"></span>
+          <span class="mini-cert__pie">
+            <span class="mini-cert__codigo">K7Q2M9XPD4</span>
+            <svg class="mini-cert__qr" viewBox="0 0 7 7" focusable="false">
+              <path d="M0 0h3v3H0zM4 0h3v3H4zM0 4h3v3H0zM4 4h1v1H4zM6 4h1v1H6zM5 5h1v1H5zM4 6h1v1H4zM6 6h1v1H6z" fill="#17153B" />
+              <path d="M1 1h1v1H1zM5 1h1v1H5zM1 5h1v1H1z" fill="#fff" />
+            </svg>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Beneficios -->
+    <ul class="beneficios">
+      {
+        BENEFICIOS.map((b) => (
+          <li class="beneficio">
+            <span class="beneficio__icono"><Icono nombre={b.icono} tamano={22} /></span>
+            <span>
+              <span class="beneficio__titulo">{b.titulo}</span>
+              <span class="beneficio__texto">{b.texto}</span>
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+
+    <!-- Catálogo -->
+    <section class="seccion" id="cursos" aria-labelledby="cursos-titulo" tabindex="-1">
+      <header class="seccion__encabezado">
+        <h2 class="seccion__titulo" id="cursos-titulo">Elige qué aprender</h2>
+        <p class="seccion__bajada">Cursos cortos para estudiantes y profesionales, con clases en video y certificado verificable.</p>
+      </header>
+      <CatalogoCursos etiquetadoPor="cursos-titulo" />
+    </section>
+
+    <!-- Así aprendes -->
+    <section class="ciclo" id="como-funciona" aria-labelledby="ciclo-titulo" tabindex="-1">
+      <header class="seccion__encabezado">
+        <h2 class="seccion__titulo" id="ciclo-titulo">Así aprendes en AulaViva</h2>
+        <p class="seccion__bajada">Cuatro pasos que se repiten en cada módulo.</p>
+      </header>
+      <div class="ciclo__cuerpo">
+        <div class="ciclo__rueda" aria-hidden="true">
+          {
+            CICLO.map((p) => (
+              <span class:list={['cuadrante', `cuadrante--${p.id}`]}>
+                <span>{p.titulo}</span>
+                <Icono nombre={p.icono} tamano={26} />
+              </span>
+            ))
+          }
+          <span class="ciclo__centro"><Icono nombre="reintentar" tamano={30} /></span>
+        </div>
+        <ol class="ciclo__pasos">
+          {
+            CICLO.map((p) => (
+              <li class:list={['ciclo__paso', `ciclo__paso--${p.id}`]}>
+                <h3 class="ciclo__nombre">{p.titulo}</h3>
+                <p class="ciclo__texto">{p.texto}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <!-- Cómo obtengo mi certificado -->
+    <section class="pasos" aria-labelledby="pasos-titulo">
+      <h2 class="seccion__titulo" id="pasos-titulo">¿Cómo obtengo mi certificado?</h2>
+      <ol class="pasos__lista">
+        {
+          PASOS.map((p, i) => (
+            <li class="paso-cert">
+              <span class:list={['paso-cert__icono', i === PASOS.length - 1 && 'paso-cert__icono--final']}>
+                <Icono nombre={p.icono} tamano={26} />
+              </span>
+              <Badge tono="lila">Paso {i + 1}</Badge>
+              <span class="paso-cert__texto">{p.texto}</span>
+            </li>
+          ))
+        }
+      </ol>
+      {
+        usuario ? (
+          <Boton variante="secundario" href={destinoPorRol(usuario)} textoCargando="Abriendo…">
+            Ir a mi Inicio
+          </Boton>
+        ) : (
+          <Boton variante="secundario" href="/registro" textoCargando="Abriendo…">
+            Crear mi cuenta gratis
+          </Boton>
+        )
+      }
+    </section>
+  </main>
+</Publico>
+
+<script>
+  import '../scripts/portada';
+</script>
+
+<style>
+  .portada-publica {
+    outline: none;
+  }
+
+  /* ─── Encabezado ───────────────────────────────────── */
+  .heroe {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--e5);
+    align-items: center;
+    min-height: 480px;
+    padding: var(--e6) var(--e7) 104px;
+    background: var(--indigo);
+    color: var(--white);
+  }
+  .heroe__texto {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+    max-width: 560px;
+  }
+  .heroe__contenido {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--e3);
+  }
+  .heroe__contenido[hidden],
+  .heroe__esqueleto[hidden],
+  [data-destacado-accion][hidden] {
+    display: none;
+  }
+  .heroe__titulo {
+    font-size: var(--t-display);
+    line-height: var(--lh-display);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .heroe__linea {
+    width: 40px;
+    height: 3px;
+    background: var(--white);
+  }
+  .heroe__bajada {
+    max-width: 48ch;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    color: rgb(255 255 255 / 0.85);
+  }
+  .heroe__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e3);
+  }
+  .heroe__esqueleto {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  .sk { display: block; }
+  .sk--etiqueta { width: 140px; height: 28px; }
+  .sk--titulo { width: 90%; height: 56px; }
+  .sk--linea { width: 80%; height: 20px; }
+  .sk--corto { width: 55%; }
+
+  /* Ilustración (decorativa) */
+  .ilustracion {
+    position: relative;
+    justify-self: end;
+    width: min(100%, 460px);
+    aspect-ratio: 440 / 300;
+  }
+  .ilustracion__montes {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .monte {
+    fill: var(--indigo2);
+    stroke: rgb(255 255 255 / 0.85);
+    stroke-width: 1.5;
+  }
+  .monte--atras {
+    fill: #221d63;
+  }
+  .ilustracion__ruta {
+    fill: none;
+    stroke: var(--mint-acento);
+    stroke-width: 3;
+    stroke-dasharray: 1 8;
+    stroke-linecap: round;
+  }
+  .chip {
+    position: absolute;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--lila);
+    color: var(--ink);
+    font-size: var(--t-nota);
+    line-height: var(--lh-nota);
+    font-weight: 700;
+  }
+  .chip--m1 { left: 9%; bottom: 8%; }
+  .chip--m4 { left: 50%; top: 52%; }
+  .chip--cert { right: 4%; top: 16%; background: var(--yellow); }
+  .ilustracion__check {
+    position: absolute;
+    right: 8%;
+    top: -2%;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--mint-acento);
+    color: var(--indigo);
+  }
+  .mini-cert {
+    position: absolute;
+    left: 14%;
+    top: -4%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 44%;
+    padding: 18px 16px 14px;
+    border-radius: 4px;
+    background: #fbfaf6;
+    color: var(--ink);
+    transform: rotate(-5deg);
+  }
+  .mini-cert__cinta {
+    position: absolute;
+    left: 30%;
+    top: -8px;
+    width: 32%;
+    height: 14px;
+    background: var(--mint-acento);
+  }
+  .mini-cert__ceja {
+    font-size: 10px;
+    line-height: 12px;
+    color: var(--ink2);
+  }
+  .mini-cert__nombre {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 800;
+  }
+  .mini-cert__raya {
+    height: 4px;
+    border-radius: 2px;
+    background: #dcdbe8;
+  }
+  .mini-cert__raya--corta {
+    width: 60%;
+  }
+  .mini-cert__pie {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  .mini-cert__codigo {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+  .mini-cert__qr {
+    width: 26px;
+    height: 26px;
+  }
+
+  /* ─── Beneficios ───────────────────────────────────── */
+  .beneficios {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--e4);
+    margin: -56px var(--e7) 0;
+    padding: 0;
+    list-style: none;
+  }
+  .beneficio {
+    display: flex;
+    align-items: center;
+    gap: var(--e3);
+    padding: var(--e4);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+  .beneficio__icono {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--indigo-t);
+    color: var(--indigo3);
+  }
+  .beneficio__titulo {
+    display: block;
+    font-weight: 700;
+  }
+  .beneficio__texto {
+    display: block;
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: var(--ink2);
+  }
+
+  /* ─── Secciones ────────────────────────────────────── */
+  .seccion {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e5);
+    padding: 88px var(--e7) 104px;
+    outline: none;
+    scroll-margin-top: 72px;
+  }
+  .seccion__encabezado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--e2);
+    text-align: center;
+  }
+  .seccion__titulo {
+    font-size: 2.5rem;
+    line-height: 3rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    text-align: center;
+  }
+  .seccion__bajada {
+    max-width: 56ch;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    color: var(--ink2);
+  }
+  .seccion :global(.filtros) {
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  /* ─── Así aprendes ─────────────────────────────────── */
+  .ciclo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e6);
+    padding: 88px var(--e7);
+    background: var(--indigo-t);
+    outline: none;
+    scroll-margin-top: 72px;
+  }
+  .ciclo__cuerpo {
+    position: relative;
+    display: grid;
+    place-items: center;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .ciclo__rueda {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 320px;
+    height: 320px;
+  }
+  .cuadrante {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--e2);
+    background: var(--indigo3);
+    color: var(--white);
+    font-weight: 700;
+    font-size: 1.125rem;
+  }
+  .cuadrante--mira { border-radius: 100% 0 0 0; background: var(--indigo); padding: 24px 0 0 32px; }
+  .cuadrante--practica { border-radius: 0 100% 0 0; padding: 24px 32px 0 0; }
+  .cuadrante--certifica { border-radius: 0 0 0 100%; padding: 0 0 24px 32px; order: 3; }
+  .cuadrante--evalua { border-radius: 0 0 100% 0; padding: 0 32px 24px 0; order: 4; }
+  .ciclo__centro {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: var(--indigo-t);
+    color: var(--indigo);
+    transform: translate(-50%, -50%);
+  }
+  .ciclo__pasos {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 1fr 360px 1fr;
+    grid-template-rows: 1fr 1fr;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    pointer-events: none;
+  }
+  .ciclo__paso {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--e1);
+    max-width: 300px;
+  }
+  .ciclo__paso--mira { grid-column: 1; grid-row: 1; }
+  .ciclo__paso--practica { grid-column: 3; grid-row: 1; justify-self: end; }
+  .ciclo__paso--certifica { grid-column: 1; grid-row: 2; }
+  .ciclo__paso--evalua { grid-column: 3; grid-row: 2; justify-self: end; }
+  .ciclo__nombre {
+    font-size: var(--t-h2);
+    line-height: var(--lh-h2);
+    font-weight: 800;
+  }
+  .ciclo__texto {
+    color: var(--ink2);
+  }
+
+  /* ─── Pasos del certificado ────────────────────────── */
+  .pasos {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--e5);
+    padding: 88px var(--e7) 104px;
+    background: var(--white);
+  }
+  .pasos__lista {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--e5);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: paso;
+  }
+  .paso-cert {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: var(--e4) var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+    text-align: center;
+  }
+  /* Flecha entre pasos (decorativa) */
+  .paso-cert:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -21px;
+    top: 50%;
+    width: 9px;
+    height: 9px;
+    border-top: 2.5px solid var(--indigo2);
+    border-right: 2.5px solid var(--indigo2);
+    transform: translateY(-50%) rotate(45deg);
+  }
+  .paso-cert__icono {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--indigo);
+    color: var(--white);
+  }
+  .paso-cert__icono--final {
+    background: var(--yellow);
+    color: var(--ink);
+  }
+  .paso-cert__texto {
+    font-weight: 700;
+  }
+
+  /* ─── Responsive ───────────────────────────────────── */
+  @media (max-width: 1199px) {
+    .heroe,
+    .seccion,
+    .ciclo,
+    .pasos {
+      padding-left: var(--e4);
+      padding-right: var(--e4);
+    }
+    .beneficios {
+      margin-left: var(--e4);
+      margin-right: var(--e4);
+    }
+    .ciclo__pasos {
+      grid-template-columns: 1fr 340px 1fr;
+    }
+    .ciclo__paso {
+      max-width: 220px;
+    }
+    .pasos__lista {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .paso-cert:nth-child(3)::after {
+      display: none;
+    }
+  }
+  @media (max-width: 899px) {
+    .heroe {
+      grid-template-columns: minmax(0, 1fr);
+      padding-top: var(--e5);
+    }
+    .heroe__titulo {
+      font-size: 2.5rem;
+      line-height: 3rem;
+    }
+    .ilustracion {
+      justify-self: center;
+      width: min(100%, 380px);
+    }
+    .beneficios {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--e3);
+    }
+    .seccion,
+    .ciclo,
+    .pasos {
+      padding-top: var(--e6);
+      padding-bottom: var(--e6);
+    }
+    .seccion__titulo {
+      font-size: var(--t-h1);
+      line-height: var(--lh-h1);
+    }
+    .ciclo__cuerpo {
+      gap: var(--e5);
+    }
+    .ciclo__rueda {
+      width: 260px;
+      height: 260px;
+    }
+    .ciclo__pasos {
+      position: static;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: auto;
+      gap: var(--e4);
+      pointer-events: auto;
+    }
+    .ciclo__paso {
+      grid-column: auto !important;
+      grid-row: auto !important;
+      justify-self: stretch !important;
+      max-width: none;
+    }
+    .pasos__lista {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--e3);
+    }
+    .paso-cert::after {
+      display: none;
+    }
+  }
+  @media (max-width: 599px) {
+    .heroe,
+    .seccion,
+    .ciclo,
+    .pasos {
+      padding-left: var(--e3);
+      padding-right: var(--e3);
+    }
+    .beneficios {
+      margin-left: var(--e3);
+      margin-right: var(--e3);
+    }
+    .ciclo__pasos,
+    .pasos__lista {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

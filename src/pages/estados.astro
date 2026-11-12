@@ -1,12 +1,11 @@
 ---
-// Solo desarrollo: los 5 estados (UI Stack) de Iniciar sesión, Crear cuenta e Inicio, lado a lado.
+// Solo desarrollo: los 5 estados (UI Stack) de cada pantalla con datos, lado a lado.
 // Cada vista es un iframe de la pantalla real con ?simular=… (el middleware da 404 en producción).
-// Elegir pantalla: /estados?p=login | registro | inicio | multimodal
+// Elegir pantalla: /estados?p=login | registro | inicio | portada | catalogo | detalle | mis-cursos | multimodal
 // "Multimodal" (Act. 12) no es una pantalla: muestra el BotonMultimodal en éxito y error
 // y la tabla de qué canal se activa en cada momento (para la exposición).
 import Publico from '../layouts/Publico.astro';
 import BotonMultimodal from '../components/BotonMultimodal.astro';
-import InterruptorSonido from '../components/InterruptorSonido.astro';
 import Icono from '../components/Icono.astro';
 import Badge from '../components/Badge.astro';
 
@@ -64,6 +63,116 @@ const PANTALLAS: Record<string, { titulo: string; ruta: string; estados: Estado[
       { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'Lo de arriba cargó; "Esta semana" dice "No se pudo cargar esta parte" + "Reconectar".' },
     ],
   },
+  portada: {
+    titulo: 'Catálogo público',
+    ruta: '/',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: 'Curso destacado, 6 cursos y una sola acción amarilla: "Ver el curso".' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'Diseño + Avanzado no tiene cursos: "Limpiar filtros" para salir.' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'Skeleton en el encabezado y en las 6 tarjetas.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'No cargó la lista de cursos: qué pasó + "Reintentar".' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'El catálogo cargó; el curso destacado dice "No se pudo cargar esta parte" + "Reconectar".' },
+    ],
+  },
+  catalogo: {
+    titulo: 'Catálogo con sesión',
+    ruta: '/catalogo',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: 'Menú lateral, filtros y "Inscrito · 45 %" en los cursos del estudiante.' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'Ningún curso con estos filtros: "Limpiar filtros".' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: '6 tarjetas skeleton.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'No cargó la lista: qué pasó + "Reintentar".' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'Los cursos se ven; "tu avance" no cargó: "Reconectar".' },
+    ],
+  },
+  detalle: {
+    titulo: 'Detalle del curso',
+    ruta: '/cursos/python-desde-cero',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: 'Temario por módulos, "Cómo apruebas" y "Continuar curso" (ya inscrito).' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'El curso no existe o ya no se publica: "Ver el catálogo".' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'La tarjeta de inscripción llega con skeleton.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'El servidor no pudo leer el curso: "Reintentar" (comprueba antes de recargar).' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'El curso se ve; la inscripción no cargó: "Reconectar".' },
+    ],
+  },
+  'mis-cursos': {
+    titulo: 'Mis cursos',
+    ruta: '/mis-cursos',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: 'En curso (3) y Completados (1); solo el primer "Continuar" es amarillo.' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'Sin cursos: una sola acción, "Explorar el catálogo".' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'Skeleton de 3 filas.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'No cargó la lista: qué pasó + "Reintentar".' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'Los cursos cargaron; el aviso del certificado no: "Reconectar".' },
+    ],
+  },
+  clase: {
+    titulo: 'Clase',
+    ruta: '/clase/211',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: 'Video con subtítulos, materiales, índice y "Marcar como completada".' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'No estás inscrito en el curso: "Ver el curso".' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'El progreso y el índice llegan con skeleton; el video ya funciona.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'El servidor no pudo leer la clase: "Reintentar".' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'El índice no cargó: "Reconectar"; el video y el botón siguen funcionando.' },
+    ],
+  },
+  evaluacion: {
+    titulo: 'Evaluación',
+    ruta: '/evaluacion/1',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: 'Una pregunta a la vez, navegador 1–5, "Guardada" e "Intento 1 de 3".' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'Faltan clases (17 de 18): la evaluación sigue bloqueada, "Continuar curso".' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'Skeleton de la pregunta y del navegador.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'No cargó la evaluación: "Reintentar".' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'Cargaron las preguntas, no tus respuestas guardadas: "Reconectar".' },
+    ],
+  },
+  resultado: {
+    titulo: 'Resultado',
+    ruta: '/resultado/1',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: '16/20 Aprobado y "Obtener certificado" (abre "Confirma tu nombre").' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'Aún no rindes la evaluación: "Ir a la evaluación".' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'Skeleton del título, las cifras y el botón.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'No cargó el resultado: "Reintentar".' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'La nota se ve; el estado del certificado no cargó: "Reconectar".' },
+    ],
+  },
+  certificados: {
+    titulo: 'Mis certificados',
+    ruta: '/certificados',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: 'Obtenidos, En progreso y la vista con código y QR; "Descargar PDF" es la acción principal.' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'Sin certificados: "Ir a Mis cursos" (lo que está en progreso sigue a la vista).' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'Skeleton de las listas y del certificado.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'No cargaron los certificados: "Reintentar".' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'Los certificados se ven; "En progreso" no cargó: "Reconectar".' },
+    ],
+  },
+  verificar: {
+    titulo: 'Verificar certificado',
+    ruta: '/verificar?codigo=K7Q2M9XPD4',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: 'El enlace del QR (?codigo=) verifica al abrir: "Certificado válido".' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'Aún sin código: "Probar con un código de ejemplo".' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: '"Verificando…" con skeleton del resultado.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'No se pudo verificar (sin conexión): "Reintentar"; el código se mantiene.' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'El lector de QR no cargó: "Reconectar"; escribir el código sigue funcionando.' },
+    ],
+  },
+  notificaciones: {
+    titulo: 'Notificaciones',
+    ruta: '/notificaciones',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: 'Vence pronto (semáforo con texto) y Avisos con "Marcar todo como leído".' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'Nada que avisar: "Ir a Mis cursos".' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'Skeleton en las dos listas.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'No cargaron los avisos: "Reintentar".' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'Los avisos se ven; las entregas no cargaron: "Reconectar".' },
+    ],
+  },
 };
 
 const pedida = Astro.url.searchParams.get('p') ?? 'login';
@@ -74,10 +183,10 @@ const actual = PANTALLAS[clave] ?? PANTALLAS.login;
 // Qué canal se activa en cada momento (redundancia sensorial).
 const CANALES = [
   {
-    momento: 'Presionar',
+    momento: 'Presionar (cualquier control)',
     tiempo: '< 50 ms',
     visual: 'Se hunde a 97 % con sombra interior; al soltar rebota',
-    auditivo: '—',
+    auditivo: 'Clic muy corto y suave (Do6), ~40 ms',
     haptico: '10 ms',
     lector: 'Nombre y función: “Publicar curso, botón”',
   },
@@ -145,10 +254,7 @@ const CANALES = [
       multimodal && (
         <div class="mm">
           <section class="mm__bloque" aria-labelledby="mm-demo-titulo">
-            <div class="mm__cabeza">
-              <h2 class="h2" id="mm-demo-titulo">Pruébalo</h2>
-              <InterruptorSonido />
-            </div>
+            <h2 class="h2" id="mm-demo-titulo">Pruébalo</h2>
             <p class="secundario pequeno">
               Con el ratón, con el teclado (Tab y luego Enter o Espacio) o con el dedo en un celular Android para sentir la vibración.
             </p>
@@ -222,8 +328,12 @@ const CANALES = [
                 Éxito y error llegan en la <strong>misma llamada</strong>: retroalimentar(boton, tipo) en src/scripts/multimodal.ts.
               </li>
               <li>
-                El sonido solo ocurre tras una acción del usuario y se apaga con “Sonido y vibración” (WCAG 1.4.2). Se recuerda en este
-                dispositivo para todas las páginas.
+                Sonido y vibración siempre activos y en <strong>todos</strong> los controles pulsables (botones, enlaces, pestañas,
+                “Usar otro correo”, mostrar contraseña, tarjetas…): clic de ~40 ms + vibración de 10 ms al presionar.
+              </li>
+              <li>
+                Sin interruptor de audio, conforme a WCAG 1.4.2: todos los sonidos duran menos de 1 s (el más largo, ~270 ms), con volumen
+                moderado, y solo suenan tras una acción del usuario, nunca solos.
               </li>
               <li>Si el dispositivo no vibra (escritorio, iPhone), los otros tres canales siguen igual.</li>
               <li>
@@ -242,7 +352,7 @@ const CANALES = [
           <article class="estado">
             <div class="marco">
               <iframe
-                src={`${actual.ruta}?simular=${e.simular}`}
+                src={`${actual.ruta}${actual.ruta.includes('?') ? '&' : '?'}simular=${e.simular}`}
                 title={`Estado ${e.nombre} de ${actual.titulo}`}
                 loading="lazy"
                 tabindex="-1"
@@ -266,7 +376,7 @@ const CANALES = [
               )}
               <a
                 class="pequeno"
-                href={`${actual.ruta}?simular=${e.simular}`}
+                href={`${actual.ruta}${actual.ruta.includes('?') ? '&' : '?'}simular=${e.simular}`}
                 target="_blank"
                 data-abrir={e.variantes ? 'variantes' : undefined}
               >
@@ -299,7 +409,7 @@ const CANALES = [
       const ms = () => Math.round(performance.now() - inicio);
       const tipo = boton.dataset.demo;
       if (tipo === 'toque') {
-        if (registro) registro.textContent = 'Presionar: 0 ms → se hunde + vibración de 10 ms. Sin earcon: solo navega.';
+        if (registro) registro.textContent = 'Presionar: 0 ms → se hunde + clic + vibración de 10 ms. Sin earcon de éxito: solo avanza.';
         return;
       }
       procesar(boton);
@@ -449,16 +559,6 @@ const CANALES = [
     padding: var(--e4);
     border-radius: var(--radio-tarjeta);
     background: var(--white);
-  }
-  .mm__bloque :global(.interruptor--claro) {
-    background: var(--paper);
-  }
-  .mm__cabeza {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: var(--e3);
   }
   .mm__botones {
     display: flex;

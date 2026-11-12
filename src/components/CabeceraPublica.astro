@@ -1,0 +1,158 @@
+---
+// Cabecera pública (01-catalogo, 02-detalle, 10-verificar): logo, 3 enlaces y la cuenta.
+// Ley de Hick: aquí no hay botón amarillo; la acción principal es la de cada página.
+// Sin sesión: "Iniciar sesión" (enlace) y "Crear cuenta" (secundario). Con sesión: "Ir a mi Inicio".
+import Logo from './Logo.astro';
+import Boton from './Boton.astro';
+import { destinoPorRol } from '../lib/auth';
+
+export type SeccionPublica = 'cursos' | 'como-funciona' | 'verificar' | 'ninguna';
+
+interface Props {
+  activo?: SeccionPublica;
+}
+const { activo = 'ninguna' } = Astro.props;
+const usuario = Astro.locals.usuario;
+const enPortada = Astro.url.pathname === '/';
+
+const ENLACES: { id: SeccionPublica; texto: string; href: string }[] = [
+  { id: 'cursos', texto: 'Cursos', href: enPortada ? '#cursos' : '/#cursos' },
+  { id: 'como-funciona', texto: 'Cómo funciona', href: enPortada ? '#como-funciona' : '/#como-funciona' },
+  { id: 'verificar', texto: 'Verificar certificado', href: '/verificar' },
+];
+---
+
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+<header class="cabecera-publica">
+  <Logo />
+  <nav class="cabecera-publica__nav" aria-label="Principal">
+    <ul>
+      {
+        ENLACES.map((e) => (
+          <li>
+            <a href={e.href} class="cabecera-publica__enlace" aria-current={e.id === activo ? 'page' : undefined}>
+              {e.texto}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+  <div class="cabecera-publica__cuenta">
+    {
+      usuario ? (
+        <Boton variante="secundario" href={destinoPorRol(usuario)} textoCargando="Abriendo…">
+          Ir a mi Inicio
+        </Boton>
+      ) : (
+        <>
+          <a href="/login" class="cabecera-publica__enlace cabecera-publica__login">Iniciar sesión</a>
+          <Boton variante="secundario" href="/registro" textoCargando="Abriendo…">
+            Crear cuenta
+          </Boton>
+        </>
+      )
+    }
+  </div>
+</header>
+
+<style>
+  .cabecera-publica {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: var(--e3) var(--e4);
+    flex-wrap: wrap;
+    min-height: 72px;
+    padding: var(--e2) var(--e7);
+    background: var(--white);
+  }
+  .cabecera-publica__nav {
+    margin-left: auto;
+  }
+  .cabecera-publica__nav ul {
+    display: flex;
+    gap: var(--e1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cabecera-publica__enlace {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--alto-control);
+    padding: 0 var(--e3);
+    border-radius: var(--radio-control);
+    color: var(--ink2);
+    font-weight: 600;
+    box-shadow: inset 0 -3px 0 transparent;
+    transition:
+      color var(--t-rapido) ease-out,
+      box-shadow var(--t-rapido) ease-out,
+      background-color var(--t-rapido) ease-out;
+  }
+  .cabecera-publica__enlace:hover {
+    text-decoration: none;
+    color: var(--ink);
+    background: var(--paper);
+  }
+  .cabecera-publica__enlace[aria-current='page'] {
+    color: var(--indigo3);
+    box-shadow: inset 0 -3px 0 var(--indigo3);
+    border-radius: 0;
+  }
+  .cabecera-publica__cuenta {
+    display: flex;
+    align-items: center;
+    gap: var(--e2);
+  }
+  .cabecera-publica__login {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .saltar {
+    position: absolute;
+    left: var(--e3);
+    top: -100px;
+    z-index: 50;
+    padding: 12px var(--e3);
+    border-radius: var(--radio-control);
+    background: var(--yellow);
+    color: var(--ink);
+  }
+  .saltar:focus {
+    top: var(--e3);
+  }
+  @media (max-width: 1199px) {
+    .cabecera-publica {
+      padding: var(--e2) var(--e4);
+    }
+  }
+  /* Móvil: el logo y la cuenta arriba; los enlaces en una segunda fila */
+  @media (max-width: 899px) {
+    .cabecera-publica {
+      position: static;
+      padding: var(--e2) var(--e3);
+    }
+    .cabecera-publica__cuenta {
+      margin-left: auto;
+    }
+    .cabecera-publica__nav {
+      order: 3;
+      width: 100%;
+      margin-left: 0;
+      overflow-x: auto;
+    }
+    .cabecera-publica__enlace {
+      padding: 0 12px;
+      white-space: nowrap;
+    }
+  }
+  @media (max-width: 479px) {
+    .cabecera-publica__login {
+      padding: 0 var(--e2);
+    }
+  }
+</style>

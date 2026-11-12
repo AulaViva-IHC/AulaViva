@@ -66,6 +66,8 @@ function modoNuevo(): void {
 }
 
 otroCorreo.addEventListener('click', () => {
+  // Firma de Cancelación (Act. 14): se descarta el correo sugerido.
+  retroalimentar(otroCorreo, 'cancelacion', 'Correo sugerido descartado. Escribe otro correo.');
   modoNuevo();
   correo.value = '';
   limpiarError(correo);

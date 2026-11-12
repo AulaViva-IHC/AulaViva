@@ -9,6 +9,7 @@ import BotonMultimodal from '../components/BotonMultimodal.astro';
 import Badge from '../components/Badge.astro';
 import Icono from '../components/Icono.astro';
 import { rutaSegura } from '../lib/auth';
+import { cursoPorSlug } from '../lib/repositorio';
 
 // Solo en desarrollo: /login?simular=… fuerza un estado (lo usa /estados).
 const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error-red', 'error-credenciales', 'bloqueo', 'parcial'];
@@ -16,17 +17,9 @@ const pedido = Astro.url.searchParams.get('simular') ?? '';
 const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
 
 // Si llega desde un curso (?curso=slug) se muestra el aviso y luego vuelve a ese curso.
-// En la Fase 3 el nombre saldrá del catálogo real.
-const NOMBRES_CURSO: Record<string, string> = {
-  'diseno-de-interfaces-con-figma': 'Diseño de interfaces con Figma',
-  'python-desde-cero': 'Python desde cero',
-  'analisis-de-datos-con-excel': 'Análisis de datos con Excel',
-};
 const slug = Astro.url.searchParams.get('curso') ?? '';
 const cursoValido = /^[a-z0-9-]{1,80}$/.test(slug);
-const nombreCurso = cursoValido
-  ? (NOMBRES_CURSO[slug] ?? slug.replace(/-/g, ' ').replace(/^./, (l) => l.toUpperCase()))
-  : '';
+const nombreCurso = cursoValido ? ((await cursoPorSlug(slug))?.titulo ?? '') : '';
 const volver =
   rutaSegura(Astro.url.searchParams.get('volver')) ?? (nombreCurso ? `/cursos/${slug}` : '');
 const sufijo = Astro.url.search && !simular ? Astro.url.search : '';

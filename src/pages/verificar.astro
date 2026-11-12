@@ -1,11 +1,536 @@
 ---
-// "Verificar certificado" todavía no existe: página Próximamente con el mismo layout.
-import Proximamente from '../components/Proximamente.astro';
+// Verificar certificado · referencias/pantallas/10-verificar.png (pública) y 10b-verificar-sesion.png
+// Sin sesión: cabecera pública y encabezado índigo. Con sesión: menú lateral.
+// Código de 10 caracteres con validación en vivo (mayúsculas, sin O, 0, I ni 1), "Escanear con la
+// cámara" (jsQR) y los 3 resultados: válido, no encontrado y anulado (CLAUDE.md §8).
+//   ideal    → resultado de un código (?codigo= lo verifica al abrir: así funciona el QR)
+//   vacío    → aún sin código: "Probar con un código de ejemplo"
+//   cargando → skeleton del resultado mientras verifica
+//   error    → no se pudo verificar (sin conexión): "Reintentar"
+//   parcial  → el lector de QR no cargó: "Reconectar"; escribir el código sigue funcionando
+// Lógica del navegador: src/scripts/verificar.ts.
+import App from '../layouts/App.astro';
+import Publico from '../layouts/Publico.astro';
+import Topbar from '../components/Topbar.astro';
+import Tarjeta from '../components/Tarjeta.astro';
+import Boton from '../components/Boton.astro';
+import BotonMultimodal from '../components/BotonMultimodal.astro';
+import Badge from '../components/Badge.astro';
+import Icono from '../components/Icono.astro';
+import Campo from '../components/Campo.astro';
+import EstadoError from '../components/EstadoError.astro';
+import EstadoParcial from '../components/EstadoParcial.astro';
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const usuario = Astro.locals.usuario;
+const Marco = usuario ? App : Publico;
+const Principal = usuario ? 'div' : 'main'; // App ya trae su <main>
+
+const propsMarco = usuario
+  ? { titulo: 'Verificar certificado', activo: 'verificar', simular }
+  : {
+      titulo: 'Verificar certificado',
+      seccion: 'verificar' as const,
+      simular,
+      descripcion: 'Comprueba si un certificado de AulaViva es válido con su código de 10 caracteres o su QR.',
+    };
 ---
 
-<Proximamente
-  titulo="Verificar certificado"
-  activo="verificar"
-  texto="Aquí cualquiera podrá comprobar un certificado con su código. Llega en la Fase 6."
-  icono="escudo"
-/>
+<Marco {...(propsMarco as any)}>
+  <Principal class="verificar-pagina" id={usuario ? undefined : 'contenido'} tabindex={usuario ? undefined : '-1'}>
+  {
+    usuario ? (
+      <Topbar titulo="Verificar certificado" buscador notificaciones>
+        <Fragment slot="bajada">Escribe el código de 10 caracteres o escanea su QR.</Fragment>
+      </Topbar>
+    ) : (
+      <section class="heroe oscuro" aria-labelledby="titulo-verificar">
+        <Badge tono="lila">Pública, sin crear cuenta</Badge>
+        <h1 class="heroe__titulo" id="titulo-verificar" tabindex="-1" data-titulo-pagina>Verifica un certificado</h1>
+        <span class="heroe__linea" aria-hidden="true"></span>
+        <p class="heroe__texto">Escribe el código de 10 caracteres que aparece en el certificado o escanea su QR.</p>
+      </section>
+    )
+  }
+
+  <div class:list={['verificar', usuario ? 'verificar--app' : 'verificar--publico']} data-verificar>
+    <div class="verificar__rejilla">
+      <!-- Código -->
+      <Tarjeta class="formulario">
+        <form class="formulario__form" novalidate data-form>
+          <div class="formulario__fila">
+            <Campo
+              id="codigo"
+              etiqueta="Código del certificado"
+              ayuda="Solo mostramos el nombre, el curso y la fecha de emisión."
+              class="campo-codigo"
+              name="codigo"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              maxlength="14"
+              placeholder="K7Q2M9XPD4"
+              data-codigo
+            >
+              <span slot="extra" class="formulario__cuenta" data-cuenta>0 de 10</span>
+            </Campo>
+            <BotonMultimodal
+              variante="principal"
+              tipo="submit"
+              modo="completo"
+              textoCargando="Verificando…"
+              textoExito="¡Verificado!"
+              class="formulario__boton"
+              data-verificar-boton
+            >
+              Verificar
+            </BotonMultimodal>
+          </div>
+          <p class="formulario__otros">
+            <span>Otros resultados posibles:</span>
+            <Badge tono="neutro">No encontrado</Badge>
+            <Badge tono="rojo">Anulado</Badge>
+          </p>
+        </form>
+      </Tarjeta>
+
+      <!-- Escáner -->
+      <Tarjeta class="escaner" aria-labelledby="escaner-titulo">
+        <h2 class="solo-lector" id="escaner-titulo">Escanear el QR del certificado</h2>
+        <div class="escaner__visor" data-visor>
+          <div class="escaner__ilustracion" data-ilustracion aria-hidden="true">
+            <svg viewBox="0 0 21 21" class="escaner__qr" focusable="false">
+              <path
+                fill="#17153B"
+                d="M0 0h7v7H0zM14 0h7v7h-7zM0 14h7v7H0zM8 0h1v2H8zM10 1h2v1h-2zM9 3h3v1H9zM8 5h2v2H8zM11 5h1v3h-1zM8 8h5v1H8zM14 8h2v1h-2zM17 8h4v1h-4zM0 8h2v1H0zM3 8h3v1H3zM1 10h3v1H1zM5 9h2v3H5zM8 10h1v3H8zM10 10h3v1h-3zM14 10h1v2h-1zM16 10h3v1h-3zM20 10h1v3h-1zM10 12h2v2h-2zM13 13h3v1h-3zM17 12h2v2h-2zM8 14h1v3H8zM10 15h3v1h-3zM14 15h1v2h-1zM16 15h2v2h-2zM19 15h2v1h-2zM9 18h2v3H9zM12 17h2v2h-2zM15 18h3v1h-3zM19 18h2v3h-2zM12 20h3v1h-3zM16 20h2v1h-2z"
+              ></path>
+              <path fill="#fff" d="M1 1h5v5H1zM15 1h5v5h-5zM1 15h5v5H1z"></path>
+              <path fill="#17153B" d="M2 2h3v3H2zM16 2h3v3h-3zM2 16h3v3H2z"></path>
+            </svg>
+            <span class="escaner__linea"></span>
+          </div>
+          <video class="escaner__video" playsinline muted data-video hidden aria-label="Vista de la cámara"></video>
+          <canvas data-lienzo hidden></canvas>
+        </div>
+        <p class="escaner__estado" role="status" data-escaner-estado></p>
+        <div class="escaner__parcial" data-escaner-error hidden>
+          <EstadoParcial texto="El lector de QR no cargó. Puedes escribir el código mientras tanto." multimodal />
+        </div>
+        <span data-escanear-caja>
+          <Boton variante="secundario" bloque data-escanear>
+            <Icono nombre="escanear" tamano={20} />
+            Escanear con la cámara
+          </Boton>
+        </span>
+        <span data-detener-caja hidden>
+          <Boton variante="secundario" bloque data-detener>
+            <Icono nombre="cerrar" tamano={20} />
+            Cancelar escaneo
+          </Boton>
+        </span>
+      </Tarjeta>
+    </div>
+
+    <!-- Resultado -->
+    <section class="resultado-v" aria-labelledby="resultado-seccion" data-resultado>
+      <h2 class="solo-lector" id="resultado-seccion">Resultado de la verificación</h2>
+
+      <!-- Vacío -->
+      <div class="pista" data-r="vacio">
+        <span class="pista__icono" aria-hidden="true"><Icono nombre="escudo" tamano={26} /></span>
+        <div class="pista__textos">
+          <p class="pista__titulo">Aún no verificas ningún código</p>
+          <p class="pista__texto">El código está abajo a la derecha del certificado, junto al QR.</p>
+        </div>
+        <Boton variante="secundario" data-ejemplo>Probar con un código de ejemplo</Boton>
+      </div>
+
+      <!-- Cargando -->
+      <div class="skeleton resultado-v__esqueleto" data-r="cargando" aria-hidden="true" hidden></div>
+
+      <!-- Válido / anulado / no encontrado -->
+      <div class="veredicto" data-r="veredicto" hidden>
+        <div class="veredicto__icono" aria-hidden="true">
+          <span class="veredicto__circulo" data-veredicto-icono></span>
+        </div>
+        <div class="veredicto__cuerpo">
+          <h3 class="veredicto__titulo" id="resultado-titulo" tabindex="-1" data-veredicto-titulo></h3>
+          <p class="veredicto__texto" data-veredicto-texto></p>
+          <dl class="veredicto__datos" data-veredicto-datos></dl>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <Tarjeta class="resultado-v__error" data-r="error" hidden>
+        <EstadoError
+          titulo="No pudimos verificar el código ahora"
+          texto="Revisa tu conexión a internet y vuelve a intentarlo. El código que escribiste se mantiene."
+          variante="secundario"
+          multimodal
+        />
+      </Tarjeta>
+    </section>
+  </div>
+  </Principal>
+
+  <template data-plantilla="ic-check"><Icono nombre="check" tamano={56} /></template>
+  <template data-plantilla="ic-alerta"><Icono nombre="alerta" tamano={52} /></template>
+  <template data-plantilla="ic-buscar"><Icono nombre="buscar" tamano={52} /></template>
+</Marco>
+
+<script>
+  import '../scripts/verificar';
+</script>
+
+<style>
+  .verificar-pagina {
+    display: flex;
+    flex-direction: column;
+    outline: none;
+  }
+  .verificar-pagina:has(.verificar--app) {
+    gap: var(--e5);
+  }
+
+  /* ─── Encabezado público ─── */
+  .heroe {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--e3);
+    padding: var(--e6) var(--e4) 128px;
+    background: var(--indigo);
+    color: var(--white);
+    text-align: center;
+  }
+  .heroe__titulo {
+    font-size: var(--t-display);
+    line-height: var(--lh-display);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    outline: none;
+  }
+  .heroe__linea {
+    width: 40px;
+    height: 3px;
+    background: var(--white);
+  }
+  .heroe__texto {
+    max-width: 46ch;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    color: rgb(255 255 255 / 0.85);
+  }
+
+  .verificar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+    outline: none;
+  }
+  .verificar--publico {
+    max-width: 1280px;
+    margin: -96px auto 0;
+    padding: 0 var(--e7) 104px;
+  }
+  .verificar__rejilla {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: var(--e4);
+    align-items: stretch;
+  }
+
+  /* Formulario */
+  .formulario__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .formulario__fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px var(--e3);
+  }
+  .formulario__fila :global(.campo-codigo input) {
+    height: 64px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .formulario__fila :global(.campo-codigo input::placeholder) {
+    color: var(--ink3);
+    font-weight: 600;
+    letter-spacing: 0.2em;
+  }
+  .formulario__fila :global(.formulario__boton) {
+    min-height: 64px;
+    margin-top: 28px; /* alineado con el campo, bajo la etiqueta */
+    padding: 0 var(--e5);
+  }
+  .formulario__cuenta {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    font-variant-numeric: tabular-nums;
+  }
+  .formulario__otros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e2);
+    color: var(--ink2);
+  }
+
+  /* Escáner */
+  :global(.escaner) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--e3);
+  }
+  .escaner__visor {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 200px;
+    height: 200px;
+  }
+  .escaner__visor::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(var(--yellow-d), var(--yellow-d)) left top / 36px 4px no-repeat,
+      linear-gradient(var(--yellow-d), var(--yellow-d)) left top / 4px 36px no-repeat,
+      linear-gradient(var(--yellow-d), var(--yellow-d)) right top / 36px 4px no-repeat,
+      linear-gradient(var(--yellow-d), var(--yellow-d)) right top / 4px 36px no-repeat,
+      linear-gradient(var(--yellow-d), var(--yellow-d)) left bottom / 36px 4px no-repeat,
+      linear-gradient(var(--yellow-d), var(--yellow-d)) left bottom / 4px 36px no-repeat,
+      linear-gradient(var(--yellow-d), var(--yellow-d)) right bottom / 36px 4px no-repeat,
+      linear-gradient(var(--yellow-d), var(--yellow-d)) right bottom / 4px 36px no-repeat;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .escaner__ilustracion {
+    position: relative;
+    width: 128px;
+    height: 128px;
+  }
+  .escaner__ilustracion[hidden] {
+    display: none;
+  }
+  .escaner__qr {
+    width: 100%;
+    height: 100%;
+    shape-rendering: crispEdges;
+  }
+  .escaner__linea {
+    position: absolute;
+    left: -16px;
+    right: -16px;
+    top: 50%;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--indigo3);
+    box-shadow: 0 0 12px var(--indigo3);
+    animation: barrer 2.2s ease-in-out infinite alternate;
+  }
+  @keyframes barrer {
+    from { top: 8%; }
+    to { top: 92%; }
+  }
+  .escaner__video {
+    width: 184px;
+    height: 184px;
+    border-radius: var(--radio-control);
+    object-fit: cover;
+    background: var(--indigo);
+  }
+  .escaner__video[hidden] {
+    display: none;
+  }
+  .escaner__estado {
+    min-height: 20px;
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    text-align: center;
+  }
+  .escaner__estado:empty {
+    display: none;
+  }
+  .escaner__parcial {
+    width: 100%;
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+  }
+  .escaner__parcial[hidden],
+  [data-escanear-caja][hidden],
+  [data-detener-caja][hidden] {
+    display: none;
+  }
+  [data-escanear-caja],
+  [data-detener-caja] {
+    width: 100%;
+  }
+
+  /* Resultado */
+  .resultado-v [hidden] {
+    display: none !important;
+  }
+  .pista {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e3);
+    padding: var(--e4);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+  .pista__icono {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--indigo-t);
+    color: var(--indigo3);
+  }
+  .pista__textos {
+    flex: 1;
+    min-width: 220px;
+  }
+  .pista__titulo {
+    font-weight: 700;
+  }
+  .pista__texto {
+    color: var(--ink2);
+  }
+  .resultado-v__esqueleto {
+    height: 260px;
+    border-radius: var(--radio-tarjeta);
+  }
+
+  /* Veredicto: región de color (Gestalt: fondo, no borde) */
+  .veredicto {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    overflow: hidden;
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+    animation: aparecer var(--t-medio) ease-out;
+  }
+  .veredicto__icono {
+    display: grid;
+    place-items: center;
+    padding: var(--e5);
+    background: var(--grn-t);
+  }
+  .veredicto__circulo {
+    display: grid;
+    place-items: center;
+    width: 132px;
+    height: 132px;
+    border-radius: 50%;
+    background: var(--grn);
+    box-shadow: 0 0 0 14px rgb(22 101 52 / 0.18);
+    color: var(--white);
+  }
+  .veredicto__cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+    padding: var(--e5) var(--e6);
+  }
+  .veredicto__titulo {
+    color: var(--grn);
+    font-size: 2.5rem;
+    line-height: 3rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    outline: none;
+  }
+  .veredicto__texto {
+    color: var(--ink2);
+    font-size: 1.125rem;
+  }
+  .veredicto__datos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--e3) var(--e4);
+    margin: var(--e4) 0 0;
+  }
+  .veredicto__datos :global(dt) {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+  }
+  .veredicto__datos :global(dd) {
+    margin: var(--e1) 0 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .veredicto[data-tono='anulado'] .veredicto__icono { background: var(--red-t); }
+  .veredicto[data-tono='anulado'] .veredicto__circulo { background: var(--red); box-shadow: 0 0 0 14px rgb(155 28 28 / 0.15); }
+  .veredicto[data-tono='anulado'] .veredicto__titulo { color: var(--red); }
+  .veredicto[data-tono='no-encontrado'] .veredicto__icono { background: var(--paper); }
+  .veredicto[data-tono='no-encontrado'] .veredicto__circulo { background: var(--ink2); box-shadow: 0 0 0 14px rgb(75 74 99 / 0.15); }
+  .veredicto[data-tono='no-encontrado'] .veredicto__titulo { color: var(--ink); }
+
+  @media (max-width: 1099px) {
+    .verificar__rejilla {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .veredicto {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .veredicto__icono {
+      padding: var(--e4);
+    }
+    .veredicto__circulo {
+      width: 96px;
+      height: 96px;
+    }
+    .veredicto__datos {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .verificar--publico {
+      padding: 0 var(--e4) var(--e6);
+    }
+  }
+  @media (max-width: 599px) {
+    .heroe__titulo {
+      font-size: 2.25rem;
+      line-height: 2.75rem;
+    }
+    .verificar--publico {
+      padding: 0 var(--e3) var(--e6);
+    }
+    .formulario__fila {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .formulario__fila :global(.formulario__boton) {
+      margin-top: 0;
+      width: 100%;
+    }
+    .veredicto__cuerpo {
+      padding: var(--e4);
+    }
+    .veredicto__titulo {
+      font-size: var(--t-h1);
+      line-height: var(--lh-h1);
+    }
+    .veredicto__datos {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .escaner__linea {
+      animation: none;
+    }
+  }
+</style>

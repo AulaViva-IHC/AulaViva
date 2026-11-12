@@ -11,6 +11,7 @@ import Campo from '../../../components/Campo.astro';
 import Boton from '../../../components/Boton.astro';
 import BotonMultimodal from '../../../components/BotonMultimodal.astro';
 import Badge from '../../../components/Badge.astro';
+import Modal from '../../../components/Modal.astro';
 import Icono, { type NombreIcono } from '../../../components/Icono.astro';
 import { listarInstructores, ultimoInstructor } from '../../../lib/repositorio';
 import { CATEGORIAS, NIVELES, LIMITES, hoyEnLima, type CategoriaId } from '../../../lib/validacion-curso';
@@ -34,7 +35,7 @@ const SUBIDAS = [
 ---
 
 <Admin titulo="Crear curso" activo="cursos">
-  <Topbar titulo="Crear curso" sonido>
+  <Topbar titulo="Crear curso">
     <nav slot="migas" class="migas" aria-label="Ruta">
       <a href="/admin/cursos">Cursos</a>
       <Icono nombre="chevron" tamano={16} class="migas__flecha" />
@@ -368,6 +369,15 @@ const SUBIDAS = [
       </Tarjeta>
     </aside>
   </div>
+
+  <!-- Cancelar con cambios sin guardar: confirmación (§5.3) y firma de Cancelación (Act. 14) -->
+  <Modal id="modal-cancelar" titulo="¿Salir sin guardar?" icono="alerta">
+    <p>Perderás los cambios que no guardaste. Si guardaste un borrador antes, ese se conserva.</p>
+    <Fragment slot="acciones">
+      <BotonMultimodal variante="secundario" modo="toque" data-descartar>Descartar y salir</BotonMultimodal>
+      <Boton variante="principal" data-cerrar-modal autofocus>Seguir editando</Boton>
+    </Fragment>
+  </Modal>
 
   <template data-plantilla="icono-arrastre"><Icono nombre="arrastre" tamano={20} /></template>
   <template data-plantilla="icono-chevron"><Icono nombre="chevron" tamano={22} /></template>

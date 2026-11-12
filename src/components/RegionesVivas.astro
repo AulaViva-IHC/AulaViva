@@ -1,10 +1,69 @@
 ---
 // Regiones aria-live de la página (una vez por documento, en Publico.astro).
 // retroalimentar() (src/scripts/multimodal.ts) escribe aquí el resultado de una acción:
-//   polite    → éxitos ("Sesión iniciada", "Curso publicado")
+//   polite    → éxitos, cancelaciones y progreso cada 25 % ("Sesión iniciada", "Cargando: 50 %")
 //   assertive → errores (interrumpen la lectura en curso)
 // Siempre en el DOM y vacías al cargar: así el lector detecta cada cambio.
+// La señal flotante es el canal visual (icono + texto, WCAG 1.4.1) de la Cancelación y del
+// Progreso que no tienen un botón propio (Act. 14). Es aria-hidden: el lector ya oye el mismo texto.
+// También inicia la escucha global de "presionar" (clic + vibración en todo control pulsable).
+import Icono from './Icono.astro';
 ---
 
 <div class="solo-lector" aria-live="polite" aria-atomic="true" data-vivo="polite"></div>
 <div class="solo-lector" aria-live="assertive" aria-atomic="true" data-vivo="assertive"></div>
+
+<div class="senal" data-senal aria-hidden="true" hidden>
+  <span class="senal__icono senal__icono--cancelacion"><Icono nombre="deshacer" tamano={20} /></span>
+  <span class="senal__icono senal__icono--progreso"><Icono nombre="reloj" tamano={20} /></span>
+  <span data-senal-texto></span>
+</div>
+
+<script>
+  // Earcon "clic" + vibración de 10 ms al presionar cualquier control pulsable de la página (§5.8).
+  // Va aquí porque RegionesVivas está en todos los layouts: vale para todas las plantillas, actuales y futuras.
+  import { iniciarMultimodal } from '../scripts/multimodal';
+  iniciarMultimodal();
+</script>
+
+<style>
+  .senal {
+    position: fixed;
+    left: 50%;
+    bottom: var(--e4);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: var(--e1);
+    max-width: calc(100vw - 32px);
+    padding: 12px var(--e3);
+    border-radius: var(--radio-control);
+    background: var(--indigo);
+    color: var(--white);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    font-weight: 600;
+    transform: translateX(-50%);
+    box-shadow: 0 8px 24px rgb(23 21 59 / 0.24); /* flota sobre la página */
+    animation: senal-entra 160ms ease-out;
+    pointer-events: none;
+  }
+  .senal[hidden] {
+    display: none;
+  }
+  .senal__icono {
+    display: none;
+    color: var(--yellow);
+  }
+  .senal[data-tipo='cancelacion'] .senal__icono--cancelacion,
+  .senal[data-tipo='progreso'] .senal__icono--progreso {
+    display: inline-flex;
+  }
+  @keyframes senal-entra {
+    from { opacity: 0; transform: translate(-50%, 8px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .senal { animation: none; }
+  }
+</style>

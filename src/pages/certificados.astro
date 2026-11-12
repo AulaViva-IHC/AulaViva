@@ -1,11 +1,549 @@
 ---
-// "Mis certificados" todavía no existe: página Próximamente con el mismo layout.
-import Proximamente from '../components/Proximamente.astro';
+// Mis certificados · referencias/pantallas/09-certificados.png
+// Izquierda: "Obtenidos" (elige cuál ver) y "En progreso". Derecha: vista del certificado con
+// código y QR, y las acciones "Descargar PDF" (principal), "Copiar enlace" y "Verificar".
+//   ideal    → certificados y cursos en progreso
+//   vacío    → aún sin certificados: "Ir a Mis cursos" (lo que está en progreso sigue a la vista)
+//   cargando → skeleton de la lista y del certificado
+//   error    → no cargaron los certificados: "Reintentar"
+//   parcial  → los certificados cargaron pero "En progreso" no: "Reconectar"
+// ?codigo=XXXXXXXXXX abre ese certificado. Lógica del navegador: src/scripts/certificados.ts.
+import App from '../layouts/App.astro';
+import Topbar from '../components/Topbar.astro';
+import Tarjeta from '../components/Tarjeta.astro';
+import Boton from '../components/Boton.astro';
+import BotonMultimodal from '../components/BotonMultimodal.astro';
+import Badge from '../components/Badge.astro';
+import Icono from '../components/Icono.astro';
+import EstadoVacio from '../components/EstadoVacio.astro';
+import EstadoError from '../components/EstadoError.astro';
+import EstadoParcial from '../components/EstadoParcial.astro';
+import type { IconoCurso } from '../lib/repositorio';
+
+const usuario = Astro.locals.usuario!;
+if (usuario.rol === 'admin') return Astro.redirect('/admin/certificados');
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chispa'];
 ---
 
-<Proximamente
-  titulo="Mis certificados"
-  activo="certificados"
-  texto="Aquí descargarás tus certificados en PDF con su código y QR. Llega en la Fase 6."
-  icono="medalla"
-/>
+<App titulo="Mis certificados" activo="certificados" simular={simular}>
+  <Topbar titulo="Mis certificados" buscador notificaciones>
+    <Fragment slot="bajada">Descárgalos en PDF o comparte su enlace para que cualquiera los verifique.</Fragment>
+  </Topbar>
+
+  <div class="certificados" data-certificados aria-busy="true">
+    <div class="certificados__rejilla" data-region="contenido">
+      <!-- Columna izquierda -->
+      <div class="listas">
+        <section aria-labelledby="obtenidos-titulo">
+          <h2 class="listas__titulo" id="obtenidos-titulo" data-obtenidos-titulo>Obtenidos</h2>
+          <ul class="lista" data-obtenidos>
+            {[0, 1].map(() => <li class="skeleton sk sk--fila" aria-hidden="true" />)}
+          </ul>
+          <p class="lista__vacia" data-obtenidos-vacio hidden>Aún no tienes certificados.</p>
+        </section>
+
+        <section aria-labelledby="progreso-titulo">
+          <h2 class="listas__titulo" id="progreso-titulo" tabindex="-1" data-progreso-titulo>En progreso</h2>
+          <ul class="lista" data-progreso>
+            {[0, 1].map(() => <li class="skeleton sk sk--fila" aria-hidden="true" />)}
+          </ul>
+          <p class="lista__vacia" data-progreso-vacio hidden>No tienes cursos sin terminar.</p>
+          <div class="lista__parcial" data-progreso-error hidden>
+            <EstadoParcial texto="Tus certificados se ven y se descargan; tus cursos en progreso aparecerán al reconectar." multimodal />
+          </div>
+        </section>
+      </div>
+
+      <!-- Columna derecha: vista del certificado -->
+      <section class="vista" aria-labelledby="vista-titulo">
+        <h2 class="solo-lector" id="vista-titulo" tabindex="-1">Certificado seleccionado</h2>
+        <div class="skeleton sk sk--certificado" data-vista-cargando aria-hidden="true"></div>
+
+        <div class="vista__contenido" data-vista hidden>
+          <p class="aviso aviso--error" data-vista-anulado hidden>
+            <Icono nombre="alerta" />
+            <span data-vista-anulado-texto></span>
+          </p>
+          <figure class="certificado" data-certificado>
+            <div class="certificado__hoja">
+              <div class="certificado__cabeza">
+                <span class="certificado__logo">
+                  <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+                    <rect width="40" height="40" rx="8" fill="#FFD23F"></rect>
+                    <path d="M12 30 20 10l8 20" fill="none" stroke="#17153B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <circle cx="20" cy="23" r="2.6" fill="#17153B"></circle>
+                  </svg>
+                  AulaViva
+                </span>
+                <span class="certificado__tipo">Certificado de aprobación</span>
+              </div>
+              <p class="certificado__otorga">Se otorga el presente certificado a</p>
+              <p class="certificado__nombre" data-c-nombre></p>
+              <p class="certificado__por">por haber aprobado el curso</p>
+              <p class="certificado__curso" data-c-curso></p>
+              <p class="certificado__fecha" data-c-fecha></p>
+              <div class="certificado__pie">
+                <span class="certificado__firma">Dirección académica</span>
+                <span class="certificado__sello" aria-hidden="true"><Icono nombre="medalla" tamano={40} /></span>
+                <span class="certificado__codigo">
+                  <span class="certificado__codigo-textos">
+                    <span class="certificado__etiqueta">Código</span>
+                    <span class="certificado__valor" data-c-codigo></span>
+                    <span class="certificado__url" data-c-url></span>
+                  </span>
+                  <span class="certificado__qr" role="img" data-c-qr></span>
+                </span>
+              </div>
+              <span class="certificado__sello-anulado" data-c-anulado hidden>Anulado</span>
+            </div>
+            <figcaption class="solo-lector" data-c-descripcion></figcaption>
+          </figure>
+
+          <div class="vista__acciones">
+            <BotonMultimodal
+              variante="principal"
+              modo="completo"
+              textoCargando="Generando PDF…"
+              textoExito="¡Descargado!"
+              data-descargar
+            >
+              <Icono nombre="descargar" tamano={20} />
+              Descargar PDF
+            </BotonMultimodal>
+            <BotonMultimodal variante="secundario" modo="exito-suave" textoCargando="Copiando…" textoExito="¡Copiado!" data-copiar>
+              <Icono nombre="enlace" tamano={20} />
+              Copiar enlace
+            </BotonMultimodal>
+            <BotonMultimodal variante="secundario" href="/verificar" modo="toque" textoCargando="Abriendo…" data-verificar>
+              <Icono nombre="escudo" tamano={20} />
+              Verificar
+            </BotonMultimodal>
+          </div>
+          <p class="aviso aviso--error" role="alert" data-accion-error hidden>
+            <Icono nombre="alerta" />
+            <span data-accion-error-texto></span>
+          </p>
+          <div class="copiar-manual" data-copiar-manual hidden>
+            <label for="enlace-manual">Copia este enlace (está seleccionado):</label>
+            <input id="enlace-manual" type="text" readonly data-enlace-manual />
+          </div>
+        </div>
+
+        <Tarjeta class="vista__vacia" data-vista-vacia hidden>
+          <EstadoVacio
+            titulo="Aún no tienes certificados"
+            texto="Completa un curso y aprueba su evaluación (14 de 20). Tu certificado aparecerá aquí con su código y QR."
+            icono="medalla"
+          >
+            <Boton variante="principal" href="/mis-cursos" textoCargando="Abriendo…">Ir a Mis cursos</Boton>
+          </EstadoVacio>
+        </Tarjeta>
+      </section>
+    </div>
+
+    <Tarjeta data-region="error" hidden>
+      <EstadoError
+        titulo="No pudimos cargar tus certificados"
+        texto="Tus certificados siguen siendo válidos. Revisa tu conexión y vuelve a intentarlo."
+        multimodal
+      />
+    </Tarjeta>
+  </div>
+  <p class="solo-lector" aria-live="polite" data-anuncio-certificados></p>
+
+  <!-- Plantillas -->
+  <template data-plantilla="obtenido">
+    <li>
+      <button type="button" class="obtenido" aria-pressed="false" data-elegir>
+        <span class="obtenido__icono" aria-hidden="true" data-icono></span>
+        <span class="obtenido__textos">
+          <span class="obtenido__titulo" data-titulo></span>
+          <span class="obtenido__fecha" data-fecha></span>
+        </span>
+        <span data-estado></span>
+      </button>
+    </li>
+  </template>
+  <template data-plantilla="progreso">
+    <li>
+      <a class="en-progreso" href="#" data-enlace>
+        <span class="en-progreso__fila">
+          <span class="en-progreso__titulo" data-titulo></span>
+          <span class="en-progreso__porcentaje" data-porcentaje></span>
+        </span>
+        <span class="progreso" aria-hidden="true"><span class="progreso__avance" data-barra></span></span>
+        <span class="en-progreso__falta" data-falta></span>
+      </a>
+    </li>
+  </template>
+  {ICONOS.map((i) => <template data-plantilla={`icono-${i}`}><Icono nombre={i} tamano={24} /></template>)}
+  <template data-plantilla="valido"><Badge tono="verde" icono="check">Válido</Badge></template>
+  <template data-plantilla="anulado"><Badge tono="rojo">Anulado</Badge></template>
+</App>
+
+<script>
+  import '../scripts/certificados';
+</script>
+
+<style>
+  .certificados__rejilla {
+    display: grid;
+    grid-template-columns: 400px minmax(0, 1fr);
+    gap: var(--e5);
+    align-items: start;
+  }
+  .certificados__rejilla[hidden] {
+    display: none;
+  }
+  .listas {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e5);
+  }
+  .listas section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .listas__titulo {
+    color: var(--ink2);
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+    outline: none;
+  }
+  .lista {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lista[hidden],
+  .lista__vacia[hidden],
+  .lista__parcial[hidden] {
+    display: none;
+  }
+  .lista__vacia {
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+    color: var(--ink2);
+  }
+  .lista__parcial {
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+  .sk { display: block; }
+  .sk--fila { height: 88px; border-radius: var(--radio-tarjeta); }
+  .sk--certificado { width: 100%; aspect-ratio: 1.42 / 1; border-radius: var(--radio-tarjeta); }
+  .sk[hidden] { display: none; }
+
+  /* Certificado obtenido (botón que elige cuál ver) */
+  .lista :global(.obtenido) {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--e3);
+    width: 100%;
+    min-height: 88px;
+    padding: var(--e3);
+    border: 0;
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      transform var(--t-rapido) ease-out,
+      box-shadow 120ms ease-out;
+  }
+  .lista :global(.obtenido:hover) {
+    transform: scale(1.02);
+    box-shadow: var(--sombra-2);
+  }
+  .lista :global(.obtenido:active) {
+    transform: scale(0.97);
+    transition-duration: 40ms;
+  }
+  .lista :global(.obtenido[aria-pressed='true']) {
+    background: var(--indigo-t);
+    box-shadow: inset 0 0 0 2px var(--indigo3);
+  }
+  .lista :global(.obtenido__icono) {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radio-control);
+    color: var(--white);
+  }
+  .lista :global(.obtenido__textos) {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .lista :global(.obtenido__titulo) {
+    overflow: hidden;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lista :global(.obtenido__fecha) {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+  }
+  .lista :global(.obtenido[aria-pressed='true'] .obtenido__fecha) {
+    color: var(--ink2);
+  }
+
+  /* En progreso */
+  .lista :global(.en-progreso) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+    padding: var(--e3) var(--e4);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+    color: var(--ink);
+    transition: transform var(--t-rapido) ease-out;
+  }
+  .lista :global(.en-progreso:hover) {
+    text-decoration: none;
+    transform: scale(1.02);
+  }
+  .lista :global(.en-progreso__fila) {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--e2);
+    font-weight: 700;
+  }
+  .lista :global(.en-progreso__porcentaje) {
+    color: var(--ink2);
+    font-weight: 500;
+  }
+  .lista :global(.en-progreso__falta) {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    font-weight: 500;
+  }
+
+  /* Vista del certificado */
+  .vista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+    min-width: 0;
+  }
+  .vista__contenido {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .vista__contenido[hidden],
+  .vista__contenido [hidden] {
+    display: none;
+  }
+  .certificado {
+    margin: 0;
+    padding: 18px;
+    border-radius: var(--radio-tarjeta);
+    background: linear-gradient(135deg, var(--indigo) 0 78%, var(--yellow) 78% 82%, var(--indigo) 82%);
+    container-type: inline-size;
+  }
+  .certificado__hoja {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.6cqw;
+    padding: 5cqw 6cqw 4.5cqw;
+    border-radius: 2px;
+    background-color: #fbfaf6;
+    background-image:
+      linear-gradient(rgb(23 21 59 / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(23 21 59 / 0.04) 1px, transparent 1px);
+    background-size: 22px 22px;
+    color: var(--ink);
+    text-align: center;
+    overflow: hidden;
+  }
+  .certificado__cabeza {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 4cqw;
+  }
+  .certificado__logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.2cqw;
+    font-size: max(1rem, 2.8cqw);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .certificado__logo svg {
+    width: max(28px, 4.4cqw);
+    height: max(28px, 4.4cqw);
+  }
+  .certificado__tipo {
+    color: var(--indigo3);
+    font-size: max(0.75rem, 1.6cqw);
+    font-weight: 700;
+  }
+  .certificado__otorga,
+  .certificado__por {
+    color: var(--ink2);
+    font-size: max(0.8125rem, 1.9cqw);
+  }
+  .certificado__nombre {
+    font-size: max(1.375rem, 5cqw);
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
+  }
+  .certificado__curso {
+    color: var(--indigo3);
+    font-size: max(1.0625rem, 3.3cqw);
+    line-height: 1.2;
+    font-weight: 800;
+  }
+  .certificado__fecha {
+    color: var(--ink2);
+    font-size: max(0.8125rem, 1.7cqw);
+  }
+  .certificado__pie {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    gap: 3cqw;
+    width: 100%;
+    margin-top: 6cqw;
+  }
+  .certificado__firma {
+    justify-self: start;
+    min-width: 30%;
+    padding-top: 1cqw;
+    box-shadow: inset 0 1px 0 var(--ink3);
+    color: var(--ink2);
+    font-size: max(0.75rem, 1.5cqw);
+    text-align: left;
+  }
+  .certificado__sello {
+    display: grid;
+    place-items: center;
+    width: max(56px, 11cqw);
+    height: max(56px, 11cqw);
+    border-radius: 50%;
+    background: var(--yellow);
+    box-shadow: inset 0 0 0 2px var(--ink);
+    color: var(--ink);
+  }
+  .certificado__codigo {
+    display: flex;
+    justify-self: end;
+    align-items: flex-end;
+    gap: 1.5cqw;
+  }
+  .certificado__codigo-textos {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .certificado__etiqueta,
+  .certificado__url {
+    color: var(--ink2);
+    font-size: max(0.6875rem, 1.4cqw);
+  }
+  .certificado__valor {
+    font-size: max(0.875rem, 2.1cqw);
+    font-weight: 800;
+    letter-spacing: 0.12em;
+  }
+  .certificado__qr {
+    display: block;
+    width: max(64px, 11cqw);
+    height: max(64px, 11cqw);
+    padding: 4px;
+    background: var(--white);
+  }
+  .certificado__qr :global(svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .certificado__sello-anulado {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    padding: 1cqw 6cqw;
+    border-radius: var(--radio-control);
+    background: var(--red);
+    color: var(--white);
+    font-size: max(1.25rem, 5cqw);
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transform: translate(-50%, -50%) rotate(-12deg);
+  }
+  .vista__acciones {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--e3);
+  }
+  .vista__acciones :global(.boton) {
+    width: 100%;
+    min-height: 56px;
+  }
+  .copiar-manual {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+  }
+  .copiar-manual input {
+    min-height: var(--alto-control);
+    padding: 0 var(--e3);
+    border: 0;
+    border-radius: var(--radio-control);
+    background: var(--white);
+    font: inherit;
+  }
+
+  @media (max-width: 1199px) {
+    .certificados__rejilla {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .vista {
+      order: -1;
+    }
+  }
+  @media (max-width: 599px) {
+    .vista__acciones {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .certificado {
+      padding: 10px;
+    }
+    .certificado__pie {
+      grid-template-columns: 1fr auto;
+    }
+    .certificado__sello {
+      display: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lista :global(.obtenido:hover),
+    .lista :global(.obtenido:active),
+    .lista :global(.en-progreso:hover) {
+      transform: none;
+    }
+  }
+</style>

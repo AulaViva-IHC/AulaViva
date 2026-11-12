@@ -7,6 +7,7 @@
 // · Guardar borrador en localStorage; quitar algo se puede deshacer.
 import { ponerEstado, estaOcupado } from './boton';
 import { procesar, retroalimentar } from './multimodal';
+import { abrirModal, cerrarModal } from './modal';
 import { limpiarError, mostrarError, type Control } from './campo';
 import { iniciales } from '../lib/validacion';
 import {
@@ -1204,6 +1205,33 @@ function iniciarAvisoBorrador(datos: Guardado): void {
     });
   };
 }
+
+// ═══ Cancelar (firma de Cancelación, Act. 14) ══════════════════════
+// Sin cambios pendientes sale directo; con cambios pide confirmación en un modal.
+// Al salir suena el "soplido" y se ve la señal antes de cambiar de página.
+const btnDescartar = $<HTMLButtonElement>('[data-descartar]');
+
+async function salirCancelando(): Promise<void> {
+  sucio = false; // ya se confirmó: el aviso del navegador no vuelve a preguntar
+  retroalimentar(null, 'cancelacion', 'Creación del curso cancelada. Volviendo a Cursos.');
+  await esperar(450); // se alcanza a oír el soplido completo (~320 ms)
+  window.location.assign(btnCancelar.href);
+}
+
+btnCancelar.addEventListener('click', (e) => {
+  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  if (sucio && !publicado) abrirModal('modal-cancelar');
+  else void salirCancelando();
+});
+
+let saliendo = false; // ningún botón se envía dos veces
+btnDescartar.addEventListener('click', () => {
+  if (saliendo) return;
+  saliendo = true;
+  cerrarModal('modal-cancelar');
+  void salirCancelando();
+});
 
 window.addEventListener('beforeunload', (e) => {
   if (sucio && !publicado) {

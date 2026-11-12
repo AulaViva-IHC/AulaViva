@@ -1,0 +1,69 @@
+---
+// Pie de las páginas públicas (01-catalogo, 02-detalle, 10-verificar).
+import Logo from './Logo.astro';
+---
+
+<footer class="pie oscuro">
+  <div class="pie__marca">
+    <Logo tono="claro" />
+    <p class="pie__texto">Escuela de Ingeniería de Sistemas e Informática, UNAMBA. 2026</p>
+  </div>
+  <nav aria-label="Pie de página">
+    <ul class="pie__enlaces">
+      <li><a href="/terminos#privacidad">Política de privacidad (Ley N.° 29733)</a></li>
+      <li><a href="/terminos">Términos y condiciones</a></li>
+      <li><a href="/verificar">Verificar certificado</a></li>
+    </ul>
+  </nav>
+</footer>
+
+<style>
+  .pie {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--e4);
+    padding: var(--e6) var(--e7);
+    background: var(--indigo);
+    color: var(--white);
+  }
+  .pie__marca {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+  }
+  .pie__texto {
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    color: rgb(255 255 255 / 0.85);
+  }
+  .pie__enlaces {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e1) var(--e4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .pie__enlaces a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--alto-control);
+    color: rgb(255 255 255 / 0.9);
+    font-weight: 500;
+  }
+  .pie__enlaces a:hover {
+    color: var(--white);
+  }
+  @media (max-width: 1199px) {
+    .pie {
+      padding: var(--e6) var(--e4);
+    }
+  }
+  @media (max-width: 600px) {
+    .pie {
+      padding: var(--e5) var(--e3);
+    }
+  }
+</style>

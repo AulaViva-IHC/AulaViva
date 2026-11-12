@@ -1,17 +1,22 @@
 ---
 // Layout público: <head> común y, opcionalmente, la cabecera con el logo.
 // El login no usa cabecera (tiene su propio panel índigo).
+// Con `seccion` usa la cabecera pública completa (Cursos · Cómo funciona · Verificar) y el pie.
 import '@fontsource-variable/inter';
 import '../styles/tokens.css';
 import '../styles/base.css';
 import '../styles/animaciones.css';
 import Logo from '../components/Logo.astro';
 import RegionesVivas from '../components/RegionesVivas.astro';
+import CabeceraPublica, { type SeccionPublica } from '../components/CabeceraPublica.astro';
+import PiePublico from '../components/PiePublico.astro';
 
 interface Props {
   titulo: string;
   descripcion?: string;
   cabecera?: boolean;
+  /** Cabecera pública completa con esta sección marcada, y pie. */
+  seccion?: SeccionPublica;
   /** Estado forzado por ?simular= (solo desarrollo, lo usa /estados). */
   simular?: string;
 }
@@ -21,6 +26,7 @@ const {
   descripcion = 'AulaViva: cursos virtuales con certificación verificable.',
   cabecera = true,
   simular = '',
+  seccion,
 } = Astro.props;
 ---
 
@@ -35,8 +41,9 @@ const {
     <title>{titulo} · AulaViva</title>
   </head>
   <body data-simular={simular || undefined}>
+    {seccion && <CabeceraPublica activo={seccion} />}
     {
-      cabecera && (
+      cabecera && !seccion && (
         <header class="cabecera">
           <Logo />
           <div class="cabecera__acciones">
@@ -46,6 +53,7 @@ const {
       )
     }
     <slot />
+    {seccion && <PiePublico />}
     <RegionesVivas />
   </body>
 </html>

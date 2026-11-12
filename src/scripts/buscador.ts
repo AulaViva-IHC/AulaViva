@@ -3,6 +3,7 @@
 // en este dispositivo y navegación con teclado (patrón combobox de ARIA).
 import { normalizarBusqueda } from '../lib/validacion';
 import { anunciar, guardarLocal, leerLocal, plantilla } from './util';
+import { retroalimentar } from './multimodal';
 
 interface Sugerencia {
   tipo: 'curso' | 'tema';
@@ -244,8 +245,14 @@ function iniciar(raiz: HTMLElement): void {
         }
         break; // sin opción activa: el formulario se envía (ver "submit")
       case 'Escape':
-        if (abierto) cerrar();
-        else input.value = '';
+        // Firma de Cancelación (Act. 14), solo si había algo que cancelar.
+        if (abierto) {
+          cerrar();
+          retroalimentar(null, 'cancelacion', 'Sugerencias cerradas.');
+        } else if (input.value) {
+          input.value = '';
+          retroalimentar(null, 'cancelacion', 'Búsqueda borrada.');
+        }
         break;
       case 'Tab':
         cerrar();

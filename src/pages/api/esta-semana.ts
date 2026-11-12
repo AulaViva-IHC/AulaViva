@@ -12,6 +12,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
   if (import.meta.env.DEV && (simular === 'fallo' || simular === 'parcial')) {
     return json({ error: 'no-disponible' }, 503);
   }
+  if (import.meta.env.DEV && simular === 'vacio') return json({ tareas: [] });
   const usuario = locals.usuario;
   const tareas = await tareasDeLaSemana(usuario?.rol === 'estudiante' ? usuario.id : null);
   return json({ tareas });

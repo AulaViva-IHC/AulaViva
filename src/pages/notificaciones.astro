@@ -1,11 +1,245 @@
 ---
-// "Notificaciones" todavía no existe: página Próximamente con el mismo layout.
-import Proximamente from '../components/Proximamente.astro';
+// Notificaciones (sin referencia en Figma; mismo sistema de diseño).
+// Dos partes que se piden por separado:
+//   "Vence pronto" → /api/esta-semana (entregas con semáforo, siempre con texto)
+//   "Avisos"       → /api/notificaciones (certificado listo, evaluación habilitada, aprobado)
+//   ideal    → ambas listas
+//   vacío    → no hay nada: "Ir a Mis cursos"
+//   cargando → skeleton en las dos listas
+//   error    → no cargaron los avisos: "Reintentar"
+//   parcial  → los avisos cargaron, las entregas no: "Reconectar"
+// "Marcar todo como leído" (BotonMultimodal, éxito suave) solo aparece si hay avisos nuevos.
+// Lógica del navegador: src/scripts/notificaciones.ts.
+import App from '../layouts/App.astro';
+import Topbar from '../components/Topbar.astro';
+import Tarjeta from '../components/Tarjeta.astro';
+import Boton from '../components/Boton.astro';
+import BotonMultimodal from '../components/BotonMultimodal.astro';
+import Badge from '../components/Badge.astro';
+import Icono from '../components/Icono.astro';
+import EstadoVacio from '../components/EstadoVacio.astro';
+import EstadoError from '../components/EstadoError.astro';
+import EstadoParcial from '../components/EstadoParcial.astro';
+
+const usuario = Astro.locals.usuario!;
+if (usuario.rol === 'admin') return Astro.redirect('/admin/cursos/nuevo');
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
 ---
 
-<Proximamente
-  titulo="Notificaciones"
-  activo=""
-  texto="Aquí verás los avisos de tus cursos y entregas."
-  icono="campana"
-/>
+<App titulo="Notificaciones" activo="" simular={simular}>
+  <Topbar titulo="Notificaciones" buscador>
+    <Fragment slot="bajada">Lo que vence pronto y los avisos de tus cursos.</Fragment>
+  </Topbar>
+
+  <div class="notificaciones" data-notificaciones aria-busy="true">
+    <div class="notificaciones__rejilla" data-region="contenido">
+      <Tarjeta class="bloque" aria-labelledby="vence-titulo">
+        <h2 class="bloque__titulo" id="vence-titulo" tabindex="-1">Vence pronto</h2>
+        <ul class="lista" data-tareas>
+          {[0, 1, 2].map(() => <li class="skeleton sk sk--fila" aria-hidden="true" />)}
+        </ul>
+        <p class="secundario" data-tareas-vacio hidden>Nada vence en los próximos 7 días.</p>
+        <div class="bloque__parcial" data-tareas-error hidden>
+          <EstadoParcial texto="Tus avisos se ven; las entregas que vencen aparecerán al reconectar." multimodal />
+        </div>
+      </Tarjeta>
+
+      <Tarjeta class="bloque" aria-labelledby="avisos-titulo">
+        <div class="bloque__cabecera">
+          <h2 class="bloque__titulo" id="avisos-titulo" tabindex="-1">Avisos</h2>
+          <span data-leer-caja hidden>
+            <BotonMultimodal
+              variante="secundario"
+              modo="exito-suave"
+              textoCargando="Marcando…"
+              textoExito="¡Listo!"
+              anuncioExito="Todos los avisos quedaron como leídos."
+              data-leer
+            >
+              <Icono nombre="check" tamano={18} />
+              Marcar todo como leído
+            </BotonMultimodal>
+          </span>
+        </div>
+        <ul class="lista" data-avisos>
+          {[0, 1].map(() => <li class="skeleton sk sk--fila" aria-hidden="true" />)}
+        </ul>
+        <p class="secundario" data-avisos-vacio hidden>No tienes avisos nuevos de tus cursos.</p>
+        <p class="aviso aviso--error" role="alert" data-leer-error hidden>
+          <Icono nombre="alerta" />
+          <span>No se pudieron marcar como leídos. Revisa tu conexión y vuelve a intentarlo.</span>
+        </p>
+      </Tarjeta>
+    </div>
+
+    <Tarjeta data-region="vacio" hidden>
+      <EstadoVacio
+        titulo="No tienes avisos"
+        texto="Aquí verás lo que vence esta semana y cuando tu evaluación o tu certificado estén listos."
+        icono="campana"
+      >
+        <Boton variante="principal" href="/mis-cursos" textoCargando="Abriendo…">Ir a Mis cursos</Boton>
+      </EstadoVacio>
+    </Tarjeta>
+
+    <Tarjeta data-region="error" hidden>
+      <EstadoError titulo="No pudimos cargar tus avisos" texto="Revisa tu conexión a internet y vuelve a intentarlo." multimodal />
+    </Tarjeta>
+  </div>
+  <p class="solo-lector" aria-live="polite" data-anuncio-notificaciones></p>
+
+  <template data-plantilla="tarea">
+    <li class="tarea">
+      <span class="tarea__textos">
+        <span class="tarea__titulo" data-titulo></span>
+        <span class="tarea__curso" data-curso></span>
+      </span>
+      <span data-badge></span>
+    </li>
+  </template>
+  <template data-plantilla="aviso">
+    <li>
+      <a class="aviso-n" href="#" data-enlace>
+        <span class="aviso-n__icono" aria-hidden="true" data-icono></span>
+        <span class="aviso-n__textos">
+          <span class="aviso-n__titulo" data-titulo></span>
+          <span class="aviso-n__texto" data-texto></span>
+          <span class="aviso-n__fecha" data-fecha></span>
+        </span>
+        <span data-nuevo></span>
+      </a>
+    </li>
+  </template>
+  <template data-plantilla="t-rojo"><Badge tono="rojo">Vence hoy</Badge></template>
+  <template data-plantilla="t-naranja"><Badge tono="naranja">En 2 días</Badge></template>
+  <template data-plantilla="t-verde"><Badge tono="verde">En 4 días</Badge></template>
+  <template data-plantilla="nuevo"><Badge tono="lila">Nuevo</Badge></template>
+  <template data-plantilla="ic-certificado"><Icono nombre="medalla" tamano={24} /></template>
+  <template data-plantilla="ic-evaluacion"><Icono nombre="portapapeles" tamano={24} /></template>
+  <template data-plantilla="ic-resultado"><Icono nombre="estrella" tamano={24} /></template>
+</App>
+
+<script>
+  import '../scripts/notificaciones';
+</script>
+
+<style>
+  .notificaciones__rejilla {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: var(--e5);
+    align-items: start;
+  }
+  .notificaciones__rejilla[hidden] {
+    display: none;
+  }
+  :global(.bloque) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  .bloque__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e2);
+  }
+  .bloque__titulo {
+    font-size: var(--t-h2);
+    line-height: var(--lh-h2);
+    font-weight: 800;
+    outline: none;
+  }
+  .bloque__parcial {
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+  }
+  .bloque [hidden],
+  .bloque__parcial[hidden] {
+    display: none;
+  }
+  .lista {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .sk { display: block; }
+  .sk--fila { height: 72px; border-radius: var(--radio-tarjeta); }
+
+  .lista :global(.tarea) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e2) var(--e3);
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+  }
+  .lista :global(.tarea__textos),
+  .lista :global(.aviso-n__textos) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .lista :global(.tarea__titulo),
+  .lista :global(.aviso-n__titulo) {
+    font-weight: 700;
+  }
+  .lista :global(.tarea__curso),
+  .lista :global(.aviso-n__fecha) {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+  }
+  .lista :global(.aviso-n) {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--e3);
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+    color: var(--ink);
+    transition: transform var(--t-rapido) ease-out;
+  }
+  .lista :global(.aviso-n:hover) {
+    text-decoration: none;
+    transform: scale(1.01);
+  }
+  .lista :global(.aviso-n[data-nuevo-aviso]) {
+    background: var(--indigo-t);
+  }
+  .lista :global(.aviso-n__icono) {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--white);
+    color: var(--indigo3);
+  }
+  .lista :global(.aviso-n__texto) {
+    color: var(--ink2);
+    font-weight: 500;
+  }
+
+  @media (max-width: 1099px) {
+    .notificaciones__rejilla {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lista :global(.aviso-n:hover) {
+      transform: none;
+    }
+  }
+</style>

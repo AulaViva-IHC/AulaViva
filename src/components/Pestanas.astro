@@ -1,0 +1,116 @@
+---
+// Pestañas ARIA (patrón "tabs" de WAI-ARIA) · Ley de Miller: dividir lo largo en partes.
+// Cada pestaña controla un panel que la página pone con id="panel-{id}",
+// role="tabpanel" y aria-labelledby="pestana-{id}" (los demás paneles con hidden).
+// Teclado: flechas izquierda/derecha, Inicio y Fin. Lógica en src/scripts/pestanas.ts.
+// `contador` muestra un número junto al texto (p. ej. "En curso 3"); el script lo puede cambiar.
+export interface Pestana {
+  id: string;
+  texto: string;
+  contador?: number | null;
+}
+
+interface Props {
+  pestanas: Pestana[];
+  activa?: string;
+  /** Nombre del grupo para el lector de pantalla. */
+  etiqueta: string;
+  class?: string;
+}
+const { pestanas, activa = pestanas[0]?.id, etiqueta, class: clase } = Astro.props;
+---
+
+<div class:list={['pestanas', clase]} role="tablist" aria-label={etiqueta} data-pestanas>
+  {
+    pestanas.map((p) => {
+      const seleccionada = p.id === activa;
+      return (
+        <button
+          type="button"
+          role="tab"
+          id={`pestana-${p.id}`}
+          class="pestanas__pestana"
+          aria-selected={seleccionada ? 'true' : 'false'}
+          aria-controls={`panel-${p.id}`}
+          tabindex={seleccionada ? 0 : -1}
+          data-pestana={p.id}
+        >
+          <span>{p.texto}</span>
+          {p.contador !== undefined && (
+            <span class="pestanas__contador" data-contador hidden={p.contador === null}>
+              {p.contador ?? ''}
+            </span>
+          )}
+        </button>
+      );
+    })
+  }
+</div>
+
+<script>
+  import { iniciarPestanas } from '../scripts/pestanas';
+  iniciarPestanas();
+</script>
+
+<style>
+  .pestanas {
+    display: flex;
+    gap: var(--e4);
+    overflow-x: auto;
+    box-shadow: inset 0 -1px 0 var(--indigo-t);
+  }
+  .pestanas__pestana {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--e2);
+    min-height: var(--alto-control);
+    padding: 0 var(--e1);
+    border: 0;
+    background: none;
+    color: var(--ink2);
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: inset 0 -3px 0 transparent;
+    transition:
+      color var(--t-rapido) ease-out,
+      box-shadow var(--t-rapido) ease-out,
+      transform var(--t-rapido) ease-out;
+  }
+  .pestanas__pestana:hover {
+    color: var(--ink);
+  }
+  .pestanas__pestana:active {
+    transform: scale(0.97);
+    transition-duration: 40ms;
+  }
+  .pestanas__pestana[aria-selected='true'] {
+    color: var(--ink);
+    box-shadow: inset 0 -3px 0 var(--ink);
+  }
+  .pestanas__contador {
+    display: inline-grid;
+    place-items: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 var(--e2);
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+  }
+  .pestanas__pestana[aria-selected='true'] .pestanas__contador {
+    background: var(--indigo-t);
+    color: var(--indigo3);
+  }
+  .pestanas__contador[hidden] {
+    display: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pestanas__pestana:active {
+      transform: none;
+    }
+  }
+</style>

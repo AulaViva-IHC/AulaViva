@@ -1,11 +1,842 @@
 ---
-// "Detalle del curso" todavía no existe: página Próximamente con el mismo layout.
-import Proximamente from '../../components/Proximamente.astro';
+// Detalle del curso · referencias/pantallas/02-detalle.png
+// El servidor arma el curso (encabezado, pestañas y temario). La tarjeta de inscripción
+// pide /api/inscripcion aparte para saber si ya estás inscrito:
+//   ideal    → todo cargó
+//   vacío    → el curso no existe o ya no está publicado: "Ver el catálogo" (404)
+//   cargando → skeleton en la tarjeta de inscripción
+//   error    → el servidor no pudo leer el curso: qué pasó + "Reintentar" (503)
+//   parcial  → el curso se ve pero la inscripción no cargó: "Reconectar"
+// Sin sesión, "Inscribirme gratis" lleva a /login?curso=… y al entrar vuelves aquí.
+// Con sesión se muestra dentro del menú lateral (como el Catálogo).
+// Lógica del navegador: src/scripts/detalle.ts.
+import App from '../../layouts/App.astro';
+import Publico from '../../layouts/Publico.astro';
+import Boton from '../../components/Boton.astro';
+import BotonMultimodal from '../../components/BotonMultimodal.astro';
+import Badge from '../../components/Badge.astro';
+import Icono, { type NombreIcono } from '../../components/Icono.astro';
+import Tarjeta from '../../components/Tarjeta.astro';
+import Pestanas from '../../components/Pestanas.astro';
+import PortadaCurso from '../../components/PortadaCurso.astro';
+import EstadoVacio from '../../components/EstadoVacio.astro';
+import EstadoError from '../../components/EstadoError.astro';
+import EstadoParcial from '../../components/EstadoParcial.astro';
+import { cursoPorSlug, type Curso } from '../../lib/repositorio';
+import { CATEGORIAS, NIVELES } from '../../lib/validacion-curso';
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const usuario = Astro.locals.usuario;
+const slug = Astro.params.slug ?? '';
+
+let curso: Curso | null = null;
+let fallo = simular === 'error';
+if (!fallo && simular !== 'vacio') {
+  try {
+    curso = await cursoPorSlug(slug);
+  } catch {
+    fallo = true;
+  }
+}
+if (fallo) Astro.response.status = 503;
+else if (!curso) Astro.response.status = 404;
+
+const titulo = curso?.titulo ?? (fallo ? 'Curso no disponible' : 'Curso no encontrado');
+const categoria = curso ? CATEGORIAS.find((c) => c.id === curso.categoria) : undefined;
+const nivel = curso ? NIVELES.find((n) => n.id === curso.nivel)?.texto.toLowerCase() : '';
+const iniciales = (nombre: string) =>
+  nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join('');
+
+const hechos: { icono: NombreIcono; texto: string }[] = curso
+  ? [
+      { icono: 'reloj', texto: `${curso.horas} horas académicas` },
+      { icono: 'libro', texto: `${curso.modulos.length} ${curso.modulos.length === 1 ? 'módulo' : 'módulos'}, ${curso.totalClases} clases` },
+      { icono: 'subtitulos', texto: 'Videos con subtítulos' },
+      { icono: 'medalla', texto: 'Certificado con QR' },
+    ]
+  : [];
+
+const incluye = curso
+  ? [
+      `${curso.totalClases} clases en video con subtítulos`,
+      'Documentos para descargar',
+      `Evaluación final con ${curso.evaluacion.intentos} intentos`,
+      'Certificado con código único y QR',
+    ]
+  : [];
+
+const Marco = usuario ? App : Publico;
+const propsMarco = usuario
+  ? { titulo, activo: 'catalogo', simular }
+  : { titulo, seccion: 'cursos' as const, simular, descripcion: curso?.descripcion };
+const Principal = usuario ? 'div' : 'main';
+const esEstudiante = usuario?.rol === 'estudiante';
 ---
 
-<Proximamente
-  titulo="Detalle del curso"
-  activo="catalogo"
-  texto="Aquí verás el temario del curso y podrás inscribirte. Llega en la Fase 3."
-  icono="libro"
-/>
+<Marco {...(propsMarco as any)}>
+  <Principal
+    class:list={['detalle', usuario ? 'detalle--app' : 'detalle--publico']}
+    id={usuario ? undefined : 'contenido'}
+    tabindex={usuario ? undefined : '-1'}
+  >
+    {
+      fallo && (
+        <Tarjeta class="detalle__estado" data-reintentar-pagina>
+          <h1 class="solo-lector">Curso no disponible</h1>
+          <EstadoError
+            titulo="No pudimos cargar este curso"
+            texto="El servidor no respondió. Tu avance está guardado; vuelve a intentarlo en un momento."
+            multimodal
+          />
+        </Tarjeta>
+      )
+    }
+
+    {
+      !fallo && !curso && (
+        <Tarjeta class="detalle__estado">
+          <h1 class="solo-lector">Curso no encontrado</h1>
+          <EstadoVacio
+            titulo="No encontramos este curso"
+            texto="Puede que el enlace esté mal escrito o que el curso ya no esté publicado. En el catálogo están todos los cursos disponibles."
+            icono="buscar"
+          >
+            <Boton variante="principal" href="/catalogo" textoCargando="Abriendo catálogo…">
+              <Icono nombre="cuadricula" tamano={18} />
+              Ver el catálogo
+            </Boton>
+          </EstadoVacio>
+        </Tarjeta>
+      )
+    }
+
+    {
+      curso && (
+        <div class="detalle__rejilla">
+          <div class="detalle__fondo oscuro" aria-hidden="true" />
+
+          {/* ─── Encabezado ─── */}
+          <section class="detalle__heroe oscuro" aria-labelledby="curso-titulo">
+            <nav aria-label="Ruta de navegación">
+              <ol class="migas">
+                <li><a href="/catalogo">Cursos</a></li>
+                <li><a href={`/catalogo?categoria=${curso.categoria}`}>{categoria?.texto}</a></li>
+                <li><span aria-current="page">{curso.titulo}</span></li>
+              </ol>
+            </nav>
+            <div class="detalle__etiquetas">
+              {curso.etiqueta === 'destacado' && <Badge tono="destacado">Destacado</Badge>}
+              {curso.etiqueta === 'nuevo' && <Badge tono="nuevo">Nuevo</Badge>}
+              <Badge tono="lila">Nivel {nivel}</Badge>
+            </div>
+            <h1 class="detalle__titulo" id="curso-titulo">{curso.titulo}</h1>
+            <span class="detalle__linea" aria-hidden="true" />
+            <p class="detalle__bajada">{curso.descripcion}</p>
+            <ul class="hechos">
+              {hechos.map((h) => (
+                <li>
+                  <Icono nombre={h.icono} tamano={22} />
+                  {h.texto}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* ─── Columna lateral: inscripción y cómo apruebas ─── */}
+          <aside class="detalle__lateral" aria-label="Inscripción">
+            <section class="inscripcion" aria-labelledby="inscripcion-titulo">
+              <PortadaCurso color={curso.color} icono={curso.icono} tamano="grande" />
+              <div class="inscripcion__cuerpo">
+                <h2 class="solo-lector" id="inscripcion-titulo">Inscripción en {curso.titulo}</h2>
+
+                {!usuario && (
+                  <div class="inscripcion__accion">
+                    <BotonMultimodal
+                      variante="principal"
+                      bloque
+                      href={`/login?curso=${curso.slug}`}
+                      modo="toque"
+                      textoCargando="Abriendo…"
+                    >
+                      Inscribirme gratis
+                    </BotonMultimodal>
+                    <p class="inscripcion__nota">Te pediremos iniciar sesión y volverás a este curso.</p>
+                  </div>
+                )}
+
+                {usuario && !esEstudiante && (
+                  <p class="aviso aviso--info">
+                    <Icono nombre="info" />
+                    <span>Estás viendo el curso como administrador. Las cuentas de administrador no se inscriben.</span>
+                  </p>
+                )}
+
+                {esEstudiante && (
+                  <div class="inscripcion__accion" data-inscripcion data-curso={curso.slug} aria-busy="true">
+                    <div class="inscripcion__esqueleto" data-inscripcion-cargando aria-hidden="true">
+                      <span class="skeleton sk sk--boton" />
+                      <span class="skeleton sk sk--nota" />
+                    </div>
+
+                    <div class="inscripcion__estado" data-inscripcion-nueva hidden>
+                      <BotonMultimodal
+                        variante="principal"
+                        bloque
+                        modo="completo"
+                        textoCargando="Inscribiendo…"
+                        textoExito="¡Inscrito!"
+                        anuncioExito="Te inscribiste. Abriendo la primera clase."
+                        data-inscribirme
+                      >
+                        Inscribirme gratis
+                      </BotonMultimodal>
+                      <p class="inscripcion__nota" data-inscripcion-nota>Es gratis. Empiezas por la clase 1.1.</p>
+                      <p class="aviso aviso--error" role="alert" data-inscripcion-mensaje hidden>
+                        <Icono nombre="alerta" />
+                        <span data-inscripcion-mensaje-texto />
+                      </p>
+                    </div>
+
+                    <div class="inscripcion__estado" data-inscripcion-inscrito hidden>
+                      <p class="inscripcion__progreso">
+                        <span data-inscripcion-estado>Ya estás inscrito</span>
+                        <span data-inscripcion-porcentaje />
+                      </p>
+                      <div class="progreso" aria-hidden="true">
+                        <span class="progreso__avance" data-inscripcion-barra />
+                      </div>
+                      <BotonMultimodal variante="principal" bloque href="#" modo="toque" textoCargando="Abriendo clase…" data-continuar>
+                        <Icono nombre="play" tamano={18} />
+                        <span data-continuar-texto>Continuar curso</span>
+                      </BotonMultimodal>
+                      <p class="inscripcion__nota" data-continuar-clase />
+                    </div>
+
+                    <EstadoParcial
+                      texto="El curso se ve completo; tu inscripción aparecerá al reconectar."
+                      multimodal
+                      data-inscripcion-error
+                      hidden
+                    />
+                  </div>
+                )}
+
+                <div class="inscripcion__bloque">
+                  <h3 class="inscripcion__subtitulo">Este curso incluye</h3>
+                  <ul class="incluye">
+                    {incluye.map((t) => (
+                      <li>
+                        <Icono nombre="check" tamano={20} />
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div class="instructor-mini">
+                  <span class="avatar" aria-hidden="true">{iniciales(curso.instructor.nombre)}</span>
+                  <span>
+                    <span class="instructor-mini__nombre">{curso.instructor.nombre}</span>
+                    <span class="instructor-mini__rol">{curso.instructor.rol}</span>
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <section class="aprobar" aria-labelledby="aprobar-titulo">
+              <h2 class="aprobar__titulo" id="aprobar-titulo">Cómo apruebas</h2>
+              <ul class="aprobar__lista">
+                <li class="regla regla--menta">
+                  <span class="regla__cifra">100 %</span>
+                  <span>Completa todas las clases para habilitar la evaluación.</span>
+                </li>
+                <li class="regla regla--lila">
+                  <span class="regla__cifra">{curso.evaluacion.notaMinima}/20</span>
+                  <span>Es la nota mínima. Vale tu mejor intento.</span>
+                </li>
+                <li class="regla regla--amarilla">
+                  <span class="regla__cifra">{curso.evaluacion.intentos}</span>
+                  <span>Intentos para rendir la evaluación final.</span>
+                </li>
+              </ul>
+            </section>
+          </aside>
+
+          {/* ─── Pestañas ─── */}
+          <div class="detalle__principal">
+            <Pestanas
+              etiqueta="Información del curso"
+              activa="temario"
+              pestanas={[
+                { id: 'descripcion', texto: 'Descripción' },
+                { id: 'temario', texto: 'Temario' },
+                { id: 'instructor', texto: 'Instructor' },
+                { id: 'como-apruebas', texto: 'Cómo apruebas' },
+              ]}
+            />
+
+            <div class="panel" id="panel-descripcion" role="tabpanel" aria-labelledby="pestana-descripcion" tabindex="0" hidden>
+              <p class="panel__texto">{curso.sobre}</p>
+              {curso.aprenderas.length > 0 && (
+                <>
+                  <h2 class="panel__titulo">Aprenderás a</h2>
+                  <ul class="incluye">
+                    {curso.aprenderas.map((t) => (
+                      <li>
+                        <Icono nombre="check" tamano={20} />
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+
+            <div class="panel" id="panel-temario" role="tabpanel" aria-labelledby="pestana-temario" tabindex="0">
+              <p class="secundario">Los módulos se desbloquean en orden.</p>
+              <div class="temario">
+                {curso.modulos.map((m, i) => (
+                  <details class="modulo" open={i === 0}>
+                    <summary class="modulo__resumen">
+                      <span class="modulo__numero" aria-hidden="true">{m.numero}</span>
+                      <span class="modulo__textos">
+                        <span class="modulo__titulo">
+                          <span class="solo-lector">Módulo {m.numero}: </span>
+                          {m.titulo}
+                        </span>
+                        <span class="modulo__cuenta">{m.clases.length} {m.clases.length === 1 ? 'clase' : 'clases'}</span>
+                      </span>
+                      <Icono nombre="chevron" tamano={22} class="modulo__flecha" />
+                    </summary>
+                    <ol class="clases">
+                      {m.clases.map((c) => (
+                        <li class="clase-fila">
+                          <Icono nombre="play" tamano={14} class="clase-fila__icono" />
+                          <span class="clase-fila__codigo">{c.codigo}</span>
+                          <span class="clase-fila__titulo">{c.titulo}</span>
+                          <span class="clase-fila__duracion">{c.duracionMin} min</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
+                ))}
+              </div>
+            </div>
+
+            <div class="panel" id="panel-instructor" role="tabpanel" aria-labelledby="pestana-instructor" tabindex="0" hidden>
+              <div class="instructor">
+                <span class="avatar avatar--grande" aria-hidden="true">{iniciales(curso.instructor.nombre)}</span>
+                <div>
+                  <h2 class="panel__titulo">{curso.instructor.nombre}</h2>
+                  <p class="secundario">{curso.instructor.rol}</p>
+                </div>
+              </div>
+              {curso.instructor.bio && <p class="panel__texto">{curso.instructor.bio}</p>}
+            </div>
+
+            <div class="panel" id="panel-como-apruebas" role="tabpanel" aria-labelledby="pestana-como-apruebas" tabindex="0" hidden>
+              <ol class="pasos-aprobar">
+                <li>Completa el 100 % de las clases: así se habilita la evaluación final.</li>
+                <li>Rinde la evaluación: necesitas {curso.evaluacion.notaMinima} de 20. Vale tu mejor intento.</li>
+                <li>Tienes {curso.evaluacion.intentos} intentos. Tus respuestas se guardan solas mientras avanzas.</li>
+                <li>Confirma tu nombre: así saldrá en el certificado y no se puede cambiar después.</li>
+                <li>Descarga tu certificado con código único y QR. Cualquiera puede verificarlo.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      )
+    }
+  </Principal>
+</Marco>
+
+<script>
+  import '../../scripts/detalle';
+  import '../../scripts/reintentar-pagina';
+</script>
+
+<style>
+  .detalle {
+    outline: none;
+  }
+  .detalle--publico {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 var(--e7) 104px;
+  }
+  :global(.detalle__estado) {
+    margin: var(--e6) auto 0;
+    max-width: 880px;
+  }
+
+  /* ─── Rejilla: encabezado oscuro + columna lateral que lo cruza ─── */
+  .detalle__rejilla {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 400px;
+    column-gap: var(--e7);
+  }
+  .detalle__fondo {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    background: var(--indigo);
+  }
+  /* Público: el fondo ocupa todo el ancho de la ventana sin crear desplazamiento lateral */
+  .detalle--publico .detalle__fondo {
+    box-shadow: 0 0 0 100vmax var(--indigo);
+    clip-path: inset(0 -100vmax);
+  }
+  .detalle--app .detalle__fondo {
+    border-radius: var(--radio-tarjeta);
+  }
+  /* Encima del fondo (que con clip-path se pinta en la capa de posicionados) */
+  .detalle__heroe,
+  .detalle__lateral,
+  .detalle__principal {
+    position: relative;
+    z-index: 1;
+  }
+  .detalle__heroe {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--e3);
+    padding: var(--e5) 0 var(--e6);
+    color: var(--white);
+  }
+  .detalle--app .detalle__heroe {
+    grid-column: 1 / -1;
+    padding: var(--e5);
+  }
+  .detalle__lateral {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: flex;
+    flex-direction: column;
+    gap: var(--e6);
+    padding-top: 96px;
+  }
+  .detalle--app .detalle__lateral {
+    grid-row: 2;
+    padding-top: var(--e5);
+  }
+  .detalle__principal {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+    padding-top: var(--e5);
+    min-width: 0;
+  }
+
+  /* Migas */
+  .migas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e1) var(--e2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--t-pequeno);
+  }
+  .migas li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--e2);
+  }
+  .migas li + li::before {
+    content: '›';
+    color: rgb(255 255 255 / 0.7);
+  }
+  .migas a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    color: rgb(255 255 255 / 0.85);
+    font-weight: 500;
+  }
+  .migas [aria-current] {
+    font-weight: 700;
+  }
+  .detalle__etiquetas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e2);
+    margin-top: var(--e2);
+  }
+  .detalle__titulo {
+    max-width: 18ch;
+    font-size: var(--t-display);
+    line-height: var(--lh-display);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .detalle__linea {
+    width: 40px;
+    height: 3px;
+    background: var(--white);
+  }
+  .detalle__bajada {
+    max-width: 52ch;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    color: rgb(255 255 255 / 0.85);
+  }
+  .hechos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e3) var(--e5);
+    margin: var(--e3) 0 0;
+    padding: 0;
+    list-style: none;
+    font-weight: 600;
+  }
+  .hechos li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--e2);
+  }
+  .hechos :global(svg) {
+    color: var(--mint-acento);
+  }
+
+  /* ─── Tarjeta de inscripción ─── */
+  .inscripcion {
+    overflow: hidden;
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+  .inscripcion__cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+    padding: var(--e4);
+  }
+  .inscripcion__accion,
+  .inscripcion__estado,
+  .inscripcion__esqueleto {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .inscripcion__estado[hidden],
+  .inscripcion__esqueleto[hidden] {
+    display: none;
+  }
+  .inscripcion__nota {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    text-align: center;
+  }
+  .inscripcion__progreso {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--e2);
+    font-weight: 700;
+  }
+  .sk {
+    display: block;
+  }
+  .sk--boton { height: 56px; }
+  .sk--nota { width: 80%; height: 16px; margin: 0 auto; }
+  .inscripcion__bloque {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+  }
+  .inscripcion__subtitulo {
+    font-size: var(--t-cuerpo);
+    line-height: var(--lh-cuerpo);
+    font-weight: 700;
+  }
+  .incluye {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .incluye li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .incluye :global(svg) {
+    flex: none;
+    margin-top: 2px;
+    color: var(--grn);
+  }
+  .instructor-mini {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .instructor-mini__nombre {
+    display: block;
+    font-weight: 700;
+  }
+  .instructor-mini__rol {
+    display: block;
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+  }
+  .avatar {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--lila);
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .avatar--grande {
+    width: 72px;
+    height: 72px;
+    font-size: 1.5rem;
+  }
+
+  /* ─── Cómo apruebas ─── */
+  .aprobar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  .aprobar__titulo,
+  .panel__titulo {
+    font-size: var(--t-h2);
+    line-height: var(--lh-h2);
+    font-weight: 700;
+  }
+  .aprobar__lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .regla {
+    display: grid;
+    grid-template-columns: 112px 1fr;
+    align-items: center;
+    gap: var(--e3);
+    padding: var(--e4);
+    border-radius: var(--radio-tarjeta);
+  }
+  .regla--menta { background: var(--mint); }
+  .regla--lila { background: var(--lila); }
+  .regla--amarilla { background: var(--yellow-t); }
+  .regla__cifra {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+
+  /* ─── Paneles ─── */
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+    border-radius: var(--radio-control);
+  }
+  .panel[hidden] {
+    display: none;
+  }
+  .panel__texto {
+    max-width: 68ch;
+    font-size: 1.0625rem;
+    line-height: 1.75rem;
+  }
+  .instructor {
+    display: flex;
+    align-items: center;
+    gap: var(--e3);
+  }
+  .pasos-aprobar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+    margin: 0;
+    padding: var(--e4) var(--e4) var(--e4) var(--e6);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+  .pasos-aprobar li::marker {
+    font-weight: 700;
+  }
+
+  /* Temario: módulos colapsables */
+  .temario {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  .modulo {
+    overflow: hidden;
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+  .modulo__resumen {
+    display: flex;
+    align-items: center;
+    gap: var(--e3);
+    min-height: 88px;
+    padding: var(--e3) var(--e4);
+    cursor: pointer;
+    list-style: none;
+    transition: background-color var(--t-rapido) ease-out;
+  }
+  .modulo__resumen::-webkit-details-marker {
+    display: none;
+  }
+  .modulo__resumen:hover {
+    background: #fafafc;
+  }
+  .modulo__numero {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radio-control);
+    background: var(--indigo-t);
+    color: var(--indigo);
+    font-size: 1.125rem;
+    font-weight: 800;
+  }
+  .modulo[open] .modulo__numero {
+    background: var(--indigo);
+    color: var(--white);
+  }
+  .modulo__textos {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .modulo__titulo {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+  }
+  .modulo__cuenta {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+  }
+  .modulo :global(.modulo__flecha) {
+    flex: none;
+    transition: transform var(--t-medio) ease-out;
+  }
+  .modulo[open] :global(.modulo__flecha) {
+    transform: rotate(180deg);
+  }
+  .clases {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e1);
+    margin: 0;
+    padding: var(--e2) var(--e4) var(--e4) 88px;
+    list-style: none;
+    background: var(--white);
+  }
+  .clase-fila {
+    display: grid;
+    grid-template-columns: 20px 40px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--e2);
+    min-height: 48px;
+    padding: 0 var(--e3);
+    border-radius: var(--radio-control);
+    background: var(--paper);
+  }
+  .clase-fila :global(.clase-fila__icono) {
+    color: var(--indigo3);
+  }
+  .clase-fila__codigo,
+  .clase-fila__duracion {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 1199px) {
+    .detalle--publico {
+      padding: 0 var(--e4) var(--e6);
+    }
+    .detalle__rejilla {
+      grid-template-columns: minmax(0, 1fr) 360px;
+      column-gap: var(--e5);
+    }
+  }
+  @media (max-width: 999px) {
+    .detalle__rejilla {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .detalle__heroe {
+      grid-column: 1;
+    }
+    .detalle__lateral,
+    .detalle--app .detalle__lateral {
+      grid-column: 1;
+      grid-row: 2;
+      padding-top: var(--e4);
+    }
+    .detalle__principal {
+      grid-row: 3;
+    }
+    .detalle__titulo {
+      font-size: 2.5rem;
+      line-height: 3rem;
+    }
+  }
+  @media (max-width: 599px) {
+    .detalle--publico {
+      padding: 0 var(--e3) var(--e6);
+    }
+    .detalle--app .detalle__heroe {
+      padding: var(--e4);
+    }
+    .detalle__titulo {
+      font-size: var(--t-h1);
+      line-height: var(--lh-h1);
+    }
+    .clases {
+      padding: var(--e2) var(--e3) var(--e3);
+    }
+    .clase-fila {
+      grid-template-columns: 20px 36px minmax(0, 1fr);
+    }
+    .clase-fila__duracion {
+      display: none;
+    }
+    .regla {
+      grid-template-columns: 96px 1fr;
+      padding: var(--e3);
+    }
+    .regla__cifra {
+      font-size: 1.75rem;
+      line-height: 2rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .modulo :global(.modulo__flecha) {
+      transition: none;
+    }
+  }
+</style>

@@ -12,8 +12,10 @@
   --indigo-t: #e8e6f7;
   --yellow: #ffd23f;
   --yellow-d: #e6b800;
+  --yellow-t: #fff1c2; /* región amarilla suave (regla "3 intentos") */
   --mint: #dff3f0;
   --mint-d: #c6e9e3; /* menta presionada */
+  --mint-acento: #9ee0d2; /* ruta punteada e iconos sobre índigo (decorativo) */
   --lila: #d9ccf7;
   --red-t: #fde2e2;
   --red: #9b1c1c;

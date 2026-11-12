@@ -11,11 +11,15 @@ import BotonMultimodal from '../components/BotonMultimodal.astro';
 import Icono from '../components/Icono.astro';
 import { rutaSegura } from '../lib/auth';
 import { REQUISITOS_PASSWORD } from '../lib/validacion';
+import { cursoPorSlug } from '../lib/repositorio';
 
 const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error-red', 'parcial'];
 const pedido = Astro.url.searchParams.get('simular') ?? '';
 const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
-const volver = rutaSegura(Astro.url.searchParams.get('volver')) ?? '';
+// Si llega desde un curso (?curso=slug), al crear la cuenta vuelve a ese curso para inscribirse.
+const slug = Astro.url.searchParams.get('curso') ?? '';
+const nombreCurso = /^[a-z0-9-]{1,80}$/.test(slug) ? ((await cursoPorSlug(slug))?.titulo ?? '') : '';
+const volver = rutaSegura(Astro.url.searchParams.get('volver')) ?? (nombreCurso ? `/cursos/${slug}` : '');
 const sufijo = Astro.url.search && !simular ? Astro.url.search : '';
 ---
 
@@ -29,6 +33,17 @@ const sufijo = Astro.url.search && !simular ? Astro.url.search : '';
     textoParcial: 'Puedes crear tu cuenta igual; esta parte aparecerá al reconectar.',
   }}
 >
+  {
+    nombreCurso && (
+      <p slot="antes" class="aviso aviso--info">
+        <Icono nombre="info" />
+        <span>
+          Crea tu cuenta para inscribirte en <strong>{nombreCurso}</strong>. Luego volverás al curso.
+        </span>
+      </p>
+    )
+  }
+
   <section class="acceso__seccion" aria-labelledby="titulo-registro">
     <div class="acceso__encabezado">
       <h1 class="acceso__titulo" id="titulo-registro">Crea tu cuenta</h1>

@@ -7,7 +7,9 @@ export type NombreIcono =
   | 'casa' | 'libro' | 'cuadricula' | 'medalla' | 'escudo' | 'campana' | 'buscar'
   | 'historial' | 'play' | 'subir' | 'mas' | 'chevron' | 'arrastre' | 'guardar'
   | 'codigo' | 'pluma' | 'grafico' | 'chat' | 'usuarios' | 'menu' | 'cerrar'
-  | 'sonido' | 'silencio';
+  | 'red' | 'chispa' | 'subtitulos' | 'nivel' | 'usuario-mas' | 'pantalla' | 'portapapeles' | 'lapiz'
+  | 'descargar' | 'enlace' | 'enviar' | 'estrella' | 'escanear' | 'circulo' | 'punto'
+  | 'deshacer' | 'sonido' | 'silencio';
 
 interface Props {
   nombre: NombreIcono;
@@ -53,8 +55,24 @@ const trazos: Record<NombreIcono, string> = {
   usuarios: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/>',
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
   cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
-  sonido: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4v-5Z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
-  silencio: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4v-5Z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/>',
+  red: '<rect x="9.5" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/><path d="M12 8v4M5.5 16v-4h13v4"/>',
+  chispa: '<path d="M12 3c.6 4.6 3.4 7.4 9 9-5.6 1.6-8.4 4.4-9 9-.6-4.6-3.4-7.4-9-9 5.6-1.6 8.4-4.4 9-9Z"/>',
+  subtitulos: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 10.5a2 2 0 1 0 0 3M16 10.5a2 2 0 1 0 0 3"/>',
+  nivel: '<path d="M5 20v-3M10 20v-7M15 20v-11M20 20V5"/>',
+  'usuario-mas': '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/>',
+  pantalla: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><path d="m10.5 7.5 4 2.5-4 2.5v-5Z"/>',
+  portapapeles: '<rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h6"/>',
+  descargar: '<path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 20h14"/>',
+  enlace: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  enviar: '<path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4 18-7Z"/>',
+  estrella: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/>',
+  escanear: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M4 12h16"/>',
+  circulo: '<circle cx="12" cy="12" r="8.5"/>',
+  punto: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none"/>',
+  lapiz: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/>',
+  deshacer: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  sonido: '<path d="M4 9.5h3.5L12 5v14l-4.5-4.5H4v-5Z"/><path d="M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>',
+  silencio: '<path d="M4 9.5h3.5L12 5v14l-4.5-4.5H4v-5Z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/>',
 };
 ---
 

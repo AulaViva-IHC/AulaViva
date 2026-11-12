@@ -8,8 +8,17 @@ import { buscarUsuarioPorId } from './lib/repositorio';
 const PRIVADAS = ['/inicio', '/mis-cursos', '/certificados', '/clase', '/evaluacion', '/resultado', '/notificaciones', '/admin'];
 // Con sesión no tiene sentido verlas: se va directo al inicio del rol.
 const SOLO_SIN_SESION = ['/login', '/registro'];
-// Solo en desarrollo: /estados muestra el Inicio dentro de iframes sin iniciar sesión.
-const SIMULABLES = ['/inicio', '/api/inicio', '/api/esta-semana'];
+// Solo en desarrollo: /estados muestra estas pantallas (y sus APIs) dentro de iframes sin
+// iniciar sesión, con el estudiante de prueba. Son prefijos: '/cursos' vale para /cursos/[slug].
+const SIMULABLES = [
+  '/inicio', '/api/inicio', '/api/esta-semana',
+  '/mis-cursos', '/api/mis-cursos', '/api/certificado-listo',
+  '/catalogo', '/api/mi-avance', '/cursos', '/api/inscripcion',
+  '/clase', '/api/indice', '/api/progreso', '/api/materiales',
+  '/evaluacion', '/api/evaluacion', '/resultado', '/api/resultado', '/api/perfil',
+  '/certificados', '/api/certificados', '/notificaciones', '/api/notificaciones',
+  // /verificar no está: en /estados se muestra la versión pública (10-verificar).
+];
 
 function empiezaCon(ruta: string, prefijo: string): boolean {
   return ruta === prefijo || ruta.startsWith(prefijo + '/');
@@ -25,8 +34,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   let usuario = await usuarioDeCookie(context.cookies);
-  // En desarrollo, ?simular=… sin sesión de estudiante muestra el Inicio con el estudiante de prueba.
-  if (simulando && SIMULABLES.includes(pathname) && usuario?.rol !== 'estudiante') {
+  // En desarrollo, ?simular=… sin sesión de estudiante usa el estudiante de prueba.
+  if (simulando && SIMULABLES.some((p) => empiezaCon(pathname, p)) && usuario?.rol !== 'estudiante') {
     usuario = await buscarUsuarioPorId(1);
   }
   context.locals.usuario = usuario;

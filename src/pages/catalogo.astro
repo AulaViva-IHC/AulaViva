@@ -1,15 +1,76 @@
 ---
-// "Catálogo" todavía no existe: página Próximamente con el mismo layout.
-import Proximamente from '../components/Proximamente.astro';
+// Catálogo · referencias/pantallas/05b-catalogo-sesion.png
+// Con sesión: layout App (menú lateral + buscador) y el avance del estudiante en cada tarjeta.
+// Sin sesión: cabecera pública. En ambos la acción principal amarilla es "Ver curso"
+// del curso destacado (Ley de Hick). Acepta ?q= desde el buscador y ?categoria= / ?nivel=.
+import App from '../layouts/App.astro';
+import Publico from '../layouts/Publico.astro';
+import Topbar from '../components/Topbar.astro';
+import CatalogoCursos from '../components/CatalogoCursos.astro';
 
-const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 80);
-const detalle = q ? `Buscaste: “${q}”` : undefined;
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const usuario = Astro.locals.usuario;
+const BAJADA = 'Elige un curso e inscríbete gratis.';
 ---
 
-<Proximamente
-  titulo="Catálogo"
-  activo="catalogo"
-  texto="Aquí podrás explorar los cursos por categoría e inscribirte. Llega en la Fase 3."
-  icono="cuadricula"
-  detalle={detalle}
-/>
+{
+  usuario ? (
+    <App titulo="Catálogo" activo="catalogo" simular={simular}>
+      <Topbar titulo="Catálogo" buscador notificaciones>
+        <Fragment slot="bajada">{BAJADA}</Fragment>
+      </Topbar>
+      <CatalogoCursos conSesion={usuario.rol === 'estudiante'} destacadoPrincipal etiquetadoPor="titulo-catalogo" nivelTitulo={2} />
+      <span class="solo-lector" id="titulo-catalogo">Cursos del catálogo</span>
+    </App>
+  ) : (
+    <Publico titulo="Catálogo" seccion="cursos" simular={simular}>
+      <main id="contenido" tabindex="-1" class="catalogo-publico">
+        <header class="catalogo-publico__encabezado">
+          <h1 class="catalogo-publico__titulo" id="titulo-catalogo">Catálogo</h1>
+          <p class="catalogo-publico__bajada">{BAJADA}</p>
+        </header>
+        <CatalogoCursos destacadoPrincipal etiquetadoPor="titulo-catalogo" nivelTitulo={2} />
+      </main>
+    </Publico>
+  )
+}
+
+<style>
+  .catalogo-publico {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e5);
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: var(--e6) var(--e7) 104px;
+    outline: none;
+  }
+  .catalogo-publico__encabezado {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e2);
+  }
+  .catalogo-publico__titulo {
+    font-size: 2.5rem;
+    line-height: 3rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .catalogo-publico__bajada {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    color: var(--ink2);
+  }
+  @media (max-width: 1199px) {
+    .catalogo-publico {
+      padding: var(--e5) var(--e4) var(--e6);
+    }
+  }
+  @media (max-width: 599px) {
+    .catalogo-publico {
+      padding: var(--e4) var(--e3) var(--e6);
+    }
+  }
+</style>

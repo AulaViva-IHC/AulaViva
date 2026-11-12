@@ -7,7 +7,6 @@
 import Logo from './Logo.astro';
 import Badge from './Badge.astro';
 import EstadoParcial from './EstadoParcial.astro';
-import InterruptorSonido from './InterruptorSonido.astro';
 
 interface Props {
   titulo: string;
@@ -21,7 +20,6 @@ const { titulo, texto, textoParcial } = Astro.props;
 <aside class="panel oscuro" aria-label="Sobre AulaViva">
   <div class="panel__cabeza">
     <Logo tono="claro" />
-    <InterruptorSonido tono="oscuro" />
   </div>
 
   <div class="panel__cuerpo">

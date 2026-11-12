@@ -4,12 +4,11 @@ import Publico from '../layouts/Publico.astro';
 import Tarjeta from '../components/Tarjeta.astro';
 ---
 
-<Publico titulo="Términos y privacidad">
-  <a slot="cabecera" href="/registro">Crear cuenta</a>
-  <main class="contenido">
+<Publico titulo="Términos y privacidad" seccion="ninguna">
+  <main class="contenido" id="contenido" tabindex="-1">
     <h1 class="h1">Términos de uso y privacidad</h1>
     <Tarjeta class="texto">
-      <h2 class="h2">Qué datos guardamos</h2>
+      <h2 class="h2" id="privacidad">Qué datos guardamos (Ley N.° 29733)</h2>
       <p class="secundario">
         Tu nombre (para tus certificados), tu correo (para iniciar sesión) y tu avance en los cursos.
         Tu contraseña se guarda cifrada; nadie puede leerla.
@@ -33,6 +32,7 @@ import Tarjeta from '../components/Tarjeta.astro';
     max-width: 720px;
     margin: 0 auto;
     padding: var(--e6) var(--e3);
+    outline: none;
   }
   .contenido :global(.texto) {
     display: flex;

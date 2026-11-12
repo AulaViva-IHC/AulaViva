@@ -2,10 +2,10 @@
 // Botón multimodal · Redundancia sensorial (CLAUDE.md §5.8, Act. 12).
 // Es el mismo <Boton> (misma apariencia, variantes y bucle perceptual) con respuesta
 // visual, auditiva, háptica y para lector de pantalla sincronizadas por
-// retroalimentar() de src/scripts/multimodal.ts.
+// retroalimentar() de src/scripts/multimodal.ts. Sonido y vibración siempre activos (sin interruptor, WCAG 1.4.2).
 //
 // modo:
-//   "toque"       → solo respuesta al presionar (hundirse + vibración 10 ms). Para navegar.
+//   "toque"       → solo respuesta al presionar (hundirse + clic + vibración 10 ms). Para navegar o avanzar.
 //   "exito-suave" → el éxito suena y vibra más suave (acciones frecuentes: guardar borrador).
 //   "completo"    → éxito o error completos (enviar, publicar, reintentar).
 // anuncioExito / anuncioError: lo que oye el lector de pantalla (aria-live polite / assertive).

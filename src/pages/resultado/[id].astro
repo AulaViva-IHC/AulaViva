@@ -1,0 +1,427 @@
+---
+// Resultado · referencias/pantallas/08-resultado.png y modal-confirmar-nombre.png
+// [id] = id del curso. Nota del último intento, Aprobado/Desaprobado (siempre con texto),
+// intentos usados y "Obtener certificado", que abre "Confirma tu nombre" (CLAUDE.md §8).
+//   ideal    → resultado y acciones
+//   vacío    → aún no rindes la evaluación: "Ir a la evaluación"
+//   cargando → skeleton del anillo y las cifras
+//   error    → no cargó el resultado: "Reintentar"
+//   parcial  → el resultado cargó pero no el estado del certificado: "Reconectar"
+// Lógica del navegador: src/scripts/resultado.ts.
+import App from '../../layouts/App.astro';
+import Tarjeta from '../../components/Tarjeta.astro';
+import Boton from '../../components/Boton.astro';
+import BotonMultimodal from '../../components/BotonMultimodal.astro';
+import Badge from '../../components/Badge.astro';
+import Icono from '../../components/Icono.astro';
+import Campo from '../../components/Campo.astro';
+import Modal from '../../components/Modal.astro';
+import EstadoVacio from '../../components/EstadoVacio.astro';
+import EstadoError from '../../components/EstadoError.astro';
+import EstadoParcial from '../../components/EstadoParcial.astro';
+
+const usuario = Astro.locals.usuario!;
+if (usuario.rol === 'admin') return Astro.redirect('/admin/cursos/nuevo');
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const cursoId = Number(Astro.params.id) || 0;
+
+const RADIO = 96;
+const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
+---
+
+<App titulo="Resultado" activo="mis-cursos" simular={simular}>
+  <div class="resultado" data-resultado data-curso={cursoId} aria-busy="true">
+    <!-- Ideal (con skeleton) -->
+    <Tarjeta class="resultado__tarjeta" data-region="contenido">
+      <div class="confeti" aria-hidden="true" data-confeti hidden>
+        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => <span class={`confeti__pieza confeti__pieza--${i}`} />)}
+      </div>
+      <p class="resultado__ceja" data-ceja>
+        <span class="skeleton sk sk--ceja" aria-hidden="true"></span>
+      </p>
+
+      <div class="anillo" role="img" data-anillo aria-label="Cargando tu nota">
+        <svg viewBox="0 0 220 220" aria-hidden="true" focusable="false">
+          <circle cx="110" cy="110" r={RADIO} class="anillo__fondo"></circle>
+          <circle
+            cx="110"
+            cy="110"
+            r={RADIO}
+            class="anillo__avance"
+            stroke-dasharray={CIRCUNFERENCIA.toFixed(2)}
+            stroke-dashoffset={CIRCUNFERENCIA.toFixed(2)}
+            data-circunferencia={CIRCUNFERENCIA.toFixed(2)}
+            data-anillo-avance></circle>
+        </svg>
+        <span class="anillo__texto" aria-hidden="true">
+          <span class="anillo__nota"><span data-nota>–</span><span class="anillo__sobre">/20</span></span>
+          <span class="anillo__etiqueta">Tu nota</span>
+        </span>
+      </div>
+
+      <div class="resultado__veredicto" data-veredicto hidden>
+        <span data-badge-aprobado hidden><Badge tono="verde">Aprobado</Badge></span>
+        <span data-badge-desaprobado hidden><Badge tono="rojo">Desaprobado</Badge></span>
+      </div>
+
+      <h1 class="resultado__titulo" tabindex="-1" data-titulo-pagina>
+        <span class="skeleton sk sk--titulo" aria-hidden="true" data-titulo-esqueleto></span>
+        <span data-titulo></span>
+      </h1>
+      <p class="resultado__texto" data-texto></p>
+
+      <dl class="cifras">
+        <div class="cifra"><dt>Respuestas correctas</dt><dd data-cifra="correctas"><span class="skeleton sk sk--cifra" aria-hidden="true"></span></dd></div>
+        <div class="cifra"><dt>Mejor nota</dt><dd data-cifra="mejor"><span class="skeleton sk sk--cifra" aria-hidden="true"></span></dd></div>
+        <div class="cifra"><dt>Intentos usados</dt><dd data-cifra="intentos"><span class="skeleton sk sk--cifra" aria-hidden="true"></span></dd></div>
+        <div class="cifra"><dt>Contenido</dt><dd data-cifra="contenido"><span class="skeleton sk sk--cifra" aria-hidden="true"></span></dd></div>
+      </dl>
+
+      <!-- Acciones: dependen del certificado (se pide aparte → parcial) -->
+      <div class="acciones" data-acciones>
+        <Boton variante="secundario" href="/mis-cursos" textoCargando="Abriendo…" data-volver>Volver a Mis cursos</Boton>
+        <span class="skeleton sk sk--boton" aria-hidden="true" data-accion-cargando></span>
+        <span data-accion-certificado hidden>
+          <BotonMultimodal variante="principal" modo="toque" data-obtener>
+            <Icono nombre="medalla" tamano={20} />
+            Obtener certificado
+          </BotonMultimodal>
+        </span>
+        <span data-accion-enlace hidden>
+          <BotonMultimodal variante="principal" href="#" modo="toque" textoCargando="Abriendo…" data-accion-principal>
+            <span data-accion-principal-texto></span>
+          </BotonMultimodal>
+        </span>
+      </div>
+      <div class="acciones__parcial" data-cert-error hidden>
+        <EstadoParcial texto="Tu nota está guardada; el botón de tu certificado aparecerá al reconectar." multimodal />
+      </div>
+    </Tarjeta>
+
+    <!-- Vacío: aún no rinde -->
+    <Tarjeta data-region="vacio" hidden>
+      <EstadoVacio
+        titulo="Aún no rindes esta evaluación"
+        texto="Cuando la envíes, aquí verás tu nota, tus intentos y, si apruebas, el botón para obtener tu certificado."
+        icono="portapapeles"
+      >
+        <Boton variante="principal" href={`/evaluacion/${cursoId}`} textoCargando="Abriendo…" data-vacio-accion>
+          Ir a la evaluación
+        </Boton>
+      </EstadoVacio>
+    </Tarjeta>
+
+    <!-- Error -->
+    <Tarjeta data-region="error" hidden>
+      <EstadoError
+        titulo="No pudimos cargar tu resultado"
+        texto="Tu nota está guardada. Revisa tu conexión y vuelve a intentarlo."
+        multimodal
+      />
+    </Tarjeta>
+  </div>
+  <p class="solo-lector" aria-live="polite" data-anuncio-resultado></p>
+
+  <!-- Modal "Confirma tu nombre" (modal-confirmar-nombre.png) -->
+  <Modal id="modal-nombre" titulo="Confirma tu nombre">
+    <div class="confirmar" data-vista="confirmar">
+      <p>Tu certificado saldrá con este nombre:</p>
+      <p class="nombre-cert oscuro" data-nombre-cert></p>
+      <p class="aviso aviso--advertencia">
+        <Icono nombre="alerta" />
+        <span>Una vez emitido, el certificado no se puede cambiar. Si tu nombre tiene un error, corrígelo primero.</span>
+      </p>
+      <p class="aviso aviso--error" role="alert" data-emitir-error hidden>
+        <Icono nombre="alerta" />
+        <span data-emitir-error-texto></span>
+      </p>
+      <div class="modal-acciones">
+        <Boton variante="secundario" data-corregir>Corregir mi nombre</Boton>
+        <BotonMultimodal
+          variante="principal"
+          modo="completo"
+          textoCargando="Emitiendo…"
+          textoExito="¡Emitido!"
+          anuncioExito="Certificado emitido. Abriendo Mis certificados."
+          data-emitir
+        >
+          Confirmar y emitir
+        </BotonMultimodal>
+      </div>
+    </div>
+
+    <form class="corregir" data-vista="corregir" novalidate hidden>
+      <p>Escríbelo tal como quieres que aparezca: nombres y apellidos completos.</p>
+      <Campo id="nombre-nuevo" etiqueta="Nombre completo" autocomplete="name" maxlength="80" required data-nombre-nuevo />
+      <div class="modal-acciones">
+        <Boton variante="secundario" data-cancelar-correccion>Cancelar</Boton>
+        <BotonMultimodal
+          variante="principal"
+          tipo="submit"
+          modo="exito-suave"
+          textoCargando="Guardando…"
+          textoExito="¡Guardado!"
+          anuncioExito="Nombre actualizado."
+          data-guardar-nombre
+        >
+          Guardar nombre
+        </BotonMultimodal>
+      </div>
+    </form>
+  </Modal>
+</App>
+
+<script>
+  import '../../scripts/resultado';
+</script>
+
+<style>
+  .resultado {
+    display: flex;
+    flex-direction: column;
+    max-width: 1080px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  :global(.resultado__tarjeta) {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--e4);
+    padding: var(--e6) var(--e7) !important;
+    overflow: hidden;
+    text-align: center;
+  }
+  .resultado__ceja {
+    color: var(--indigo3);
+    font-weight: 700;
+  }
+  .sk { display: inline-block; vertical-align: middle; }
+  .sk--ceja { width: 360px; max-width: 70vw; height: 20px; }
+  .sk--titulo { width: 420px; max-width: 70vw; height: 48px; }
+  .sk--cifra { width: 96px; height: 32px; }
+  .sk--boton { width: 240px; height: 56px; }
+  .sk[hidden] { display: none; }
+
+  /* Anillo de la nota */
+  .anillo {
+    position: relative;
+    width: 220px;
+    height: 220px;
+  }
+  .anillo svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .anillo__fondo {
+    fill: none;
+    stroke: var(--paper);
+    stroke-width: 18;
+  }
+  .anillo__avance {
+    fill: none;
+    stroke: var(--indigo3);
+    stroke-width: 18;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .anillo[data-tono='bajo'] .anillo__avance {
+    stroke: var(--red);
+  }
+  .anillo__texto {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .anillo__nota {
+    font-size: 4.5rem;
+    line-height: 4.5rem;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+  }
+  .anillo__sobre {
+    font-size: 2rem;
+    color: var(--ink2);
+  }
+  .anillo__etiqueta {
+    color: var(--ink2);
+  }
+
+  .resultado__veredicto[hidden],
+  [data-badge-aprobado][hidden],
+  [data-badge-desaprobado][hidden] {
+    display: none;
+  }
+  .resultado__veredicto :global(.badge) {
+    min-height: 44px;
+    padding: var(--e2) var(--e4);
+    font-size: 1.125rem;
+  }
+  .resultado__titulo {
+    font-size: 2.75rem;
+    line-height: 3.25rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    outline: none;
+  }
+  .resultado__texto {
+    max-width: 52ch;
+    font-size: 1.25rem;
+    line-height: 1.875rem;
+    color: var(--ink2);
+  }
+
+  .cifras {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--e3);
+    width: 100%;
+    margin: var(--e2) 0 0;
+  }
+  .cifra {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e1);
+    padding: var(--e3) var(--e4);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+    text-align: left;
+  }
+  .cifra dt {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+  }
+  .cifra dd {
+    margin: 0;
+    font-size: 1.75rem;
+    line-height: 2.25rem;
+    font-weight: 800;
+  }
+
+  .acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--e3);
+    margin-top: var(--e3);
+  }
+  .acciones [hidden] {
+    display: none;
+  }
+  .acciones :global(.boton) {
+    min-height: 56px;
+    padding: 0 var(--e5);
+    font-size: 1.125rem;
+  }
+  .acciones__parcial {
+    width: 100%;
+    max-width: 560px;
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+    text-align: left;
+  }
+  .acciones__parcial[hidden] {
+    display: none;
+  }
+
+  /* Confeti decorativo (solo si aprueba; sin movimiento con prefers-reduced-motion) */
+  .confeti[hidden] {
+    display: none;
+  }
+  .confeti__pieza {
+    position: absolute;
+    width: 12px;
+    height: 22px;
+    border-radius: 3px;
+    animation: caer 1.2s ease-out both;
+  }
+  .confeti__pieza--0 { left: 9%; top: 6%; background: var(--yellow); transform: rotate(18deg); }
+  .confeti__pieza--1 { left: 24%; top: 9%; background: var(--lila); transform: rotate(-24deg); }
+  .confeti__pieza--2 { left: 16%; top: 16%; width: 12px; height: 12px; border-radius: 50%; background: var(--mint-acento); }
+  .confeti__pieza--3 { left: 12%; top: 29%; width: 10px; height: 10px; border-radius: 50%; background: var(--lila); }
+  .confeti__pieza--4 { right: 18%; top: 7%; background: var(--mint-acento); transform: rotate(40deg); }
+  .confeti__pieza--5 { right: 25%; top: 15%; background: var(--lila); transform: rotate(-12deg); }
+  .confeti__pieza--6 { right: 10%; top: 19%; width: 16px; height: 16px; border-radius: 50%; background: var(--yellow); }
+  .confeti__pieza--7 { right: 11%; top: 32%; width: 22px; height: 12px; background: var(--yellow); transform: rotate(-30deg); }
+  @keyframes caer {
+    from { opacity: 0; translate: 0 -24px; }
+    to { opacity: 1; translate: 0 0; }
+  }
+
+  /* Modal */
+  .confirmar,
+  .corregir {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  .confirmar[hidden],
+  .corregir[hidden] {
+    display: none;
+  }
+  .nombre-cert {
+    padding: var(--e5) var(--e4);
+    border-radius: var(--radio-tarjeta);
+    background: var(--indigo);
+    color: var(--white);
+    font-size: 1.75rem;
+    line-height: 2.25rem;
+    font-weight: 800;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .modal-acciones {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--e3);
+    margin-top: var(--e2);
+  }
+  .modal-acciones :global(.boton) {
+    width: 100%;
+  }
+
+  @media (max-width: 899px) {
+    :global(.resultado__tarjeta) {
+      padding: var(--e5) var(--e4) !important;
+    }
+    .cifras {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .resultado__titulo {
+      font-size: var(--t-h1);
+      line-height: var(--lh-h1);
+    }
+  }
+  @media (max-width: 599px) {
+    .modal-acciones {
+      grid-template-columns: 1fr;
+    }
+    .modal-acciones > :global(:last-child) {
+      order: -1;
+    }
+    .acciones {
+      flex-direction: column-reverse;
+      width: 100%;
+    }
+    .acciones :global(.boton) {
+      width: 100%;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .confeti__pieza {
+      animation: none;
+    }
+    .anillo__avance {
+      transition: none;
+    }
+  }
+</style>

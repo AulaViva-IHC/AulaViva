@@ -1,0 +1,102 @@
+---
+// Portada de un curso (01-catalogo, 02-detalle, 05-mis-cursos): fondo de color del curso,
+// la ruta punteada de AulaViva y el icono del tema. Es decorativa (aria-hidden);
+// solo la etiqueta "Destacado" / "Nuevo" se lee, porque informa.
+// En las listas que pinta el navegador se usa sin props dentro de un <template>:
+// el script pone el color (style), el icono ([data-portada-icono]) y la etiqueta.
+import Icono from './Icono.astro';
+import Badge from './Badge.astro';
+import type { EtiquetaCurso, IconoCurso } from '../lib/repositorio';
+
+interface Props {
+  color?: string;
+  icono?: IconoCurso;
+  etiqueta?: EtiquetaCurso;
+  /** "normal" (tarjeta), "grande" (detalle) o "mini" (fila de Mis cursos). */
+  tamano?: 'normal' | 'grande' | 'mini';
+  class?: string;
+}
+const { color, icono, etiqueta = null, tamano = 'normal', class: clase } = Astro.props;
+---
+
+<div class:list={['portada', `portada--${tamano}`, clase]} style={color ? `--portada: ${color}` : undefined} data-portada>
+  <svg class="portada__ruta" viewBox="0 0 320 150" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path d="M0 140 C 40 120, 60 80, 80 70 S 130 50, 160 52 S 220 60, 260 30 S 300 10, 320 0" />
+  </svg>
+  <span class="portada__punto portada__punto--a" aria-hidden="true"></span>
+  <span class="portada__punto portada__punto--b" aria-hidden="true"></span>
+  <span class="portada__punto portada__punto--c" aria-hidden="true"></span>
+  <span class="portada__icono" aria-hidden="true" data-portada-icono>
+    {icono && <Icono nombre={icono} tamano={tamano === 'mini' ? 28 : 40} />}
+  </span>
+  <span class="portada__etiqueta" data-portada-etiqueta>
+    {etiqueta === 'destacado' && <Badge tono="destacado">Destacado</Badge>}
+    {etiqueta === 'nuevo' && <Badge tono="nuevo">Nuevo</Badge>}
+  </span>
+</div>
+
+<style>
+  .portada {
+    --portada: var(--indigo2);
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 2 / 1;
+    background: var(--portada);
+    color: var(--white);
+  }
+  .portada--grande {
+    aspect-ratio: 2.1 / 1;
+  }
+  .portada--mini {
+    aspect-ratio: 1.55 / 1;
+    border-radius: var(--radio-tarjeta);
+  }
+  .portada__ruta {
+    position: absolute;
+    inset: 12% 0 6% 0;
+    width: 100%;
+    height: 82%;
+  }
+  .portada__ruta path {
+    fill: none;
+    stroke: rgb(255 255 255 / 0.55);
+    stroke-width: 2.5;
+    stroke-dasharray: 1 7;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .portada__punto {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .portada__punto--a { left: 22%; top: 55%; background: var(--yellow); }
+  .portada__punto--b { left: 48%; top: 44%; background: var(--lila); }
+  .portada__punto--c { left: 79%; top: 18%; background: var(--mint-acento); }
+  .portada__icono {
+    position: absolute;
+    right: 9%;
+    bottom: 13%;
+    display: grid;
+  }
+  .portada__etiqueta {
+    position: absolute;
+    left: 0;
+    top: var(--e3);
+  }
+  .portada__etiqueta :global(.badge) {
+    min-height: 28px;
+    padding: 2px 10px;
+    border-radius: 0 var(--radio-control) var(--radio-control) 0;
+    font-size: var(--t-nota);
+    line-height: var(--lh-nota);
+  }
+  .portada__etiqueta:empty {
+    display: none;
+  }
+  .portada--mini .portada__punto {
+    width: 8px;
+    height: 8px;
+  }
+</style>

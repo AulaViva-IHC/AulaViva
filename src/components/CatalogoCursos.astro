@@ -1,0 +1,379 @@
+---
+// Catálogo de cursos: filtros + rejilla + estados. Lo usan "/" (portada pública) y "/catalogo".
+// Los cursos llegan de /api/cursos (skeleton mientras tanto); los filtros se aplican en el
+// navegador y quedan en la URL (?categoria=&nivel=&q=) para poder compartirla.
+//   Ley de Hick: 4 categorías principales + "Todos"; los temas se buscan escribiendo.
+//   Ley de Miller: 5 pestañas + 4 niveles a la vista (9 elementos de decisión).
+//   Con sesión además pide /api/mi-avance para marcar "Inscrito · 45 %" (si falla: parcial).
+// Lógica del navegador: src/scripts/catalogo.ts.
+import Icono from './Icono.astro';
+import Boton from './Boton.astro';
+import Badge from './Badge.astro';
+import PortadaCurso from './PortadaCurso.astro';
+import EstadoVacio from './EstadoVacio.astro';
+import EstadoError from './EstadoError.astro';
+import EstadoParcial from './EstadoParcial.astro';
+import { CATEGORIAS, NIVELES } from '../lib/validacion-curso';
+import type { IconoCurso } from '../lib/repositorio';
+
+interface Props {
+  /** Con sesión: pide el avance del estudiante. */
+  conSesion?: boolean;
+  /**
+   * La tarjeta "Destacado" lleva la acción principal amarilla (en /catalogo).
+   * En la portada no: allí la acción principal es "Ver el curso" del encabezado (Ley de Hick).
+   */
+  destacadoPrincipal?: boolean;
+  /** Id del encabezado que nombra la sección. */
+  etiquetadoPor: string;
+  /** Nivel del título de cada curso: 3 bajo un h2 (portada), 2 directamente bajo el h1 (/catalogo). */
+  nivelTitulo?: 2 | 3;
+}
+const { conSesion = false, destacadoPrincipal = false, etiquetadoPor, nivelTitulo = 3 } = Astro.props;
+const TituloCurso = nivelTitulo === 2 ? 'h2' : 'h3';
+
+const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chispa'];
+---
+
+<div
+  class="catalogo"
+  data-catalogo
+  data-sesion={conSesion ? '' : undefined}
+  data-destacado-principal={destacadoPrincipal ? '' : undefined}
+>
+  <div class="filtros">
+    <div class="filtros__categorias" role="group" aria-label="Categoría">
+      <button type="button" class="filtro-categoria" aria-pressed="true" data-categoria="">Todos</button>
+      {
+        CATEGORIAS.map((c) => (
+          <button type="button" class="filtro-categoria" aria-pressed="false" data-categoria={c.id}>
+            {c.texto}
+          </button>
+        ))
+      }
+    </div>
+    <div class="filtros__niveles" role="group" aria-labelledby="filtro-nivel">
+      <span class="filtros__etiqueta" id="filtro-nivel">Nivel</span>
+      <button type="button" class="filtro-nivel" aria-pressed="true" data-nivel="">Todos</button>
+      {
+        NIVELES.map((n) => (
+          <button type="button" class="filtro-nivel" aria-pressed="false" data-nivel={n.id}>
+            {n.texto}
+          </button>
+        ))
+      }
+    </div>
+  </div>
+
+  <p class="busqueda" data-busqueda hidden>
+    <Icono nombre="buscar" tamano={18} />
+    <span>Resultados para “<strong data-busqueda-texto></strong>”</span>
+    <button type="button" class="enlace" data-quitar-busqueda>Quitar búsqueda</button>
+  </p>
+
+  {
+    conSesion && (
+      <EstadoParcial
+        class="catalogo__parcial"
+        texto="Los cursos se ven y puedes abrirlos; tu avance en cada uno aparecerá al reconectar."
+        multimodal
+        data-avance-error
+        hidden
+      />
+    )
+  }
+
+  <!-- Ideal + cargando (skeleton) -->
+  <ul class="rejilla" data-rejilla aria-labelledby={etiquetadoPor} aria-busy="true">
+    {
+      [0, 1, 2, 3, 4, 5].map(() => (
+        <li class="curso curso--esqueleto" aria-hidden="true" data-esqueleto>
+          <span class="skeleton sk-portada" />
+          <span class="curso__cuerpo">
+            <span class="skeleton sk sk--titulo" />
+            <span class="skeleton sk sk--linea" />
+            <span class="skeleton sk sk--corta" />
+            <span class="skeleton sk sk--corta" />
+            <span class="skeleton sk sk--boton" />
+          </span>
+        </li>
+      ))
+    }
+  </ul>
+
+  <!-- Vacío: ningún curso con estos filtros -->
+  <div class="catalogo__vacio" data-region="vacio" hidden>
+    <EstadoVacio
+      titulo="No hay cursos con estos filtros"
+      texto="Prueba con otra categoría u otro nivel, o limpia los filtros para ver todos los cursos."
+      icono="buscar"
+    >
+      <Boton variante={destacadoPrincipal ? 'principal' : 'secundario'} data-limpiar>
+        <Icono nombre="reintentar" tamano={18} />
+        Limpiar filtros
+      </Boton>
+    </EstadoVacio>
+  </div>
+
+  <!-- Error: no cargó la lista -->
+  <div class="catalogo__vacio" data-region="error" hidden>
+    <EstadoError
+      titulo="No pudimos cargar los cursos"
+      texto="Revisa tu conexión a internet y vuelve a intentarlo."
+      variante={destacadoPrincipal ? 'principal' : 'secundario'}
+      multimodal
+    />
+  </div>
+
+  <p class="solo-lector" aria-live="polite" data-anuncio-catalogo></p>
+
+  <!-- Plantillas que usa el script -->
+  <template data-plantilla="curso">
+    <li class="curso">
+      <PortadaCurso />
+      <div class="curso__cuerpo">
+        <TituloCurso class="curso__titulo" data-titulo></TituloCurso>
+        <p class="curso__resumen" data-resumen></p>
+        <ul class="curso__datos">
+          <li><Icono nombre="libro" tamano={18} /><span data-clases></span></li>
+          <li><Icono nombre="reloj" tamano={18} /><span data-horas></span></li>
+          <li><Icono nombre="nivel" tamano={18} /><span data-nivel></span></li>
+        </ul>
+        <p class="curso__avance" data-avance hidden></p>
+        <Boton variante="secundario" href="#" bloque class="curso__boton" textoCargando="Abriendo curso…" data-ver>
+          Ver curso<span class="solo-lector" data-ver-titulo></span>
+        </Boton>
+      </div>
+    </li>
+  </template>
+  {ICONOS.map((i) => <template data-plantilla={`icono-${i}`}><Icono nombre={i} tamano={40} /></template>)}
+  <template data-plantilla="etiqueta-destacado"><Badge tono="destacado">Destacado</Badge></template>
+  <template data-plantilla="etiqueta-nuevo"><Badge tono="nuevo">Nuevo</Badge></template>
+  <template data-plantilla="avance-inscrito"><Badge tono="lila" icono="libro">Inscrito</Badge></template>
+  <template data-plantilla="avance-aprobado"><Badge tono="verde">Aprobado</Badge></template>
+</div>
+
+<script>
+  import '../scripts/catalogo';
+</script>
+
+<style>
+  .catalogo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+
+  /* ─── Filtros ────────────────────────────────────────── */
+  .filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e3) var(--e4);
+  }
+  .filtros__categorias {
+    display: flex;
+    gap: var(--e1) var(--e4);
+    flex-wrap: wrap;
+  }
+  .filtro-categoria {
+    min-height: var(--alto-control);
+    padding: 0 var(--e1);
+    border: 0;
+    background: none;
+    color: var(--ink2);
+    font-size: 1.0625rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 -3px 0 transparent;
+    transition:
+      color var(--t-rapido) ease-out,
+      box-shadow var(--t-rapido) ease-out,
+      transform var(--t-rapido) ease-out;
+  }
+  .filtro-categoria:hover {
+    color: var(--ink);
+  }
+  .filtro-categoria[aria-pressed='true'] {
+    color: var(--ink);
+    box-shadow: inset 0 -3px 0 var(--ink);
+  }
+  .filtros__niveles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e2);
+  }
+  .filtros__etiqueta {
+    margin-right: var(--e1);
+    color: var(--ink2);
+    font-weight: 600;
+  }
+  .filtro-nivel {
+    min-height: 40px;
+    padding: 0 var(--e3);
+    border: 0;
+    border-radius: 999px;
+    background: var(--white); /* sobre el fondo gris de la página */
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+      background-color var(--t-rapido) ease-out,
+      color var(--t-rapido) ease-out,
+      transform var(--t-rapido) ease-out;
+  }
+  .filtro-nivel:hover {
+    background: var(--indigo-t);
+    color: var(--ink);
+  }
+  .filtro-nivel[aria-pressed='true'] {
+    background: var(--indigo-t);
+    color: var(--indigo3);
+    box-shadow: inset 0 0 0 2px var(--indigo3);
+  }
+  .filtro-categoria:active,
+  .filtro-nivel:active {
+    transform: scale(0.97);
+    transition-duration: 40ms;
+  }
+
+  .busqueda {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e2) var(--e3);
+    padding: 12px var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+  .busqueda[hidden] {
+    display: none;
+  }
+  .busqueda .enlace {
+    min-height: 32px;
+  }
+
+  .catalogo__parcial {
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+
+  /* ─── Rejilla de cursos ──────────────────────────────── */
+  .rejilla {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--e4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .rejilla[hidden] {
+    display: none;
+  }
+  .rejilla :global(.curso) {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+  .rejilla :global(.curso__cuerpo),
+  .curso__cuerpo {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--e2);
+    padding: var(--e4);
+  }
+  .rejilla :global(.curso__titulo) {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .rejilla :global(.curso__resumen) {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+  }
+  .rejilla :global(.curso__datos) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e1);
+    margin: var(--e1) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+  }
+  .rejilla :global(.curso__datos li) {
+    display: flex;
+    align-items: center;
+    gap: var(--e2);
+  }
+  .rejilla :global(.curso__datos svg) {
+    flex: none;
+    color: var(--ink2);
+  }
+  .rejilla :global(.curso__avance) {
+    margin-top: var(--e1);
+  }
+  .rejilla :global(.curso__avance[hidden]) {
+    display: none;
+  }
+  /* El botón siempre al pie de la tarjeta, al menos a 16 px de los datos */
+  .rejilla :global(.curso__boton) {
+    margin-top: auto;
+  }
+  .rejilla :global(.curso__datos),
+  .rejilla :global(.curso__avance) {
+    margin-bottom: var(--e3);
+  }
+
+  /* Skeleton */
+  .curso--esqueleto .sk-portada {
+    display: block;
+    aspect-ratio: 2 / 1;
+    border-radius: 0;
+  }
+  .sk {
+    display: block;
+  }
+  .sk--titulo { width: 75%; height: 26px; }
+  .sk--linea { width: 90%; height: 16px; }
+  .sk--corta { width: 45%; height: 16px; }
+  .sk--boton { width: 100%; height: 48px; margin-top: var(--e3); }
+
+  .catalogo__vacio {
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+  .catalogo__vacio[hidden] {
+    display: none;
+  }
+
+  @media (max-width: 1099px) {
+    .rejilla {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 679px) {
+    .rejilla {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .filtros__categorias {
+      gap: var(--e1) var(--e3);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .filtro-categoria:active,
+    .filtro-nivel:active {
+      transform: none;
+    }
+  }
+</style>

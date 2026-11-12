@@ -1,24 +1,22 @@
 ---
 // Barra superior de las páginas con menú lateral: título (h1) y, a la derecha,
 // el buscador con sugerencias y búsquedas recientes (referencia 04b-inicio-buscador).
-// Ranuras: "migas" (ruta sobre el título) y "acciones" (a la derecha).
+// Ranuras: "migas" (ruta sobre el título), "bajada" (texto bajo el título) y "acciones" (a la derecha).
 import Icono from './Icono.astro';
-import InterruptorSonido from './InterruptorSonido.astro';
 
 interface Props {
   titulo: string;
   buscador?: boolean;
   notificaciones?: boolean;
-  /** Interruptor "Sonido y vibración" (páginas con BotonMultimodal, §5.8). */
-  sonido?: boolean;
 }
-const { titulo, buscador = false, notificaciones = false, sonido = false } = Astro.props;
+const { titulo, buscador = false, notificaciones = false } = Astro.props;
 ---
 
 <header class="barra">
   <div class="barra__titulos">
     <slot name="migas" />
     <h1 class="barra__titulo" tabindex="-1" data-titulo-pagina>{titulo}</h1>
+    {Astro.slots.has('bajada') && <p class="barra__bajada"><slot name="bajada" /></p>}
   </div>
 
   <div class="barra__acciones">
@@ -72,7 +70,6 @@ const { titulo, buscador = false, notificaciones = false, sonido = false } = Ast
       )
     }
     <slot name="acciones" />
-    {sonido && <InterruptorSonido />}
   </div>
 </header>
 
@@ -101,6 +98,11 @@ const { titulo, buscador = false, notificaciones = false, sonido = false } = Ast
     font-weight: 800;
     letter-spacing: -0.03em;
     outline: none;
+  }
+  .barra__bajada {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    color: var(--ink2);
   }
   .barra__acciones {
     display: flex;
