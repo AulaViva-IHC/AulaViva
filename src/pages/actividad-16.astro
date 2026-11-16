@@ -1,0 +1,770 @@
+---
+// Act. 16 · Formulario accesible con cambio automático de entrada (voz / teclado).
+// Tarea: buscar un curso y filtrarlo por categoría, entera por voz o entera con teclado/clic/táctil.
+// Un solo estado compartido (texto + categoría): lo dictado aparece en el campo y nada se borra
+// al cambiar de modo. Si la voz falla, el formulario pasa solo al teclado con un aviso que dice
+// qué hacer (y suena la firma de Error, §5.9).
+//   /actividad-16            → la búsqueda
+//   /actividad-16?prueba=1   → además, el panel "Simular fallo" con el registro de eventos
+//   ?simular=ideal|vacio|cargando|error|parcial (solo desarrollo) → los 5 estados de los resultados
+// Lógica del navegador: src/scripts/actividad-16.ts (firmas de src/scripts/multimodal.ts).
+import App from '../layouts/App.astro';
+import Topbar from '../components/Topbar.astro';
+import Tarjeta from '../components/Tarjeta.astro';
+import Boton from '../components/Boton.astro';
+import BotonMultimodal from '../components/BotonMultimodal.astro';
+import Campo from '../components/Campo.astro';
+import Badge from '../components/Badge.astro';
+import Icono from '../components/Icono.astro';
+import EstadoVacio from '../components/EstadoVacio.astro';
+import EstadoError from '../components/EstadoError.astro';
+import EstadoParcial from '../components/EstadoParcial.astro';
+import { CATEGORIAS } from '../lib/validacion-curso';
+
+const prueba = Astro.url.searchParams.get('prueba') === '1';
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && ['ideal', 'vacio', 'cargando', 'error', 'parcial'].includes(pedido) ? pedido : '';
+
+const COMANDOS = [
+  ['buscar diseño web', 'Escribe «diseño web» en la búsqueda.'],
+  ['categoría negocios', 'Filtra por una categoría (tecnología, diseño, negocios o habilidades blandas).'],
+  ['quitar filtro', 'Vuelve a mostrar todas las categorías.'],
+  ['borrar', 'Borra el texto de la búsqueda.'],
+  ['mostrar resultados', 'Lleva a la lista de cursos y dice cuántos hay.'],
+  ['usar teclado', 'Deja de escuchar y pone el cursor en el campo.'],
+  ['usar voz', 'Vuelve a escuchar (también con el botón «Hablar»).'],
+];
+
+const SIMULACIONES = [
+  { id: 'sin-soporte', texto: 'Navegador sin dictado', regla: 'Regla 1' },
+  { id: 'not-allowed', texto: 'Permiso de micrófono negado', regla: 'Regla 2' },
+  { id: 'audio-capture', texto: 'Sin micrófono', regla: 'Regla 3' },
+  { id: 'network', texto: 'Sin conexión para dictar', regla: 'Regla 4' },
+  { id: 'confianza', texto: 'Resultado con confianza 0,42', regla: 'Regla 5 · púlsalo 2 veces' },
+  { id: 'no-speech', texto: 'No se escuchó nada', regla: 'Regla 6 · púlsalo 2 veces' },
+  { id: 'conflicto', texto: 'Voz «diseño» + clic «negocios»', regla: 'Conflicto voz / clic' },
+];
+---
+
+<App titulo="Búsqueda por voz o teclado" activo="actividad-16" simular={simular}>
+  <Topbar titulo="Busca un curso por voz o con el teclado">
+    <Fragment slot="bajada">
+      Act. 16 · Usa el modo que prefieras. Si la voz falla, pasamos al teclado sin borrar lo que hiciste.
+    </Fragment>
+  </Topbar>
+
+  <div class="a16" data-a16 data-prueba={prueba ? '' : undefined}>
+    <!-- Conflicto voz vs clic: tarjeta alertdialog (no modal, sin límite de tiempo) -->
+    <Tarjeta
+      como="div"
+      tono="oscura"
+      class="conflicto"
+      role="alertdialog"
+      aria-labelledby="conflicto-titulo"
+      aria-describedby="conflicto-ayuda"
+      data-conflicto
+      hidden
+    >
+      <h2 class="h2" id="conflicto-titulo" data-conflicto-titulo>Dijiste X y tocaste Y. ¿Cuál quieres?</h2>
+      <p class="conflicto__ayuda" id="conflicto-ayuda">
+        No apliqué ninguna de las dos. Elige con un botón, con las teclas 1 o 2, o di «uno» o «dos».
+        Esc cierra sin cambiar nada.
+      </p>
+      <div class="conflicto__opciones">
+        <button type="button" class="opcion" data-opcion="1">
+          <kbd class="opcion__tecla" aria-hidden="true">1</kbd>
+          <Icono nombre="sonido" tamano={24} />
+          <span class="opcion__texto" data-opcion-texto>X</span>
+          <span class="opcion__origen">Lo dijiste</span>
+        </button>
+        <button type="button" class="opcion" data-opcion="2">
+          <kbd class="opcion__tecla" aria-hidden="true">2</kbd>
+          <Icono nombre="cuadricula" tamano={24} />
+          <span class="opcion__texto" data-opcion-texto>Y</span>
+          <span class="opcion__origen">Lo tocaste</span>
+        </button>
+      </div>
+    </Tarjeta>
+
+    <!-- 1 · El formulario -->
+    <Tarjeta aria-labelledby="buscar-titulo">
+      <form class="form" role="search" aria-labelledby="buscar-titulo" novalidate data-form>
+        <div class="form__cabecera">
+          <h2 class="h2" id="buscar-titulo">Buscar curso</h2>
+          <p class="modo" data-modo>
+            <span class="modo__texto">Modo: <strong data-modo-texto>Teclado</strong></span>
+            <!-- Semáforo de la voz: siempre icono + texto (WCAG 1.4.1) -->
+            <span data-semaforo="lista"><Badge tono="verde" icono="sonido">Voz lista</Badge></span>
+            <span data-semaforo="escuchando" hidden><Badge tono="naranja" icono="reloj">Escuchando…</Badge></span>
+            <span data-semaforo="no-disponible" hidden><Badge tono="rojo" icono="silencio">Voz no disponible</Badge></span>
+          </p>
+        </div>
+
+        <!-- Aviso del cambio de modo (visible); el lector lo oye por las regiones aria-live -->
+        <p class="aviso aviso--advertencia" data-aviso hidden>
+          <Icono nombre="alerta" tamano={20} />
+          <span data-aviso-texto></span>
+        </p>
+
+        <!-- Sugerencias que no cambian el modo ni roban el foco -->
+        <div class="sugerencia" data-sugerencia="escribir" hidden>
+          <Icono nombre="info" tamano={20} />
+          <p>No te escuchamos. ¿Prefieres escribir?</p>
+          <Boton variante="secundario" data-ir-teclado>
+            <Icono nombre="lapiz" tamano={18} />
+            Escribir
+          </Boton>
+          <button type="button" class="enlace" data-cerrar-sugerencia>Seguir con voz</button>
+        </div>
+        <div class="sugerencia" data-sugerencia="voz" hidden>
+          <Icono nombre="info" tamano={20} />
+          <p>¿Te cuesta escribir? Puedes dictar tu búsqueda.</p>
+          <Boton variante="secundario" data-ir-voz>
+            <Icono nombre="sonido" tamano={18} />
+            Usar voz
+          </Boton>
+          <button type="button" class="enlace" data-cerrar-sugerencia>Cerrar <span class="pequeno">(Esc)</span></button>
+        </div>
+
+        <div class="form__fila">
+          <Campo
+            id="busqueda"
+            etiqueta="¿Qué curso buscas?"
+            ayuda="Escribe, o pulsa «Hablar» y di: buscar diseño."
+            type="search"
+            autocomplete="off"
+            maxlength={80}
+            class="form__campo"
+            data-busqueda
+          />
+          <div class="voz" data-voz>
+            <Boton variante="secundario" class="hablar" data-hablar aria-describedby="hablar-estado">
+              <span class="hablar__icono hablar__icono--lista"><Icono nombre="sonido" tamano={20} /></span>
+              <span class="hablar__icono hablar__icono--escuchando"><Icono nombre="reloj" tamano={20} /></span>
+              <span class="hablar__icono hablar__icono--no-disponible"><Icono nombre="silencio" tamano={20} /></span>
+              <span data-hablar-texto>Hablar</span>
+            </Boton>
+            <p class="voz__estado pequeno secundario" id="hablar-estado" data-hablar-estado>Lista para escuchar.</p>
+          </div>
+        </div>
+        <p class="oido pequeno" data-oido hidden>
+          <Icono nombre="chat" tamano={16} />
+          <span>Oyendo: «<span data-oido-texto></span>»</span>
+        </p>
+
+        <div class="categorias" role="group" aria-labelledby="categorias-etiqueta">
+          <span class="categorias__etiqueta" id="categorias-etiqueta">Categoría</span>
+          <button type="button" class="categoria" aria-pressed="true" data-categoria="">Todas</button>
+          {
+            CATEGORIAS.map((c) => (
+              <button type="button" class="categoria" aria-pressed="false" data-categoria={c.id}>
+                {c.texto}
+              </button>
+            ))
+          }
+        </div>
+
+        <p class="orden pequeno" data-orden hidden>
+          <Icono nombre="check" tamano={16} />
+          <span data-orden-texto></span>
+        </p>
+
+        <div class="form__acciones">
+          <BotonMultimodal
+            variante="principal"
+            tipo="submit"
+            modo="completo"
+            textoCargando="Buscando…"
+            textoExito="¡Listo!"
+            data-mostrar
+          >
+            <Icono nombre="buscar" tamano={18} />
+            Mostrar resultados
+          </BotonMultimodal>
+        </div>
+
+        <details class="comandos">
+          <summary>Qué puedo decir</summary>
+          <dl>
+            {
+              COMANDOS.map(([frase, efecto]) => (
+                <div>
+                  <dt>«{frase}»</dt>
+                  <dd>{efecto}</dd>
+                </div>
+              ))
+            }
+          </dl>
+          <p class="pequeno secundario">No importan las tildes ni las mayúsculas. Esc deja de escuchar.</p>
+        </details>
+      </form>
+    </Tarjeta>
+
+    <!-- 2 · Resultados con los 5 estados -->
+    <Tarjeta aria-labelledby="resultados-titulo" class="resultados">
+      <div class="resultados__cabecera">
+        <h2 class="h2" id="resultados-titulo" tabindex="-1" data-resultados-titulo>Resultados</h2>
+        <p class="secundario" data-resumen>Cargando cursos…</p>
+      </div>
+
+      <EstadoParcial
+        texto="Los cursos se ven y puedes abrirlos; tu avance en cada uno aparecerá al reconectar."
+        multimodal
+        data-avance-error
+        hidden
+      />
+
+      <ul class="lista" aria-labelledby="resultados-titulo" aria-busy="true" data-lista>
+        {
+          [0, 1, 2].map(() => (
+            <li class="curso curso--esqueleto" aria-hidden="true" data-esqueleto>
+              <span class="skeleton sk sk--titulo" />
+              <span class="skeleton sk sk--linea" />
+            </li>
+          ))
+        }
+      </ul>
+
+      <div data-region="vacio" hidden>
+        <EstadoVacio
+          titulo="No hay cursos con esta búsqueda"
+          texto="Prueba con otras palabras o quita el filtro de categoría. Por voz di «quitar filtro» o «borrar»."
+          icono="buscar"
+        >
+          <Boton variante="secundario" data-limpiar>
+            <Icono nombre="reintentar" tamano={18} />
+            Quitar filtro y búsqueda
+          </Boton>
+        </EstadoVacio>
+      </div>
+
+      <div data-region="error" hidden>
+        <EstadoError
+          titulo="No pudimos cargar los cursos"
+          texto="Revisa tu conexión a internet y vuelve a intentarlo. Lo que escribiste o dictaste se conserva."
+          variante="secundario"
+          multimodal
+        />
+      </div>
+
+      <template data-plantilla="curso">
+        <li class="curso">
+          <a class="curso__titulo" data-enlace></a>
+          <p class="curso__datos pequeno secundario">
+            <span data-categoria-texto></span> · <span data-nivel></span> · <span data-horas></span>
+          </p>
+          <span class="curso__avance" data-avance hidden></span>
+        </li>
+      </template>
+      <template data-plantilla="avance-inscrito"><Badge tono="lila" icono="libro"><span data-badge-texto></span></Badge></template>
+      <template data-plantilla="avance-aprobado"><Badge tono="verde"><span data-badge-texto></span></Badge></template>
+    </Tarjeta>
+
+    {
+      prueba && (
+        <Tarjeta tono="gris" aria-labelledby="prueba-titulo" class="prueba" data-panel-prueba>
+          <h2 class="h2" id="prueba-titulo">Simular fallo</h2>
+          <p class="secundario">
+            Fuerza cada regla sin tocar el micrófono. Cada evento queda en el registro con su hora y si se conservaron
+            los datos.
+          </p>
+          <ul class="simulaciones">
+            {SIMULACIONES.map((s) => (
+              <li>
+                <button type="button" class="simular" data-simular-fallo={s.id}>
+                  <span class="simular__texto">{s.texto}</span>
+                  <span class="simular__regla">{s.regla}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <form class="dictado" novalidate data-form-dictado>
+            <Campo
+              id="dictado"
+              etiqueta="Simular dictado (confianza 0,92)"
+              ayuda="Escribe una frase como si la dijeras: «categoría diseño», «usar voz»…"
+              autocomplete="off"
+              maxlength={80}
+              sobreGris
+            />
+            <Boton variante="secundario" tipo="submit">
+              <Icono nombre="enviar" tamano={18} />
+              Dictar
+            </Boton>
+          </form>
+
+          <h3 class="prueba__subtitulo">Registro</h3>
+          <div class="tabla-scroll" role="region" aria-label="Registro de eventos" tabindex="0">
+            <table class="tabla">
+              <caption class="solo-lector">Eventos de la prueba: hora, regla, mensaje y si se conservaron los datos</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Hora</th>
+                  <th scope="col">Regla</th>
+                  <th scope="col">Mensaje</th>
+                  <th scope="col">Datos conservados</th>
+                </tr>
+              </thead>
+              <tbody data-registro>
+                <tr data-registro-vacio>
+                  <td colspan="4">Aún no hay eventos. Pulsa una simulación o usa la búsqueda.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="prueba__acciones">
+            <BotonMultimodal
+              variante="secundario"
+              modo="exito-suave"
+              textoCargando="Copiando…"
+              textoExito="Copiado"
+              anuncioExito="Registro copiado."
+              data-copiar
+            >
+              <Icono nombre="portapapeles" tamano={18} />
+              Copiar registro
+            </BotonMultimodal>
+          </div>
+          <div class="copiar-manual" data-copiar-manual hidden>
+            <label for="registro-texto" class="pequeno">Tu navegador no dejó copiar. Selecciona el texto y cópialo con Ctrl + C:</label>
+            <textarea id="registro-texto" rows="6" readonly data-copiar-texto></textarea>
+          </div>
+        </Tarjeta>
+      )
+    }
+
+    <p class="solo-lector" aria-live="polite" data-anuncio></p>
+    <template data-plantilla="ic-check"><Icono nombre="check" tamano={16} /></template>
+    <template data-plantilla="ic-alerta"><Icono nombre="alerta" tamano={16} /></template>
+  </div>
+</App>
+
+<script>
+  import '../scripts/actividad-16';
+</script>
+
+<style>
+  .a16 {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+
+  /* Formulario */
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e4);
+  }
+  .form__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e2) var(--e3);
+  }
+  .modo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e2);
+  }
+  .modo [hidden] {
+    display: none;
+  }
+  .form__fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--e3);
+  }
+  .form__fila :global(.form__campo) {
+    flex: 1 1 320px;
+  }
+  .voz {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e1);
+    /* El botón queda a la altura del campo (etiqueta 24 px + 8 px) */
+    padding-top: calc(var(--lh-cuerpo) + var(--e2));
+    min-width: 200px;
+  }
+  .voz :global(.hablar) {
+    min-width: 200px;
+  }
+  .hablar__icono {
+    display: none;
+  }
+  [data-voz='lista'] .hablar__icono--lista,
+  [data-voz='escuchando'] .hablar__icono--escuchando,
+  [data-voz='no-disponible'] .hablar__icono--no-disponible {
+    display: inline-flex;
+  }
+  [data-voz='escuchando'] :global(.hablar) {
+    background: var(--org-t);
+    color: var(--org);
+  }
+  .oido,
+  .orden {
+    display: flex;
+    align-items: center;
+    gap: var(--e1);
+    margin-top: calc(var(--e3) * -1);
+  }
+  .oido {
+    color: var(--ink2);
+  }
+  .orden {
+    color: var(--grn);
+    font-weight: 600;
+  }
+  .oido[hidden],
+  .orden[hidden] {
+    display: none;
+  }
+
+  .sugerencia {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e2) var(--e3);
+    padding: var(--e2) var(--e3);
+    border-radius: var(--radio-control);
+    background: var(--mint);
+  }
+  .sugerencia p {
+    flex: 1 1 220px;
+    font-weight: 600;
+  }
+  .sugerencia[hidden] {
+    display: none;
+  }
+  .sugerencia .enlace {
+    min-height: var(--alto-control);
+    padding: 0 var(--e1);
+  }
+
+  .categorias {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e2);
+  }
+  .categorias__etiqueta {
+    margin-right: var(--e1);
+    font-weight: 600;
+  }
+  .categoria {
+    min-height: var(--alto-control);
+    padding: 0 var(--e3);
+    border: 0;
+    border-radius: var(--radio-control);
+    background: var(--paper);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      transform var(--t-rapido) ease-out,
+      background-color var(--t-rapido) ease-out;
+  }
+  .categoria:hover {
+    transform: scale(1.02);
+  }
+  .categoria:active,
+  .categoria[data-presion='abajo'] {
+    transform: scale(0.97);
+  }
+  /* Seleccionada: fondo de selección + check (no solo color) */
+  .categoria[aria-pressed='true'] {
+    background: var(--indigo-t);
+    color: var(--ink);
+    box-shadow: inset 0 -3px 0 var(--indigo3);
+  }
+  .categoria[aria-pressed='true']::before {
+    content: '✓ ';
+  }
+  .form__acciones {
+    display: flex;
+  }
+
+  .comandos summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--alto-control);
+    color: var(--indigo3);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .comandos dl {
+    display: grid;
+    gap: var(--e1);
+    margin: var(--e1) 0 var(--e2);
+  }
+  .comandos dl div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e1) var(--e2);
+  }
+  .comandos dt {
+    font-weight: 700;
+  }
+
+  /* Conflicto */
+  .conflicto {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  .conflicto[hidden] {
+    display: none;
+  }
+  .conflicto h2 {
+    outline: none;
+  }
+  .conflicto__ayuda {
+    max-width: 72ch;
+  }
+  .conflicto__opciones {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--e3);
+  }
+  .opcion {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--e1);
+    min-height: 136px;
+    padding: var(--e3);
+    border: 0;
+    border-radius: var(--radio-tarjeta);
+    background: var(--mint);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+      transform var(--t-rapido) ease-out,
+      background-color 120ms ease-out;
+  }
+  .opcion:hover {
+    transform: scale(1.02);
+  }
+  .opcion:active,
+  .opcion[data-presion='abajo'] {
+    transform: scale(0.97);
+    background: var(--mint-d);
+  }
+  .opcion__texto {
+    font-size: var(--t-h2);
+    line-height: var(--lh-h2);
+  }
+  .opcion__origen {
+    font-weight: 500;
+    color: var(--ink2);
+  }
+  .opcion__tecla {
+    position: absolute;
+    top: var(--e1);
+    left: var(--e2);
+    font: inherit;
+    font-size: var(--t-pequeno);
+  }
+
+  /* Resultados */
+  .resultados__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--e1) var(--e3);
+    margin-bottom: var(--e3);
+  }
+  .resultados__cabecera h2 {
+    outline: none;
+  }
+  .resultados :global([data-avance-error]) {
+    margin-bottom: var(--e3);
+  }
+  .lista {
+    display: grid;
+    gap: var(--e2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lista[hidden] {
+    display: none;
+  }
+  .curso {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e1);
+    padding: var(--e3);
+    border-radius: var(--radio-control);
+    background: var(--paper);
+  }
+  .curso__titulo {
+    align-self: flex-start;
+    color: var(--indigo3);
+    font-weight: 700;
+    font-size: 1.0625rem;
+  }
+  .curso__avance[hidden] {
+    display: none;
+  }
+  .sk {
+    height: 16px;
+  }
+  .sk--titulo {
+    width: 45%;
+    height: 20px;
+    background: var(--white);
+  }
+  .sk--linea {
+    width: 30%;
+    background: var(--white);
+  }
+
+  /* Panel de pruebas */
+  .prueba {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  .simulaciones {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--e2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .simular {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    min-height: 64px;
+    padding: var(--e2) var(--e3);
+    border: 0;
+    border-radius: var(--radio-control);
+    background: var(--white);
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: transform var(--t-rapido) ease-out;
+  }
+  .simular:hover {
+    transform: scale(1.02);
+  }
+  .simular:active,
+  .simular[data-presion='abajo'] {
+    transform: scale(0.97);
+  }
+  .simular__texto {
+    font-weight: 700;
+  }
+  .simular__regla {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+  }
+  .dictado {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--e3);
+  }
+  .dictado :global(.campo) {
+    flex: 1 1 320px;
+  }
+  .dictado > :global(.boton) {
+    margin-top: calc(var(--lh-cuerpo) + var(--e2));
+  }
+  .prueba__subtitulo {
+    font-size: var(--t-cuerpo);
+    font-weight: 700;
+  }
+  .tabla-scroll {
+    overflow-x: auto;
+    border-radius: var(--radio-control);
+  }
+  .tabla {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: separate;
+    border-spacing: 0 var(--e1);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+  }
+  .tabla th,
+  .tabla td {
+    padding: var(--e2);
+    text-align: left;
+    vertical-align: top;
+  }
+  .tabla thead th {
+    color: var(--ink2);
+    font-weight: 600;
+  }
+  .tabla tbody td {
+    background: var(--white);
+  }
+  .a16 :global(.conservado) {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 700;
+  }
+  .a16 :global(.conservado--si) {
+    color: var(--grn);
+  }
+  .a16 :global(.conservado--no) {
+    color: var(--red);
+  }
+  .prueba__acciones {
+    display: flex;
+  }
+  .copiar-manual {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e1);
+  }
+  .copiar-manual[hidden] {
+    display: none;
+  }
+  .copiar-manual textarea {
+    padding: var(--e2);
+    border: 0;
+    border-radius: var(--radio-control);
+    background: var(--white);
+    font: 13px/1.4 ui-monospace, monospace;
+  }
+
+  @media (max-width: 699px) {
+    .voz,
+    .voz :global(.hablar) {
+      width: 100%;
+      padding-top: 0;
+    }
+    .conflicto__opciones {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .dictado > :global(.boton) {
+      margin-top: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .categoria,
+    .opcion,
+    .simular {
+      transform: none !important;
+    }
+  }
+</style>
