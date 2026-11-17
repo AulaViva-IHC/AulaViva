@@ -5,6 +5,9 @@
 //   Ley de Hick: 4 categorías principales + "Todos"; los temas se buscan escribiendo.
 //   Ley de Miller: 5 pestañas + 4 niveles a la vista (9 elementos de decisión).
 //   Con sesión además pide /api/mi-avance para marcar "Inscrito · 45 %" (si falla: parcial).
+// Act. 17: con `i18n` (portada "/") la interfaz sale del diccionario en el idioma de la cookie y
+// cambia al instante con el selector (data-i18n + evento "idioma:cambio"). Sin `i18n`, en español.
+// Cada tarjeta muestra el inicio (DD/MM/AAAA · hora) y el precio (S/ 49.90 o "Gratis").
 // Lógica del navegador: src/scripts/catalogo.ts.
 import Icono from './Icono.astro';
 import Boton from './Boton.astro';
@@ -15,6 +18,7 @@ import EstadoError from './EstadoError.astro';
 import EstadoParcial from './EstadoParcial.astro';
 import { CATEGORIAS, NIVELES } from '../lib/validacion-curso';
 import type { IconoCurso } from '../lib/repositorio';
+import { traductor } from '../i18n';
 
 interface Props {
   /** Con sesión: pide el avance del estudiante. */
@@ -28,11 +32,17 @@ interface Props {
   etiquetadoPor: string;
   /** Nivel del título de cada curso: 3 bajo un h2 (portada), 2 directamente bajo el h1 (/catalogo). */
   nivelTitulo?: 2 | 3;
+  /** Act. 17: interfaz traducida con el idioma de la página. */
+  i18n?: boolean;
 }
-const { conSesion = false, destacadoPrincipal = false, etiquetadoPor, nivelTitulo = 3 } = Astro.props;
+const { conSesion = false, destacadoPrincipal = false, etiquetadoPor, nivelTitulo = 3, i18n = false } = Astro.props;
 const TituloCurso = nivelTitulo === 2 ? 'h2' : 'h3';
 
 const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chispa'];
+const idioma = i18n ? Astro.locals.idioma : 'es';
+const t = traductor(idioma, i18n && Astro.locals.estres);
+/** data-i18n solo cuando el catálogo se traduce. */
+const k = (clave: string) => (i18n ? clave : undefined);
 ---
 
 <div
@@ -40,25 +50,28 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
   data-catalogo
   data-sesion={conSesion ? '' : undefined}
   data-destacado-principal={destacadoPrincipal ? '' : undefined}
+  data-i18n-catalogo={i18n ? '' : undefined}
+  lang={i18n ? idioma : undefined}
+  data-i18n-lang={i18n ? '' : undefined}
 >
   <div class="filtros">
-    <div class="filtros__categorias" role="group" aria-label="Categoría">
-      <button type="button" class="filtro-categoria" aria-pressed="true" data-categoria="">Todos</button>
+    <div class="filtros__categorias" role="group" aria-label={t('catalogo.categoria')} data-i18n-attr={i18n ? 'aria-label:catalogo.categoria' : undefined}>
+      <button type="button" class="filtro-categoria" aria-pressed="true" data-categoria="" data-i18n={k('catalogo.todos')}>{t('catalogo.todos')}</button>
       {
         CATEGORIAS.map((c) => (
-          <button type="button" class="filtro-categoria" aria-pressed="false" data-categoria={c.id}>
-            {c.texto}
+          <button type="button" class="filtro-categoria" aria-pressed="false" data-categoria={c.id} data-i18n={k(`catalogo.categorias.${c.id}`)}>
+            {t(`catalogo.categorias.${c.id}`)}
           </button>
         ))
       }
     </div>
     <div class="filtros__niveles" role="group" aria-labelledby="filtro-nivel">
-      <span class="filtros__etiqueta" id="filtro-nivel">Nivel</span>
-      <button type="button" class="filtro-nivel" aria-pressed="true" data-nivel="">Todos</button>
+      <span class="filtros__etiqueta" id="filtro-nivel" data-i18n={k('catalogo.nivel')}>{t('catalogo.nivel')}</span>
+      <button type="button" class="filtro-nivel" aria-pressed="true" data-nivel="" data-i18n={k('catalogo.todos')}>{t('catalogo.todos')}</button>
       {
         NIVELES.map((n) => (
-          <button type="button" class="filtro-nivel" aria-pressed="false" data-nivel={n.id}>
-            {n.texto}
+          <button type="button" class="filtro-nivel" aria-pressed="false" data-nivel={n.id} data-i18n={k(`catalogo.niveles.${n.id}`)}>
+            {t(`catalogo.niveles.${n.id}`)}
           </button>
         ))
       }
@@ -67,15 +80,17 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
 
   <p class="busqueda" data-busqueda hidden>
     <Icono nombre="buscar" tamano={18} />
-    <span>Resultados para “<strong data-busqueda-texto></strong>”</span>
-    <button type="button" class="enlace" data-quitar-busqueda>Quitar búsqueda</button>
+    <span><span data-i18n={k('catalogo.resultadosPara')}>{t('catalogo.resultadosPara')}</span> “<strong data-busqueda-texto></strong>”</span>
+    <button type="button" class="enlace" data-quitar-busqueda data-i18n={k('catalogo.quitarBusqueda')}>{t('catalogo.quitarBusqueda')}</button>
   </p>
 
   {
     conSesion && (
       <EstadoParcial
         class="catalogo__parcial"
-        texto="Los cursos se ven y puedes abrirlos; tu avance en cada uno aparecerá al reconectar."
+        texto={t('catalogo.avanceParcial')}
+        i18n={i18n}
+        claveTexto={k('catalogo.avanceParcial')}
         multimodal
         data-avance-error
         hidden
@@ -101,16 +116,12 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
     }
   </ul>
 
-  <!-- Vacío: ningún curso con estos filtros -->
+  <!-- Vacío: ningún curso con estos filtros (el script pone el título y el texto en el idioma actual) -->
   <div class="catalogo__vacio" data-region="vacio" hidden>
-    <EstadoVacio
-      titulo="No hay cursos con estos filtros"
-      texto="Prueba con otra categoría u otro nivel, o limpia los filtros para ver todos los cursos."
-      icono="buscar"
-    >
+    <EstadoVacio titulo={t('catalogo.vacioTitulo')} texto={t('catalogo.vacioTexto')} icono="buscar">
       <Boton variante={destacadoPrincipal ? 'principal' : 'secundario'} data-limpiar>
         <Icono nombre="reintentar" tamano={18} />
-        Limpiar filtros
+        <span data-i18n={k('catalogo.limpiar')}>{t('catalogo.limpiar')}</span>
       </Boton>
     </EstadoVacio>
   </div>
@@ -118,8 +129,11 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
   <!-- Error: no cargó la lista -->
   <div class="catalogo__vacio" data-region="error" hidden>
     <EstadoError
-      titulo="No pudimos cargar los cursos"
-      texto="Revisa tu conexión a internet y vuelve a intentarlo."
+      titulo={t('catalogo.errorTitulo')}
+      texto={t('error.texto')}
+      i18n={i18n}
+      claveTitulo={k('catalogo.errorTitulo')}
+      claveTexto={k('error.texto')}
       variante={destacadoPrincipal ? 'principal' : 'secundario'}
       multimodal
     />
@@ -132,25 +146,36 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
     <li class="curso">
       <PortadaCurso />
       <div class="curso__cuerpo">
-        <TituloCurso class="curso__titulo" data-titulo></TituloCurso>
-        <p class="curso__resumen" data-resumen></p>
+        <!-- Contenido del curso: queda en español -->
+        <TituloCurso class="curso__titulo" lang="es" data-titulo></TituloCurso>
+        <p class="curso__resumen" lang="es" data-resumen></p>
         <ul class="curso__datos">
           <li><Icono nombre="libro" tamano={18} /><span data-clases></span></li>
           <li><Icono nombre="reloj" tamano={18} /><span data-horas></span></li>
           <li><Icono nombre="nivel" tamano={18} /><span data-nivel></span></li>
+          <li data-inicio-fila><Icono nombre="calendario" tamano={18} /><span data-inicio></span></li>
+          <li><Icono nombre="moneda" tamano={18} /><span data-precio></span></li>
         </ul>
         <p class="curso__avance" data-avance hidden></p>
-        <Boton variante="secundario" href="#" bloque class="curso__boton" textoCargando="Abriendo curso…" data-ver>
-          Ver curso<span class="solo-lector" data-ver-titulo></span>
+        <Boton
+          variante="secundario"
+          href="#"
+          bloque
+          class="curso__boton"
+          textoCargando={t('heroe.abriendoCurso')}
+          claveCargando={k('heroe.abriendoCurso')}
+          data-ver
+        >
+          <span data-i18n={k('catalogo.verCurso')}>{t('catalogo.verCurso')}</span><span class="solo-lector" data-ver-titulo></span>
         </Boton>
       </div>
     </li>
   </template>
   {ICONOS.map((i) => <template data-plantilla={`icono-${i}`}><Icono nombre={i} tamano={40} /></template>)}
-  <template data-plantilla="etiqueta-destacado"><Badge tono="destacado">Destacado</Badge></template>
-  <template data-plantilla="etiqueta-nuevo"><Badge tono="nuevo">Nuevo</Badge></template>
-  <template data-plantilla="avance-inscrito"><Badge tono="lila" icono="libro">Inscrito</Badge></template>
-  <template data-plantilla="avance-aprobado"><Badge tono="verde">Aprobado</Badge></template>
+  <template data-plantilla="etiqueta-destacado"><Badge tono="destacado"><span data-i18n={k('catalogo.destacado')}>{t('catalogo.destacado')}</span></Badge></template>
+  <template data-plantilla="etiqueta-nuevo"><Badge tono="nuevo"><span data-i18n={k('catalogo.nuevo')}>{t('catalogo.nuevo')}</span></Badge></template>
+  <template data-plantilla="avance-inscrito"><Badge tono="lila" icono="libro">{t('catalogo.inscrito')}</Badge></template>
+  <template data-plantilla="avance-aprobado"><Badge tono="verde">{t('catalogo.aprobado')}</Badge></template>
 </div>
 
 <script>
@@ -177,9 +202,15 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
     gap: var(--e1) var(--e4);
     flex-wrap: wrap;
   }
+  /* Act. 17: botones y chips con alto mínimo y ancho según el texto (nunca ancho fijo ni ellipsis):
+     con un texto largo (quechua o ?i18n=estres) pasan a 2 líneas en vez de desbordar. */
   .filtro-categoria {
+    min-width: fit-content;
+    max-width: 100%;
     min-height: var(--alto-control);
-    padding: 0 var(--e1);
+    padding: var(--e1) var(--e1);
+    line-height: 1.25;
+    text-align: center;
     border: 0;
     background: none;
     color: var(--ink2);
@@ -211,8 +242,12 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
     font-weight: 600;
   }
   .filtro-nivel {
+    min-width: fit-content;
+    max-width: 100%;
     min-height: 40px;
-    padding: 0 var(--e3);
+    padding: var(--e1) var(--e3);
+    line-height: 1.25;
+    text-align: center;
     border: 0;
     border-radius: 999px;
     background: var(--white); /* sobre el fondo gris de la página */
@@ -263,9 +298,10 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
   }
 
   /* ─── Rejilla de cursos ──────────────────────────────── */
+  /* 3 columnas en escritorio, 2 en tableta, 1 en móvil, sin media queries: cada tarjeta mide al menos 300 px */
   .rejilla {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
     gap: var(--e4);
     margin: 0;
     padding: 0;
@@ -295,6 +331,7 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
     line-height: 1.75rem;
     font-weight: 800;
     letter-spacing: -0.01em;
+    overflow-wrap: anywhere; /* solo parte palabras que no caben en la tarjeta */
   }
   .rejilla :global(.curso__resumen) {
     color: var(--ink2);
@@ -313,11 +350,15 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
   }
   .rejilla :global(.curso__datos li) {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--e2);
+  }
+  .rejilla :global(.curso__datos li[hidden]) {
+    display: none;
   }
   .rejilla :global(.curso__datos svg) {
     flex: none;
+    margin-top: 1px;
     color: var(--ink2);
   }
   .rejilla :global(.curso__avance) {
@@ -357,15 +398,7 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
     display: none;
   }
 
-  @media (max-width: 1099px) {
-    .rejilla {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
   @media (max-width: 679px) {
-    .rejilla {
-      grid-template-columns: minmax(0, 1fr);
-    }
     .filtros__categorias {
       gap: var(--e1) var(--e3);
     }

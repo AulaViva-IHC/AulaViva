@@ -1,14 +1,19 @@
 ---
 // Logo de AulaViva: cuadro amarillo con la "A" y el nombre.
+import { traductor } from '../i18n';
+
 interface Props {
   /** 'claro' para fondos oscuros (texto blanco), 'oscuro' para fondos claros. */
   tono?: 'claro' | 'oscuro';
   href?: string;
+  /** Act. 17: nombre accesible traducido (cabecera y pie públicos). */
+  i18n?: boolean;
 }
-const { tono = 'oscuro', href = '/' } = Astro.props;
+const { tono = 'oscuro', href = '/', i18n = false } = Astro.props;
+const etiqueta = i18n ? traductor(Astro.locals.idioma, Astro.locals.estres)('meta.logo') : 'AulaViva, ir al inicio';
 ---
 
-<a class:list={['logo', `logo--${tono}`]} href={href} aria-label="AulaViva, ir al inicio">
+<a class:list={['logo', `logo--${tono}`]} href={href} aria-label={etiqueta} data-i18n-attr={i18n ? 'aria-label:meta.logo' : undefined}>
   <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
     <rect width="40" height="40" rx="8" fill="#FFD23F"></rect>
     <path d="M12 30 20 10l8 20" fill="none" stroke="#17153B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>

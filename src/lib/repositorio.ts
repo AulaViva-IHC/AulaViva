@@ -112,6 +112,10 @@ export interface Curso {
   categoria: Categoria;
   nivel: Nivel;
   horas: number;
+  /** Soles; 0 = gratis (DEMO, Act. 17). */
+  precio: number;
+  /** Fecha ISO de inicio, o null si no tiene (DEMO, Act. 17). */
+  inicio: string | null;
   etiqueta: EtiquetaCurso;
   color: string;
   icono: IconoCurso;
@@ -144,6 +148,10 @@ export interface CursoResumen {
   nivel: Nivel;
   horas: number;
   clases: number;
+  /** Soles; 0 = gratis. */
+  precio: number;
+  /** Fecha ISO de inicio (-05:00) o null. */
+  inicio: string | null;
   etiqueta: EtiquetaCurso;
   color: string;
   icono: IconoCurso;
@@ -323,6 +331,8 @@ function desdePublicado(p: CursoPublicado): Curso {
     categoria: p.categoria,
     nivel: p.nivel,
     horas: p.horas,
+    precio: 0, // los cursos del administrador aún no tienen precio ni fecha de inicio
+    inicio: null,
     etiqueta: 'nuevo',
     color: COLOR_CATEGORIA[p.categoria],
     icono: ICONO_CATEGORIA[p.categoria],
@@ -505,6 +515,8 @@ function aResumen(c: Curso): CursoResumen {
     nivel: c.nivel,
     horas: c.horas,
     clases: c.totalClases,
+    precio: c.precio,
+    inicio: c.inicio,
     etiqueta: c.etiqueta,
     color: c.color,
     icono: c.icono,

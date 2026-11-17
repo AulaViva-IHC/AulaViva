@@ -1,0 +1,50 @@
+{
+  "meta": { "titulo": "Chiqanchakuq certificadoyuq yachaykuna", "saltar": "Ukuman riy", "descripcion": "Pisi yachaykuna videopi yachachikuywan subtitulokunawan, codigoyuq QR-niyuq certificadowan, pipas chiqanchanampaq.", "logo": "AulaViva, ir al inicio" },
+  "idioma": { "etiqueta": "Simi", "es": "Español", "qu": "Runasimi" },
+  "nav": { "cursos": "Yachaykuna", "comoFunciona": "Imaynam llamkan", "verificar": "Certificadota chiqanchay", "iniciarSesion": "Yaykuy", "crearCuenta": "Cuentaykita kamay", "irInicio": "Qallariyniyman riy", "abriendo": "Kichachkan…", "principal": "Hatun ñan" },
+  "heroe": { "badge": "Akllasqa yachay", "tituloRespaldo": "Pisi yachaykunawan yachay, certificadoykitapas chaskiy", "parcial": "Akllasqa yachayqa internet kutimuptinmi rikurinqa; uraypi yachaykunaqa llamkanmi.", "verCurso": "Yachayta qaway", "verTodos": "Llapan yachaykunata qaway", "abriendoCurso": "Yachayta kichachkan…", "bajando": "Uraykuchkan…", "cargado": "Akllasqa yachay apamusqañam.", "sigueSinCargar": "Akllasqa yachayqa manaraqmi rikurinchu. Internetniykita qaway.", "region": "Akllasqa yachay", "h1": "AulaViva: cursos virtuales con certificado verificable" },
+  "ilustracion": { "modulo": "Raki", "certificado": "Certificado", "aprobacion": "Atipasqa certificado" },
+  "beneficios": {
+    "ritmo": { "titulo": "Allillamanta yachay", "texto": "Munasqayki pachapi ñawpaqman riy, mana kamachisqa pachayuq." },
+    "subtitulos": { "titulo": "Subtitulokunayuq yachachikuykuna", "texto": "Pisi videokuna, subtitulokunayuq, materialkunayuqpas." },
+    "qr": { "titulo": "QR-niyuq certificado", "texto": "Pipas codigonwan chiqanchayta atinmi." }
+  },
+  "catalogo": {
+    "titulo": "Imata yachanaykita akllay",
+    "bajada": "Pisi yachaykuna yachaqkunapaq llamkaqkunapaqpas, videopi yachachikuywan chiqanchakuq certificadowan.",
+    "todos": "Llapan", "nivel": "Pata", "categoria": "Imayna yachay",
+    "categorias": { "tecnologia": "Tecnologia", "diseno": "Diseño", "negocios": "Rantinakuy", "habilidades-blandas": "Llampu atiykuna" },
+    "niveles": { "basico": "Qallariy pata", "intermedio": "Chawpi pata", "avanzado": "Ñawpaq pata" },
+    "nivelesTarjeta": { "basico": "Qallariy pata", "intermedio": "Chawpi pata", "avanzado": "Ñawpaq pata" },
+    "resultadosPara": "Maskasqayki:", "quitarBusqueda": "Maskayta qichuy",
+    "vacioTitulo": "Kay akllasqakunawanqa manam yachaykuna kanchu", "vacioBusqueda": "Manam tarinchikchu yachaykunata kaypaq:",
+    "vacioTexto": "Huk imayna yachaywan utaq huk patawan maskay, utaq akllasqakunata pichay llapan yachaykunata qawanaykipaq.",
+    "limpiar": "Akllasqakunata pichay", "ningunoAnuncio": "Manam mayqan yachaypas tupanchu. Akllasqakunata pichayta atinki.",
+    "filtrosQuitados": "Akllasqakuna pichasqañam. Llapan yachaykunam rikurichkan.",
+    "errorTitulo": "Manam yachaykunata apamuyta atirqanchikchu", "errorAnuncio": "Manam yachaykunata apamuyta atirqanchikchu. «Yapamanta ruway» nisqata ñitiy.",
+    "siguenSinCargar": "Yachaykunaqa manaraqmi apamusqachu. Internetniykita qaway, hinaspa yapamanta ruway.",
+    "cargados": "Yachaykuna apamusqañam.", "cargando": "Yachaykunata apamuchkan",
+    "verCurso": "Yachayta qaway", "destacado": "Akllasqa", "nuevo": "Musuq", "inscrito": "Qillqasqa", "aprobado": "Atipasqa",
+    "inscritoAvance": "Qillqasqa · {n} %",
+    "clases": "{n} yachachikuy", "horas": "{n} hora", "cursos": "{n} yachay", "cursoUno": "{n} yachay",
+    "precio": "Chanin", "gratis": "Yanqalla", "inicio": "Qallariynin",
+    "avanceParcial": "Los cursos se ven y puedes abrirlos; tu avance en cada uno aparecerá al reconectar.",
+    "avanceCargado": "Tu avance se cargó.",
+    "avanceSigue": "Tu avance sigue sin cargar. Revisa tu conexión y vuelve a intentarlo."
+  },
+  "error": { "titulo": "Manam kay paginata apamuyta atirqanchikchu", "texto": "Internetniykita qaway, hinaspa yapamanta ruway.", "reintentar": "Yapamanta ruway", "reintentando": "Yapamanta ruwachkan…", "cargado": "¡Apamusqañam!" },
+  "parcial": { "titulo": "Manam kay rakita apamuyta atirqanchikchu", "texto": "El resto de la página funciona; esta parte aparecerá al reconectar.", "reconectar": "Yapamanta tinkiy", "reconectando": "Yapamanta tinkichkan…", "conectado": "¡Tinkisqañam!" },
+  "ciclo": {
+    "titulo": "Kaynatam AulaVivapi yachanki", "bajada": "Tawa ñan, sapa rakipi kutipakuq.",
+    "mira": { "titulo": "Qaway", "texto": "Pisi videokuna subtitulokunayuq, sapa yachaypa imarayku kasqanta imayna kasqantapas willakuq." },
+    "practica": { "titulo": "Kamarikuy", "texto": "Yachasqaykita kikiyki ruwayniykipi churanaykipaq ruwanakuna qillqakunapas." },
+    "certifica": { "titulo": "Certificakuy", "texto": "Codigoyuq QR-niyuq certificado, pipas chiqanchanampaq." },
+    "evalua": { "titulo": "Tupuy", "texto": "Tukupay tupuy, kimsa kutipaq. 20-manta 14-wan atipanki." }
+  },
+  "pasos": {
+    "titulo": "¿Imaynatataq certificadoyta chaskisaq?", "paso": "{n} ñiqi ñan",
+    "crearCuenta": "Cuentaykita kamay", "inscribete": "Huk yachaypi qillqakuy", "completa": "Yachachikuykunata tukuy", "aprueba": "Tupuyta atipay", "descarga": "Certificadoykita uraykachiy",
+    "crearGratis": "Cuentayta yanqalla kamay", "irInicio": "Qallariyniyman riy"
+  },
+  "pie": { "escuela": "Ingeniería de Sistemas e Informática Yachay Wasi, UNAMBA. 2026", "privacidad": "Pakasqa willakuykunata waqaychay (29733 Kamachiy)", "terminos": "Kamachikuykuna", "verificar": "Certificadota chiqanchay", "actualizado": "Musuqchasqa", "navegacion": "Paginapa chakin" }
+}

@@ -1,18 +1,29 @@
 ---
 // Pie de las páginas públicas (01-catalogo, 02-detalle, 10-verificar).
+// Act. 17: textos traducidos (data-i18n) y "Actualizado: <fecha y hora del servidor>"
+// con los formatos regionales (DD/MM/AAAA · 12 h en español, 24 h en quechua, zona Lima).
 import Logo from './Logo.astro';
+import { formatearFechaHora, traductor } from '../i18n';
+
+const { idioma, estres } = Astro.locals;
+const t = traductor(idioma, estres);
+const ahora = new Date();
 ---
 
-<footer class="pie oscuro">
+<footer class="pie oscuro" lang={idioma} data-i18n-lang>
   <div class="pie__marca">
-    <Logo tono="claro" />
-    <p class="pie__texto">Escuela de Ingeniería de Sistemas e Informática, UNAMBA. 2026</p>
+    <Logo tono="claro" i18n />
+    <p class="pie__texto" data-i18n="pie.escuela">{t('pie.escuela')}</p>
+    <p class="pie__texto">
+      <span data-i18n="pie.actualizado">{t('pie.actualizado')}</span>:
+      <time datetime={ahora.toISOString()} data-formato="fecha-hora">{formatearFechaHora(ahora, idioma)}</time>
+    </p>
   </div>
-  <nav aria-label="Pie de página">
+  <nav aria-label={t('pie.navegacion')} data-i18n-attr="aria-label:pie.navegacion">
     <ul class="pie__enlaces">
-      <li><a href="/terminos#privacidad">Política de privacidad (Ley N.° 29733)</a></li>
-      <li><a href="/terminos">Términos y condiciones</a></li>
-      <li><a href="/verificar">Verificar certificado</a></li>
+      <li><a href="/terminos#privacidad" data-i18n="pie.privacidad">{t('pie.privacidad')}</a></li>
+      <li><a href="/terminos" data-i18n="pie.terminos">{t('pie.terminos')}</a></li>
+      <li><a href="/verificar" data-i18n="pie.verificar">{t('pie.verificar')}</a></li>
     </ul>
   </nav>
 </footer>
@@ -32,6 +43,7 @@ import Logo from './Logo.astro';
     display: flex;
     flex-direction: column;
     gap: var(--e2);
+    min-width: 0;
   }
   .pie__texto {
     font-size: var(--t-pequeno);

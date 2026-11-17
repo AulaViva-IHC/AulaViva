@@ -17,6 +17,9 @@ type Props = {
   auto?: boolean;
   textoCargando?: string;
   textoExito?: string;
+  /** Act. 17: claves i18n de los textos de carga y éxito (los cambia el selector de idioma). */
+  claveCargando?: string;
+  claveExito?: string;
 } & Omit<HTMLAttributes<'button'>, 'type'>;
 
 const {
@@ -27,6 +30,8 @@ const {
   auto = false,
   textoCargando = href ? 'Abriendo…' : 'Guardando…',
   textoExito = '¡Listo!',
+  claveCargando,
+  claveExito,
   class: clase,
   ...resto
 } = Astro.props;
@@ -42,7 +47,7 @@ const clases = ['boton', `boton--${variante}`, bloque && 'boton--bloque', clase]
       </span>
       <span class="boton__capa boton__cargando" aria-hidden="true">
         <span class="girador" />
-        <span data-texto-cargando>{textoCargando}</span>
+        <span data-texto-cargando data-i18n={claveCargando}>{textoCargando}</span>
       </span>
       <span class="boton__barra" aria-hidden="true" />
     </a>
@@ -60,11 +65,11 @@ const clases = ['boton', `boton--${variante}`, bloque && 'boton--bloque', clase]
       </span>
       <span class="boton__capa boton__cargando" aria-hidden="true">
         <span class="girador" />
-        <span data-texto-cargando>{textoCargando}</span>
+        <span data-texto-cargando data-i18n={claveCargando}>{textoCargando}</span>
       </span>
       <span class="boton__capa boton__exito" aria-hidden="true">
         <Icono nombre="check" tamano={20} />
-        <span data-texto-exito>{textoExito}</span>
+        <span data-texto-exito data-i18n={claveExito}>{textoExito}</span>
       </span>
       <span class="boton__barra" aria-hidden="true" />
     </button>

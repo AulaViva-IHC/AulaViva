@@ -6,10 +6,15 @@
 //   parcial  → con sesión, la lista cargó pero "tu avance" no: "Reconectar"
 //              (en la portada, el parcial es el curso destacado: ver portada.ts)
 // Los filtros quedan en la URL (?categoria=&nivel=&q=) sin recargar la página.
+// Act. 17: todos los textos salen de t() en el idioma actual (si el catálogo lleva data-i18n-catalogo;
+// si no, en español). Al cambiar de idioma (evento "idioma:cambio") se vuelven a pintar las tarjetas.
+// Inicio y precio con los formatos regionales de src/i18n (DD/MM/AAAA · hora, S/ 49.90 o "Gratis").
 import { ponerEstado, estaOcupado } from './boton';
 import { iniciarProgreso, procesar, retroalimentar } from './multimodal';
 import { $, $$, anunciar, completarCarga, enfocar, ESPERA_EXITO_MS, esperar, pedirJSON, plantilla, simulacion } from './util';
 import { normalizarBusqueda } from '../lib/validacion';
+import { formatearFechaHora, formatearPrecio, t, type Idioma, type Variables } from '../i18n';
+import { EVENTO_IDIOMA, idiomaActual, tr } from './idioma';
 
 interface CursoResumen {
   slug: string;
@@ -19,6 +24,8 @@ interface CursoResumen {
   nivel: 'basico' | 'intermedio' | 'avanzado';
   horas: number;
   clases: number;
+  precio: number;
+  inicio: string | null;
   etiqueta: 'destacado' | 'nuevo' | null;
   color: string;
   icono: string;
@@ -49,6 +56,11 @@ function iniciar(raiz: HTMLElement): void {
   const botonesCategoria = $$<HTMLButtonElement>('[data-categoria]', raiz);
   const botonesNivel = $$<HTMLButtonElement>('[data-nivel]', raiz);
   const avanceError = raiz.querySelector<HTMLElement>('[data-avance-error]');
+
+  // ─── Idioma (Act. 17) ─────────────────────────────────────────────
+  const traducido = raiz.dataset.i18nCatalogo !== undefined;
+  let idioma: Idioma = traducido ? idiomaActual() : 'es';
+  const tx = (clave: string, variables?: Variables) => (traducido ? tr(idioma, clave, variables) : t('es', clave, variables));
 
   // ─── Filtros (desde la URL) ───────────────────────────────────────
   const url = new URL(window.location.href);
@@ -94,8 +106,6 @@ function iniciar(raiz: HTMLElement): void {
   }
 
   // ─── Pintar ───────────────────────────────────────────────────────
-  const NIVEL = { basico: 'Nivel básico', intermedio: 'Nivel intermedio', avanzado: 'Nivel avanzado' };
-
   function tarjeta(c: CursoResumen): DocumentFragment {
     const t = plantilla('curso', raiz);
     const portada = $<HTMLElement>('[data-portada]', t);
@@ -104,9 +114,14 @@ function iniciar(raiz: HTMLElement): void {
     if (c.etiqueta) $<HTMLElement>('[data-portada-etiqueta]', t).append(plantilla(`etiqueta-${c.etiqueta}`, raiz));
     $<HTMLElement>('[data-titulo]', t).textContent = c.titulo;
     $<HTMLElement>('[data-resumen]', t).textContent = c.resumen;
-    $<HTMLElement>('[data-clases]', t).textContent = `${c.clases} clases`;
-    $<HTMLElement>('[data-horas]', t).textContent = `${c.horas} horas`;
-    $<HTMLElement>('[data-nivel]', t).textContent = NIVEL[c.nivel];
+    $<HTMLElement>('[data-clases]', t).textContent = tx('catalogo.clases', { n: c.clases });
+    $<HTMLElement>('[data-horas]', t).textContent = tx('catalogo.horas', { n: c.horas });
+    $<HTMLElement>('[data-nivel]', t).textContent = tx(`catalogo.nivelesTarjeta.${c.nivel}`);
+    // "Inicio: 20/11/2026 · 6:00 p. m." (en quechua 18:00) y "Precio: S/ 49.90" o "Gratis"
+    $<HTMLElement>('[data-inicio-fila]', t).hidden = !c.inicio;
+    if (c.inicio) $<HTMLElement>('[data-inicio]', t).textContent = `${tx('catalogo.inicio')}: ${formatearFechaHora(c.inicio, idioma)}`;
+    const precio = c.precio === 0 ? tx('catalogo.gratis') : formatearPrecio(c.precio, idioma);
+    $<HTMLElement>('[data-precio]', t).textContent = `${tx('catalogo.precio')}: ${precio}`;
     const ver = $<HTMLAnchorElement>('[data-ver]', t);
     ver.href = `/cursos/${c.slug}`;
     ver.dataset.slug = c.slug;
@@ -125,7 +140,7 @@ function iniciar(raiz: HTMLElement): void {
     caja.replaceChildren();
     if (!a) return;
     const badge = plantilla(a.aprobado ? 'avance-aprobado' : 'avance-inscrito', raiz);
-    $<HTMLElement>('[data-badge-texto]', badge).textContent = a.aprobado ? 'Aprobado' : `Inscrito · ${a.porcentaje} %`;
+    $<HTMLElement>('[data-badge-texto]', badge).textContent = a.aprobado ? tx('catalogo.aprobado') : tx('catalogo.inscritoAvance', { n: a.porcentaje });
     caja.append(badge);
   }
 
@@ -141,21 +156,22 @@ function iniciar(raiz: HTMLElement): void {
     if (lista.length === 0) {
       mostrar('vacio');
       $<HTMLElement>('h2', vacio).textContent = filtros.q
-        ? `No encontramos cursos para “${filtros.q}”`
-        : 'No hay cursos con estos filtros';
-      if (anunciarCambio) anunciar(anuncio, 'Ningún curso coincide. Puedes limpiar los filtros.');
+        ? `${tx('catalogo.vacioBusqueda')} “${filtros.q}”`
+        : tx('catalogo.vacioTitulo');
+      $<HTMLElement>('.vacio__texto', vacio).textContent = tx('catalogo.vacioTexto');
+      if (anunciarCambio) anunciar(anuncio, tx('catalogo.ningunoAnuncio'));
       return;
     }
     rejilla.replaceChildren(...lista.map(tarjeta));
     mostrar('rejilla');
-    if (anunciarCambio) anunciar(anuncio, lista.length === 1 ? '1 curso' : `${lista.length} cursos`);
+    if (anunciarCambio) anunciar(anuncio, tx(lista.length === 1 ? 'catalogo.cursoUno' : 'catalogo.cursos', { n: lista.length }));
   }
 
   // ─── Cargar la lista ──────────────────────────────────────────────
   async function cargar(reintento = false): Promise<boolean> {
     rejilla.setAttribute('aria-busy', 'true');
     // Firma de Progreso (Act. 14): carga automática → gotas solo si tarda más de 1 s, sin campanita al final.
-    const progreso = reintento ? null : iniciarProgreso(rejilla, { automatico: true, texto: 'Cargando los cursos' });
+    const progreso = reintento ? null : iniciarProgreso(rejilla, { automatico: true, texto: tx('catalogo.cargando') });
     if (simular === 'cargando') return new Promise(() => {}); // se queda en skeleton (solo /estados)
     const inicio = performance.now();
     try {
@@ -163,7 +179,7 @@ function iniciar(raiz: HTMLElement): void {
       if (!respuesta.ok) throw new Error('servidor');
       await completarCarga(inicio);
       if (reintento) {
-        retroalimentar(reintentar, 'exito', 'Cursos cargados.');
+        retroalimentar(reintentar, 'exito', tx('catalogo.cargados'));
         await esperar(ESPERA_EXITO_MS);
         ponerEstado(reintentar, 'normal');
       }
@@ -174,8 +190,8 @@ function iniciar(raiz: HTMLElement): void {
     } catch {
       await completarCarga(inicio);
       mostrar('error');
-      if (reintento) retroalimentar(reintentar, 'error', 'Los cursos siguen sin cargar. Revisa tu conexión y vuelve a intentarlo.');
-      else anunciar(anuncio, 'No pudimos cargar los cursos. Pulsa Reintentar.');
+      if (reintento) retroalimentar(reintentar, 'error', tx('catalogo.siguenSinCargar'));
+      else anunciar(anuncio, tx('catalogo.errorAnuncio'));
       return false;
     } finally {
       progreso?.detener(); // el resultado ya se anuncia arriba
@@ -194,7 +210,7 @@ function iniciar(raiz: HTMLElement): void {
       if (!respuesta.ok) throw new Error('servidor');
       await completarCarga(inicio);
       if (reintento) {
-        retroalimentar(boton, 'exito', 'Tu avance se cargó.');
+        retroalimentar(boton, 'exito', tx('catalogo.avanceCargado'));
         await esperar(ESPERA_EXITO_MS);
         ponerEstado(boton, 'normal');
       }
@@ -208,7 +224,7 @@ function iniciar(raiz: HTMLElement): void {
     } catch {
       await completarCarga(inicio);
       avanceError.hidden = false;
-      if (reintento) retroalimentar(boton, 'error', 'Tu avance sigue sin cargar. Revisa tu conexión y vuelve a intentarlo.');
+      if (reintento) retroalimentar(boton, 'error', tx('catalogo.avanceSigue'));
       return false;
     }
   }
@@ -229,7 +245,7 @@ function iniciar(raiz: HTMLElement): void {
   });
   limpiar.addEventListener('click', () => {
     // Firma de Cancelación (Act. 14): se deshacen los filtros.
-    retroalimentar(limpiar, 'cancelacion', 'Filtros quitados. Se muestran todos los cursos.');
+    retroalimentar(limpiar, 'cancelacion', tx('catalogo.filtrosQuitados'));
     cambiar({ categoria: '', nivel: '', q: '' });
     enfocar(botonesCategoria[0]); // el botón desaparece: el foco va al inicio de los filtros
   });
@@ -246,6 +262,15 @@ function iniciar(raiz: HTMLElement): void {
       if (estaOcupado(boton)) return;
       procesar(boton);
       await cargarAvance(true);
+    });
+  }
+
+  // Cambio de idioma sin recargar: los textos fijos ya los cambió idioma.ts; aquí se repintan
+  // las tarjetas, el vacío y las insignias de avance (sin anunciar: el selector ya avisa).
+  if (traducido) {
+    document.addEventListener(EVENTO_IDIOMA, (e) => {
+      idioma = (e as CustomEvent<Idioma>).detail;
+      if (cargado) pintar(false);
     });
   }
 

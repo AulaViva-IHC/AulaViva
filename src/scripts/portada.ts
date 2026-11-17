@@ -2,9 +2,11 @@
 //   cargando → skeleton del título y la bajada
 //   ideal    → título, bajada y "Ver el curso"
 //   parcial  → "No se pudo cargar esta parte" + "Reconectar"; el catálogo de abajo sigue funcionando
+// Act. 17: los anuncios salen de t() en el idioma actual (el título y la bajada del curso quedan en español).
 import { ponerEstado, estaOcupado } from './boton';
 import { procesar, retroalimentar } from './multimodal';
 import { $, completarCarga, enfocar, ESPERA_EXITO_MS, esperar, pedirJSON, simulacion } from './util';
+import { idiomaActual, tr } from './idioma';
 
 interface Destacado {
   slug: string;
@@ -30,7 +32,7 @@ async function cargar(reintento = false): Promise<boolean> {
     if (!respuesta.ok) throw new Error('servidor');
     await completarCarga(inicio);
     if (reintento) {
-      retroalimentar(reconectar, 'exito', 'Curso destacado cargado.');
+      retroalimentar(reconectar, 'exito', tr(idiomaActual(), 'heroe.cargado'));
       await esperar(ESPERA_EXITO_MS);
       ponerEstado(reconectar, 'normal');
     }
@@ -47,7 +49,7 @@ async function cargar(reintento = false): Promise<boolean> {
     await completarCarga(inicio);
     cargando.hidden = true;
     error.hidden = false;
-    if (reintento) retroalimentar(reconectar, 'error', 'El curso destacado sigue sin cargar. Revisa tu conexión.');
+    if (reintento) retroalimentar(reconectar, 'error', tr(idiomaActual(), 'heroe.sigueSinCargar'));
     return false;
   } finally {
     raiz.setAttribute('aria-busy', 'false');

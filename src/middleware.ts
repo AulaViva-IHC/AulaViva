@@ -3,6 +3,7 @@ import { defineMiddleware } from 'astro:middleware';
 import { usuarioDeCookie } from './lib/sesiones';
 import { destinoPorRol } from './lib/auth';
 import { buscarUsuarioPorId } from './lib/repositorio';
+import { COOKIE_IDIOMA, IDIOMA_POR_DEFECTO, esIdioma } from './i18n';
 
 // Páginas que exigen sesión (las APIs privadas revisan la sesión por su cuenta y responden 401).
 const PRIVADAS = ['/inicio', '/mis-cursos', '/certificados', '/clase', '/evaluacion', '/resultado', '/notificaciones', '/actividad-14', '/actividad-16', '/admin'];
@@ -40,6 +41,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
     usuario = await buscarUsuarioPorId(1);
   }
   context.locals.usuario = usuario;
+
+  // Act. 17: idioma de la interfaz desde la cookie (la guarda el selector de la cabecera).
+  // Así el servidor pinta la página ya traducida y no hay parpadeo al cargar.
+  const idioma = context.cookies.get(COOKIE_IDIOMA)?.value;
+  context.locals.idioma = esIdioma(idioma) ? idioma : IDIOMA_POR_DEFECTO;
+  // Prueba de estrés de traducciones (solo desarrollo): ?i18n=estres alarga cada texto un 35 %.
+  context.locals.estres = import.meta.env.DEV && searchParams.get('i18n') === 'estres';
 
   if (SOLO_SIN_SESION.includes(pathname) && usuario && !simulando) {
     return context.redirect(destinoPorRol(usuario));

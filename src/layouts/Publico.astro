@@ -10,6 +10,7 @@ import Logo from '../components/Logo.astro';
 import RegionesVivas from '../components/RegionesVivas.astro';
 import CabeceraPublica, { type SeccionPublica } from '../components/CabeceraPublica.astro';
 import PiePublico from '../components/PiePublico.astro';
+import { traductor } from '../i18n';
 
 interface Props {
   titulo: string;
@@ -19,6 +20,9 @@ interface Props {
   seccion?: SeccionPublica;
   /** Estado forzado por ?simular= (solo desarrollo, lo usa /estados). */
   simular?: string;
+  /** Act. 17: claves i18n del título y la descripción (se traducen y cambian con el selector). */
+  claveTitulo?: string;
+  claveDescripcion?: string;
 }
 
 const {
@@ -27,18 +31,32 @@ const {
   cabecera = true,
   simular = '',
   seccion,
+  claveTitulo,
+  claveDescripcion,
 } = Astro.props;
+const { idioma, estres } = Astro.locals;
+const tr = traductor(idioma, estres);
+// Solo las páginas traducidas (con claveTitulo) cambian <html lang>; el resto sigue en español
+// y la cabecera y el pie llevan su propio lang.
+const tituloFinal = claveTitulo ? tr(claveTitulo) : titulo;
+const descripcionFinal = claveDescripcion ? tr(claveDescripcion) : descripcion;
 ---
 
 <!doctype html>
-<html lang="es">
+<html
+  lang={claveTitulo ? idioma : 'es'}
+  data-idioma={idioma}
+  data-i18n-modo={estres ? 'estres' : undefined}
+  data-i18n-titulo={claveTitulo}
+  data-i18n-descripcion={claveDescripcion}
+>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content={descripcion} />
+    <meta name="description" content={descripcionFinal} />
     <meta name="theme-color" content="#1B1750" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <title>{titulo} · AulaViva</title>
+    <title>{tituloFinal} · AulaViva</title>
   </head>
   <body data-simular={simular || undefined}>
     {seccion && <CabeceraPublica activo={seccion} />}

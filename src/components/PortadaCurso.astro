@@ -4,9 +4,11 @@
 // solo la etiqueta "Destacado" / "Nuevo" se lee, porque informa.
 // En las listas que pinta el navegador se usa sin props dentro de un <template>:
 // el script pone el color (style), el icono ([data-portada-icono]) y la etiqueta.
+// Act. 17: con i18n la etiqueta sale del diccionario (catalogo.destacado / catalogo.nuevo).
 import Icono from './Icono.astro';
 import Badge from './Badge.astro';
 import type { EtiquetaCurso, IconoCurso } from '../lib/repositorio';
+import { traductor } from '../i18n';
 
 interface Props {
   color?: string;
@@ -14,9 +16,13 @@ interface Props {
   etiqueta?: EtiquetaCurso;
   /** "normal" (tarjeta), "grande" (detalle) o "mini" (fila de Mis cursos). */
   tamano?: 'normal' | 'grande' | 'mini';
+  /** Act. 17: etiqueta traducida con el idioma de la página. */
+  i18n?: boolean;
   class?: string;
 }
-const { color, icono, etiqueta = null, tamano = 'normal', class: clase } = Astro.props;
+const { color, icono, etiqueta = null, tamano = 'normal', i18n = false, class: clase } = Astro.props;
+const t = traductor(i18n ? Astro.locals.idioma : 'es', i18n && Astro.locals.estres);
+const k = (clave: string) => (i18n ? clave : undefined);
 ---
 
 <div class:list={['portada', `portada--${tamano}`, clase]} style={color ? `--portada: ${color}` : undefined} data-portada>
@@ -30,8 +36,8 @@ const { color, icono, etiqueta = null, tamano = 'normal', class: clase } = Astro
     {icono && <Icono nombre={icono} tamano={tamano === 'mini' ? 28 : 40} />}
   </span>
   <span class="portada__etiqueta" data-portada-etiqueta>
-    {etiqueta === 'destacado' && <Badge tono="destacado">Destacado</Badge>}
-    {etiqueta === 'nuevo' && <Badge tono="nuevo">Nuevo</Badge>}
+    {etiqueta === 'destacado' && <Badge tono="destacado"><span data-i18n={k('catalogo.destacado')}>{t('catalogo.destacado')}</span></Badge>}
+    {etiqueta === 'nuevo' && <Badge tono="nuevo"><span data-i18n={k('catalogo.nuevo')}>{t('catalogo.nuevo')}</span></Badge>}
   </span>
 </div>
 
@@ -83,9 +89,13 @@ const { color, icono, etiqueta = null, tamano = 'normal', class: clase } = Astro
   .portada__etiqueta {
     position: absolute;
     left: 0;
+    max-width: 70%;
     top: var(--e3);
   }
   .portada__etiqueta :global(.badge) {
+    min-width: fit-content;
+    max-width: 100%;
+    white-space: normal;
     min-height: 28px;
     padding: 2px 10px;
     border-radius: 0 var(--radio-control) var(--radio-control) 0;

@@ -2,9 +2,12 @@
 // Cabecera pública (01-catalogo, 02-detalle, 10-verificar): logo, 3 enlaces y la cuenta.
 // Ley de Hick: aquí no hay botón amarillo; la acción principal es la de cada página.
 // Sin sesión: "Iniciar sesión" (enlace) y "Crear cuenta" (secundario). Con sesión: "Ir a mi Inicio".
+// Act. 17: selector de idioma (Español / Runasimi) antes de la cuenta; textos con data-i18n.
 import Logo from './Logo.astro';
 import Boton from './Boton.astro';
+import Icono from './Icono.astro';
 import { destinoPorRol } from '../lib/auth';
+import { IDIOMAS, t as tBase, traductor } from '../i18n';
 
 export type SeccionPublica = 'cursos' | 'como-funciona' | 'verificar' | 'ninguna';
 
@@ -15,23 +18,26 @@ const { activo = 'ninguna' } = Astro.props;
 const usuario = Astro.locals.usuario;
 const enPortada = Astro.url.pathname === '/';
 
-const ENLACES: { id: SeccionPublica; texto: string; href: string }[] = [
-  { id: 'cursos', texto: 'Cursos', href: enPortada ? '#cursos' : '/#cursos' },
-  { id: 'como-funciona', texto: 'Cómo funciona', href: enPortada ? '#como-funciona' : '/#como-funciona' },
-  { id: 'verificar', texto: 'Verificar certificado', href: '/verificar' },
+const { idioma, estres } = Astro.locals;
+const t = traductor(idioma, estres);
+
+const ENLACES: { id: SeccionPublica; clave: string; href: string }[] = [
+  { id: 'cursos', clave: 'nav.cursos', href: enPortada ? '#cursos' : '/#cursos' },
+  { id: 'como-funciona', clave: 'nav.comoFunciona', href: enPortada ? '#como-funciona' : '/#como-funciona' },
+  { id: 'verificar', clave: 'nav.verificar', href: '/verificar' },
 ];
 ---
 
-<a class="saltar" href="#contenido">Saltar al contenido</a>
-<header class="cabecera-publica">
-  <Logo />
-  <nav class="cabecera-publica__nav" aria-label="Principal">
+<a class="saltar" href="#contenido" lang={idioma} data-i18n-lang data-i18n="meta.saltar">{t('meta.saltar')}</a>
+<header class="cabecera-publica" lang={idioma} data-i18n-lang>
+  <Logo i18n />
+  <nav class="cabecera-publica__nav" aria-label={t('nav.principal')} data-i18n-attr="aria-label:nav.principal">
     <ul>
       {
         ENLACES.map((e) => (
           <li>
-            <a href={e.href} class="cabecera-publica__enlace" aria-current={e.id === activo ? 'page' : undefined}>
-              {e.texto}
+            <a href={e.href} class="cabecera-publica__enlace" aria-current={e.id === activo ? 'page' : undefined} data-i18n={e.clave}>
+              {t(e.clave)}
             </a>
           </li>
         ))
@@ -39,22 +45,40 @@ const ENLACES: { id: SeccionPublica; texto: string; href: string }[] = [
     </ul>
   </nav>
   <div class="cabecera-publica__cuenta">
+    <div class="idioma" role="group" aria-labelledby="idioma-etiqueta" data-selector-idioma>
+      <span class="idioma__etiqueta" id="idioma-etiqueta"><span lang="qu">{tBase('qu', 'idioma.etiqueta')}</span> / <span lang="es">{tBase('es', 'idioma.etiqueta')}</span></span>
+      <span class="idioma__opciones">
+        {
+          IDIOMAS.map((i) => (
+            <button type="button" class="idioma__opcion" lang={i} aria-pressed={i === idioma ? 'true' : 'false'} data-idioma-opcion={i}>
+              <span class="idioma__check" aria-hidden="true"><Icono nombre="check" tamano={16} /></span>
+              {tBase(i, `idioma.${i}`)}
+            </button>
+          ))
+        }
+      </span>
+    </div>
     {
       usuario ? (
-        <Boton variante="secundario" href={destinoPorRol(usuario)} textoCargando="Abriendo…">
-          Ir a mi Inicio
+        <Boton variante="secundario" href={destinoPorRol(usuario)} textoCargando={t('nav.abriendo')} claveCargando="nav.abriendo">
+          <span data-i18n="nav.irInicio">{t('nav.irInicio')}</span>
         </Boton>
       ) : (
         <>
-          <a href="/login" class="cabecera-publica__enlace cabecera-publica__login">Iniciar sesión</a>
-          <Boton variante="secundario" href="/registro" textoCargando="Abriendo…">
-            Crear cuenta
+          <a href="/login" class="cabecera-publica__enlace cabecera-publica__login" data-i18n="nav.iniciarSesion">{t('nav.iniciarSesion')}</a>
+          <Boton variante="secundario" href="/registro" textoCargando={t('nav.abriendo')} claveCargando="nav.abriendo">
+            <span data-i18n="nav.crearCuenta">{t('nav.crearCuenta')}</span>
           </Boton>
         </>
       )
     }
   </div>
 </header>
+
+<script>
+  import { iniciarSelector } from '../scripts/idioma';
+  for (const grupo of document.querySelectorAll<HTMLElement>('[data-selector-idioma]')) iniciarSelector(grupo);
+</script>
 
 <style>
   .cabecera-publica {
@@ -74,6 +98,7 @@ const ENLACES: { id: SeccionPublica; texto: string; href: string }[] = [
   }
   .cabecera-publica__nav ul {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--e1);
     margin: 0;
     padding: 0;
@@ -105,8 +130,80 @@ const ENLACES: { id: SeccionPublica; texto: string; href: string }[] = [
   }
   .cabecera-publica__cuenta {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-end;
     gap: var(--e2);
+  }
+
+  /* ─── Selector de idioma (Act. 17) ─────────────────── */
+  .idioma {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e1) var(--e2);
+  }
+  .idioma__etiqueta {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    font-weight: 600;
+  }
+  /* Región común: las dos opciones sobre el mismo fondo gris */
+  .idioma__opciones {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radio-control);
+    background: var(--paper);
+  }
+  .idioma__opcion {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: fit-content;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radio-control);
+    background: transparent;
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+      background-color var(--t-rapido) ease-out,
+      color var(--t-rapido) ease-out,
+      box-shadow var(--t-rapido) ease-out,
+      transform var(--t-rapido) ease-out;
+  }
+  .idioma__opcion:hover {
+    background: var(--white);
+    color: var(--ink);
+  }
+  .idioma__opcion:active {
+    transform: scale(0.97);
+    transition-duration: 40ms;
+  }
+  /* Elegido: fondo de selección + borde + check (nunca solo color) */
+  .idioma__opcion[aria-pressed='true'] {
+    background: var(--indigo-t);
+    color: var(--indigo3);
+    box-shadow: inset 0 0 0 2px var(--indigo3);
+  }
+  .idioma__check {
+    display: none;
+  }
+  .idioma__opcion[aria-pressed='true'] .idioma__check {
+    display: inline-grid;
+  }
+  /* Firma de Éxito al cambiar: verde con check */
+  .idioma__opcion[data-estado='exito'] {
+    background: var(--grn-t);
+    color: var(--grn);
+    box-shadow: inset 0 0 0 2px var(--grn);
   }
   .cabecera-publica__login {
     color: var(--ink);
@@ -143,16 +240,24 @@ const ENLACES: { id: SeccionPublica; texto: string; href: string }[] = [
       order: 3;
       width: 100%;
       margin-left: 0;
-      overflow-x: auto;
     }
     .cabecera-publica__enlace {
       padding: 0 12px;
-      white-space: nowrap;
     }
   }
   @media (max-width: 479px) {
     .cabecera-publica__login {
       padding: 0 var(--e2);
+    }
+    /* Móvil: el selector ocupa su propia fila, debajo del logo */
+    .cabecera-publica__cuenta {
+      margin-left: 0;
+      justify-content: flex-start;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .idioma__opcion:active {
+      transform: none;
     }
   }
 </style>

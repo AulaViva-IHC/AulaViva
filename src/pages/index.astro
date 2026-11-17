@@ -3,6 +3,9 @@
 // Encabezado con el curso destacado (/api/cursos/destacado, aparte: si falla, estado parcial),
 // 3 beneficios, el catálogo con filtros (CatalogoCursos), "Así aprendes" y los 5 pasos del certificado.
 // Ley de Hick: la única acción amarilla es "Ver el curso"; el resto es secundario.
+// Act. 17: toda la interfaz sale del diccionario (src/i18n) en el idioma de la cookie y cambia al
+// instante con el selector de la cabecera (data-i18n). El título y la bajada del curso quedan en español
+// (lang="es"). Prueba de estrés en desarrollo: /?i18n=estres.
 // Lógica del navegador: src/scripts/portada.ts (encabezado) y src/scripts/catalogo.ts (rejilla).
 import Publico from '../layouts/Publico.astro';
 import Boton from '../components/Boton.astro';
@@ -12,45 +15,48 @@ import Icono, { type NombreIcono } from '../components/Icono.astro';
 import EstadoParcial from '../components/EstadoParcial.astro';
 import CatalogoCursos from '../components/CatalogoCursos.astro';
 import { destinoPorRol } from '../lib/auth';
+import { traductor } from '../i18n';
 
 const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
 const pedido = Astro.url.searchParams.get('simular') ?? '';
 const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
 const usuario = Astro.locals.usuario;
+const t = traductor(Astro.locals.idioma, Astro.locals.estres);
 
-const BENEFICIOS: { icono: NombreIcono; titulo: string; texto: string }[] = [
-  { icono: 'reloj', titulo: 'Aprende a tu ritmo', texto: 'Avanza cuando quieras, sin horarios fijos.' },
-  { icono: 'subtitulos', titulo: 'Clases con subtítulos', texto: 'Videos cortos con subtítulos y materiales.' },
-  { icono: 'medalla', titulo: 'Certificado con QR', texto: 'Cualquiera puede verificarlo con su código.' },
+const BENEFICIOS: { icono: NombreIcono; id: string }[] = [
+  { icono: 'reloj', id: 'ritmo' },
+  { icono: 'subtitulos', id: 'subtitulos' },
+  { icono: 'medalla', id: 'qr' },
 ];
 
-const CICLO: { id: string; titulo: string; texto: string; icono: NombreIcono }[] = [
-  { id: 'mira', titulo: 'Mira', texto: 'Videos cortos con subtítulos que explican el porqué y el cómo de cada tema.', icono: 'pantalla' },
-  { id: 'practica', titulo: 'Practica', texto: 'Ejercicios y documentos para aplicar lo aprendido en tu propio proyecto.', icono: 'lapiz' },
-  { id: 'certifica', titulo: 'Certifica', texto: 'Un certificado con código y QR que cualquiera puede comprobar.', icono: 'medalla' },
-  { id: 'evalua', titulo: 'Evalúa', texto: 'Una evaluación final con 3 intentos. Apruebas con 14 de 20.', icono: 'portapapeles' },
+const CICLO: { id: string; icono: NombreIcono }[] = [
+  { id: 'mira', icono: 'pantalla' },
+  { id: 'practica', icono: 'lapiz' },
+  { id: 'certifica', icono: 'medalla' },
+  { id: 'evalua', icono: 'portapapeles' },
 ];
 
-const PASOS: { texto: string; icono: NombreIcono }[] = [
-  { texto: 'Crea tu cuenta', icono: 'usuario-mas' },
-  { texto: 'Inscríbete en un curso', icono: 'libro' },
-  { texto: 'Completa las clases', icono: 'pantalla' },
-  { texto: 'Aprueba la evaluación', icono: 'portapapeles' },
-  { texto: 'Descarga tu certificado', icono: 'medalla' },
+const PASOS: { clave: string; icono: NombreIcono }[] = [
+  { clave: 'pasos.crearCuenta', icono: 'usuario-mas' },
+  { clave: 'pasos.inscribete', icono: 'libro' },
+  { clave: 'pasos.completa', icono: 'pantalla' },
+  { clave: 'pasos.aprueba', icono: 'portapapeles' },
+  { clave: 'pasos.descarga', icono: 'medalla' },
 ];
 ---
 
 <Publico
-  titulo="Cursos con certificado verificable"
-  descripcion="Cursos cortos con clases en video, subtítulos y un certificado con código y QR que cualquiera puede verificar."
+  titulo={t('meta.titulo')}
+  claveTitulo="meta.titulo"
+  claveDescripcion="meta.descripcion"
   seccion="cursos"
   simular={simular}
 >
   <main id="contenido" tabindex="-1" class="portada-publica">
-    <h1 class="solo-lector">AulaViva: cursos virtuales con certificado verificable</h1>
+    <h1 class="solo-lector" data-i18n="heroe.h1">{t('heroe.h1')}</h1>
 
     <!-- Encabezado: curso destacado -->
-    <section class="heroe oscuro" aria-label="Curso destacado">
+    <section class="heroe oscuro" aria-label={t('heroe.region')} data-i18n-attr="aria-label:heroe.region">
       <div class="heroe__texto" data-destacado aria-busy="true">
         <div class="heroe__esqueleto" data-destacado-cargando aria-hidden="true">
           <span class="skeleton sk sk--etiqueta"></span>
@@ -61,29 +67,35 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
         </div>
 
         <div class="heroe__contenido" data-destacado-contenido hidden>
-          <Badge tono="lila">Curso destacado</Badge>
-          <h2 class="heroe__titulo" data-destacado-titulo></h2>
+          <Badge tono="lila"><span data-i18n="heroe.badge">{t('heroe.badge')}</span></Badge>
+          <!-- Contenido del curso: queda en español -->
+          <h2 class="heroe__titulo" lang="es" data-destacado-titulo></h2>
           <span class="heroe__linea" aria-hidden="true"></span>
-          <p class="heroe__bajada" data-destacado-descripcion></p>
+          <p class="heroe__bajada" lang="es" data-destacado-descripcion></p>
         </div>
 
         <div class="heroe__contenido" data-destacado-error hidden>
-          <h2 class="heroe__titulo">Aprende con cursos cortos y certifícate</h2>
+          <h2 class="heroe__titulo" data-i18n="heroe.tituloRespaldo">{t('heroe.tituloRespaldo')}</h2>
           <span class="heroe__linea" aria-hidden="true"></span>
-          <EstadoParcial
-            tono="oscuro"
-            texto="El curso destacado aparecerá al reconectar; el catálogo de abajo funciona."
-            multimodal
-          />
+          <EstadoParcial tono="oscuro" texto={t('heroe.parcial')} i18n claveTexto="heroe.parcial" multimodal />
         </div>
 
         <div class="heroe__acciones">
           <span data-destacado-accion hidden>
-            <BotonMultimodal variante="principal" href="/#cursos" modo="toque" textoCargando="Abriendo curso…" data-destacado-enlace>
-              Ver el curso
+            <BotonMultimodal
+              variante="principal"
+              href="/#cursos"
+              modo="toque"
+              textoCargando={t('heroe.abriendoCurso')}
+              claveCargando="heroe.abriendoCurso"
+              data-destacado-enlace
+            >
+              <span data-i18n="heroe.verCurso">{t('heroe.verCurso')}</span>
             </BotonMultimodal>
           </span>
-          <Boton variante="secundario" href="#cursos" class="heroe__todos" textoCargando="Bajando…">Ver todos los cursos</Boton>
+          <Boton variante="secundario" href="#cursos" class="heroe__todos" textoCargando={t('heroe.bajando')} claveCargando="heroe.bajando">
+            <span data-i18n="heroe.verTodos">{t('heroe.verTodos')}</span>
+          </Boton>
         </div>
       </div>
 
@@ -96,13 +108,13 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
           <circle cx="240" cy="150" r="8" fill="#D9CCF7" />
           <circle cx="430" cy="140" r="4" fill="#FFD23F" />
         </svg>
-        <span class="chip chip--m1">Módulo 1</span>
-        <span class="chip chip--m4">Módulo 4</span>
-        <span class="chip chip--cert">Certificado</span>
+        <span class="chip chip--m1"><span data-i18n="ilustracion.modulo">{t('ilustracion.modulo')}</span> 1</span>
+        <span class="chip chip--m4"><span data-i18n="ilustracion.modulo">{t('ilustracion.modulo')}</span> 4</span>
+        <span class="chip chip--cert" data-i18n="ilustracion.certificado">{t('ilustracion.certificado')}</span>
         <span class="ilustracion__check"><Icono nombre="check" tamano={22} /></span>
         <div class="mini-cert">
           <span class="mini-cert__cinta"></span>
-          <span class="mini-cert__ceja">Certificado de aprobación</span>
+          <span class="mini-cert__ceja" data-i18n="ilustracion.aprobacion">{t('ilustracion.aprobacion')}</span>
           <span class="mini-cert__nombre">Gonzalo O. Barreto Geri</span>
           <span class="mini-cert__raya"></span>
           <span class="mini-cert__raya mini-cert__raya--corta"></span>
@@ -123,9 +135,9 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
         BENEFICIOS.map((b) => (
           <li class="beneficio">
             <span class="beneficio__icono"><Icono nombre={b.icono} tamano={22} /></span>
-            <span>
-              <span class="beneficio__titulo">{b.titulo}</span>
-              <span class="beneficio__texto">{b.texto}</span>
+            <span class="beneficio__cuerpo">
+              <span class="beneficio__titulo" data-i18n={`beneficios.${b.id}.titulo`}>{t(`beneficios.${b.id}.titulo`)}</span>
+              <span class="beneficio__texto" data-i18n={`beneficios.${b.id}.texto`}>{t(`beneficios.${b.id}.texto`)}</span>
             </span>
           </li>
         ))
@@ -135,24 +147,24 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
     <!-- Catálogo -->
     <section class="seccion" id="cursos" aria-labelledby="cursos-titulo" tabindex="-1">
       <header class="seccion__encabezado">
-        <h2 class="seccion__titulo" id="cursos-titulo">Elige qué aprender</h2>
-        <p class="seccion__bajada">Cursos cortos para estudiantes y profesionales, con clases en video y certificado verificable.</p>
+        <h2 class="seccion__titulo" id="cursos-titulo" data-i18n="catalogo.titulo">{t('catalogo.titulo')}</h2>
+        <p class="seccion__bajada" data-i18n="catalogo.bajada">{t('catalogo.bajada')}</p>
       </header>
-      <CatalogoCursos etiquetadoPor="cursos-titulo" />
+      <CatalogoCursos etiquetadoPor="cursos-titulo" i18n />
     </section>
 
     <!-- Así aprendes -->
     <section class="ciclo" id="como-funciona" aria-labelledby="ciclo-titulo" tabindex="-1">
       <header class="seccion__encabezado">
-        <h2 class="seccion__titulo" id="ciclo-titulo">Así aprendes en AulaViva</h2>
-        <p class="seccion__bajada">Cuatro pasos que se repiten en cada módulo.</p>
+        <h2 class="seccion__titulo" id="ciclo-titulo" data-i18n="ciclo.titulo">{t('ciclo.titulo')}</h2>
+        <p class="seccion__bajada" data-i18n="ciclo.bajada">{t('ciclo.bajada')}</p>
       </header>
       <div class="ciclo__cuerpo">
         <div class="ciclo__rueda" aria-hidden="true">
           {
             CICLO.map((p) => (
               <span class:list={['cuadrante', `cuadrante--${p.id}`]}>
-                <span>{p.titulo}</span>
+                <span class="cuadrante__texto" data-i18n={`ciclo.${p.id}.titulo`}>{t(`ciclo.${p.id}.titulo`)}</span>
                 <Icono nombre={p.icono} tamano={26} />
               </span>
             ))
@@ -163,8 +175,8 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
           {
             CICLO.map((p) => (
               <li class:list={['ciclo__paso', `ciclo__paso--${p.id}`]}>
-                <h3 class="ciclo__nombre">{p.titulo}</h3>
-                <p class="ciclo__texto">{p.texto}</p>
+                <h3 class="ciclo__nombre" data-i18n={`ciclo.${p.id}.titulo`}>{t(`ciclo.${p.id}.titulo`)}</h3>
+                <p class="ciclo__texto" data-i18n={`ciclo.${p.id}.texto`}>{t(`ciclo.${p.id}.texto`)}</p>
               </li>
             ))
           }
@@ -174,7 +186,7 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
 
     <!-- Cómo obtengo mi certificado -->
     <section class="pasos" aria-labelledby="pasos-titulo">
-      <h2 class="seccion__titulo" id="pasos-titulo">¿Cómo obtengo mi certificado?</h2>
+      <h2 class="seccion__titulo" id="pasos-titulo" data-i18n="pasos.titulo">{t('pasos.titulo')}</h2>
       <ol class="pasos__lista">
         {
           PASOS.map((p, i) => (
@@ -182,20 +194,20 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
               <span class:list={['paso-cert__icono', i === PASOS.length - 1 && 'paso-cert__icono--final']}>
                 <Icono nombre={p.icono} tamano={26} />
               </span>
-              <Badge tono="lila">Paso {i + 1}</Badge>
-              <span class="paso-cert__texto">{p.texto}</span>
+              <Badge tono="lila"><span data-i18n="pasos.paso" data-i18n-n={i + 1}>{t('pasos.paso', { n: i + 1 })}</span></Badge>
+              <span class="paso-cert__texto" data-i18n={p.clave}>{t(p.clave)}</span>
             </li>
           ))
         }
       </ol>
       {
         usuario ? (
-          <Boton variante="secundario" href={destinoPorRol(usuario)} textoCargando="Abriendo…">
-            Ir a mi Inicio
+          <Boton variante="secundario" href={destinoPorRol(usuario)} textoCargando={t('nav.abriendo')} claveCargando="nav.abriendo">
+            <span data-i18n="pasos.irInicio">{t('pasos.irInicio')}</span>
           </Boton>
         ) : (
-          <Boton variante="secundario" href="/registro" textoCargando="Abriendo…">
-            Crear mi cuenta gratis
+          <Boton variante="secundario" href="/registro" textoCargando={t('nav.abriendo')} claveCargando="nav.abriendo">
+            <span data-i18n="pasos.crearGratis">{t('pasos.crearGratis')}</span>
           </Boton>
         )
       }
@@ -245,6 +257,7 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
     line-height: var(--lh-display);
     font-weight: 800;
     letter-spacing: -0.03em;
+    overflow-wrap: anywhere; /* Act. 17: solo parte palabras que no caben (quechua, estrés) */
   }
   .heroe__linea {
     width: 40px;
@@ -301,8 +314,12 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
     stroke-dasharray: 1 8;
     stroke-linecap: round;
   }
+  /* Chips de la ilustración: ancho según el texto (sin ancho fijo) y hasta 2 líneas si no caben */
   .chip {
     position: absolute;
+    min-width: fit-content;
+    max-width: 48%;
+    text-align: center;
     padding: 2px 10px;
     border-radius: 999px;
     background: var(--lila);
@@ -400,6 +417,9 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
     border-radius: var(--radio-tarjeta);
     background: var(--white);
   }
+  .beneficio__cuerpo {
+    min-width: 0;
+  }
   .beneficio__icono {
     display: grid;
     flex: none;
@@ -443,6 +463,7 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
     font-weight: 800;
     letter-spacing: -0.03em;
     text-align: center;
+    overflow-wrap: anywhere;
   }
   .seccion__bajada {
     max-width: 56ch;
@@ -491,6 +512,13 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
     color: var(--white);
     font-weight: 700;
     font-size: 1.125rem;
+  }
+  .cuadrante__texto {
+    max-width: 100%;
+    padding: 0 var(--e1);
+    text-align: center;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
   }
   .cuadrante--mira { border-radius: 100% 0 0 0; background: var(--indigo); padding: 24px 0 0 32px; }
   .cuadrante--practica { border-radius: 0 100% 0 0; padding: 24px 32px 0 0; }
@@ -597,6 +625,13 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
   }
   .paso-cert__texto {
     font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  /* La insignia "Paso 1" puede pasar a 2 líneas con textos largos (Badge no lo permite por defecto) */
+  .paso-cert :global(.badge) {
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
   }
 
   /* ─── Responsive ───────────────────────────────────── */
@@ -658,6 +693,19 @@ const PASOS: { texto: string; icono: NombreIcono }[] = [
     .ciclo__rueda {
       width: 260px;
       height: 260px;
+    }
+    /* Rueda chica: letra y relleno menores para que cada palabra quepa entera (quechua, estrés) */
+    .cuadrante {
+      gap: var(--e1);
+      font-size: 0.875rem;
+    }
+    .cuadrante--mira { padding: 16px 0 0 16px; }
+    .cuadrante--practica { padding: 16px 16px 0 0; }
+    .cuadrante--certifica { padding: 0 0 16px 16px; }
+    .cuadrante--evalua { padding: 0 16px 16px 0; }
+    .ciclo__centro {
+      width: 60px;
+      height: 60px;
     }
     .ciclo__pasos {
       position: static;

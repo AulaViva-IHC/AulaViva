@@ -26,6 +26,10 @@ export interface CursoDemo {
   categoria: Categoria;
   nivel: Nivel;
   horas: number;
+  /** DEMO (Act. 17): precio en soles (0 = gratis) para probar el formato de moneda. */
+  precio: number;
+  /** DEMO (Act. 17): inicio del curso, fecha ISO en hora de Lima (-05:00). */
+  inicio: string;
   etiqueta: EtiquetaCurso;
   /** Fondo de la portada (con el icono blanco encima). */
   color: string;
@@ -57,6 +61,8 @@ export const catalogoDemo: readonly CursoDemo[] = [
     categoria: 'diseno',
     nivel: 'basico',
     horas: 24,
+    precio: 49.90,
+    inicio: '2026-11-20T18:00:00-05:00',
     etiqueta: 'destacado',
     color: '#2A2477',
     icono: 'pluma',
@@ -131,6 +137,8 @@ export const catalogoDemo: readonly CursoDemo[] = [
     categoria: 'tecnologia',
     nivel: 'basico',
     horas: 32,
+    precio: 0,
+    inicio: '2026-11-23T19:30:00-05:00',
     etiqueta: 'nuevo',
     color: '#1E5E9E',
     icono: 'codigo',
@@ -204,6 +212,8 @@ export const catalogoDemo: readonly CursoDemo[] = [
     categoria: 'negocios',
     nivel: 'intermedio',
     horas: 20,
+    precio: 39.90,
+    inicio: '2026-12-01T09:00:00-05:00',
     etiqueta: null,
     color: '#22766A',
     icono: 'grafico',
@@ -270,6 +280,8 @@ export const catalogoDemo: readonly CursoDemo[] = [
     categoria: 'tecnologia',
     nivel: 'intermedio',
     horas: 28,
+    precio: 59.90,
+    inicio: '2026-12-05T16:00:00-05:00',
     etiqueta: null,
     color: '#4A40A6',
     icono: 'red',
@@ -346,6 +358,8 @@ export const catalogoDemo: readonly CursoDemo[] = [
     categoria: 'habilidades-blandas',
     nivel: 'basico',
     horas: 12,
+    precio: 0,
+    inicio: '2026-11-28T10:00:00-05:00',
     etiqueta: 'nuevo',
     color: '#7A3A86',
     icono: 'chat',
@@ -402,6 +416,8 @@ export const catalogoDemo: readonly CursoDemo[] = [
     categoria: 'tecnologia',
     nivel: 'avanzado',
     horas: 36,
+    precio: 79.90,
+    inicio: '2027-01-11T20:00:00-05:00',
     etiqueta: null,
     color: '#363852',
     icono: 'chispa',
