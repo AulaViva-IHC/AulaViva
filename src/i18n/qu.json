@@ -1,6 +1,6 @@
 {
   "meta": { "titulo": "Chiqanchakuq certificadoyuq yachaykuna", "saltar": "Ukuman riy", "descripcion": "Pisi yachaykuna videopi yachachikuywan subtitulokunawan, codigoyuq QR-niyuq certificadowan, pipas chiqanchanampaq.", "logo": "AulaViva, ir al inicio" },
-  "idioma": { "etiqueta": "Simi", "es": "Español", "qu": "Runasimi" },
+  "idioma": { "etiqueta": "Idioma", "es": "Español", "qu": "Quechua" },
   "nav": { "cursos": "Yachaykuna", "comoFunciona": "Imaynam llamkan", "verificar": "Certificadota chiqanchay", "iniciarSesion": "Yaykuy", "crearCuenta": "Cuentaykita kamay", "irInicio": "Qallariyniyman riy", "abriendo": "Kichachkan…", "principal": "Hatun ñan" },
   "heroe": { "badge": "Akllasqa yachay", "tituloRespaldo": "Pisi yachaykunawan yachay, certificadoykitapas chaskiy", "parcial": "Akllasqa yachayqa internet kutimuptinmi rikurinqa; uraypi yachaykunaqa llamkanmi.", "verCurso": "Yachayta qaway", "verTodos": "Llapan yachaykunata qaway", "abriendoCurso": "Yachayta kichachkan…", "bajando": "Uraykuchkan…", "cargado": "Akllasqa yachay apamusqañam.", "sigueSinCargar": "Akllasqa yachayqa manaraqmi rikurinchu. Internetniykita qaway.", "region": "Akllasqa yachay", "h1": "AulaViva: cursos virtuales con certificado verificable" },
   "ilustracion": { "modulo": "Raki", "certificado": "Certificado", "aprobacion": "Atipasqa certificado" },

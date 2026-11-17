@@ -2,16 +2,32 @@
 //   cargando → skeleton del título y la bajada
 //   ideal    → título, bajada y "Ver el curso"
 //   parcial  → "No se pudo cargar esta parte" + "Reconectar"; el catálogo de abajo sigue funcionando
-// Act. 17: los anuncios salen de t() en el idioma actual (el título y la bajada del curso quedan en español).
+// Act. 17: los anuncios salen de t() en el idioma actual; el título y la bajada del curso salen en
+// quechua si el curso los tiene (campo qu) y se vuelven a pintar con el evento "idioma:cambio".
 import { ponerEstado, estaOcupado } from './boton';
 import { procesar, retroalimentar } from './multimodal';
 import { $, completarCarga, enfocar, ESPERA_EXITO_MS, esperar, pedirJSON, simulacion } from './util';
-import { idiomaActual, tr } from './idioma';
+import { EVENTO_IDIOMA, idiomaActual, tr } from './idioma';
+import type { Idioma } from '../i18n';
 
 interface Destacado {
   slug: string;
   titulo: string;
   descripcion: string;
+  qu: { titulo: string; descripcion: string } | null;
+}
+
+let destacado: Destacado | null = null;
+
+/** Título y bajada del curso en el idioma actual (con su lang, para el lector de pantalla). */
+function pintarDestacado(idioma: Idioma): void {
+  if (!destacado) return;
+  const textos = idioma === 'qu' && destacado.qu ? { ...destacado.qu, lang: 'qu' } : { ...destacado, lang: 'es' };
+  const titulo = $<HTMLElement>('[data-destacado-titulo]', contenido);
+  const descripcion = $<HTMLElement>('[data-destacado-descripcion]', contenido);
+  titulo.textContent = textos.titulo;
+  descripcion.textContent = textos.descripcion;
+  titulo.lang = descripcion.lang = textos.lang;
 }
 
 const raiz = $<HTMLElement>('[data-destacado]');
@@ -39,8 +55,8 @@ async function cargar(reintento = false): Promise<boolean> {
     cargando.hidden = true;
     error.hidden = true;
     if (!datos.curso) return true; // sin cursos publicados: queda "Ver todos los cursos"
-    $<HTMLElement>('[data-destacado-titulo]', contenido).textContent = datos.curso.titulo;
-    $<HTMLElement>('[data-destacado-descripcion]', contenido).textContent = datos.curso.descripcion;
+    destacado = datos.curso;
+    pintarDestacado(idiomaActual());
     $<HTMLAnchorElement>('[data-destacado-enlace]', accion).href = `/cursos/${datos.curso.slug}`;
     contenido.hidden = false;
     accion.hidden = false;
@@ -61,5 +77,7 @@ reconectar.addEventListener('click', async () => {
   procesar(reconectar);
   if (await cargar(true)) enfocar($<HTMLAnchorElement>('[data-destacado-enlace]', accion));
 });
+
+document.addEventListener(EVENTO_IDIOMA, (e) => pintarDestacado((e as CustomEvent<Idioma>).detail));
 
 void cargar();

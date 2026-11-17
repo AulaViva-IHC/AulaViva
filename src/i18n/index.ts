@@ -1,7 +1,7 @@
-// Internacionalización (Act. 17): español y quechua chanka (runasimi).
+// Internacionalización (Act. 17): español y quechua chanka.
 // Lo usan el servidor (componentes .astro, con Astro.locals.idioma) y el navegador
-// (src/scripts/idioma.ts, catalogo.ts, portada.ts). Solo se traduce la interfaz:
-// el título y el resumen de los cursos quedan en español.
+// (src/scripts/idioma.ts, catalogo.ts, portada.ts). Aquí está la interfaz;
+// el título, el resumen y la descripción de los cursos van aparte (campo qu de datos-demo.ts).
 //
 //   t('qu', 'catalogo.clases', { n: 12 })  →  "12 yachachikuy"
 //   Si una clave falta en quechua se usa el español; si falta en los dos, la propia clave.

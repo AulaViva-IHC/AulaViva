@@ -4,8 +4,8 @@
 // 3 beneficios, el catálogo con filtros (CatalogoCursos), "Así aprendes" y los 5 pasos del certificado.
 // Ley de Hick: la única acción amarilla es "Ver el curso"; el resto es secundario.
 // Act. 17: toda la interfaz sale del diccionario (src/i18n) en el idioma de la cookie y cambia al
-// instante con el selector de la cabecera (data-i18n). El título y la bajada del curso quedan en español
-// (lang="es"). Prueba de estrés en desarrollo: /?i18n=estres.
+// instante con el selector de la cabecera (data-i18n). El título y la bajada del curso destacado salen en
+// quechua si el curso los tiene (portada.ts pone el lang). Prueba de estrés en desarrollo: /?i18n=estres.
 // Lógica del navegador: src/scripts/portada.ts (encabezado) y src/scripts/catalogo.ts (rejilla).
 import Publico from '../layouts/Publico.astro';
 import Boton from '../components/Boton.astro';
@@ -68,7 +68,7 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
 
         <div class="heroe__contenido" data-destacado-contenido hidden>
           <Badge tono="lila"><span data-i18n="heroe.badge">{t('heroe.badge')}</span></Badge>
-          <!-- Contenido del curso: queda en español -->
+          <!-- Contenido del curso: portada.ts lo pinta en el idioma actual y ajusta el lang -->
           <h2 class="heroe__titulo" lang="es" data-destacado-titulo></h2>
           <span class="heroe__linea" aria-hidden="true"></span>
           <p class="heroe__bajada" lang="es" data-destacado-descripcion></p>

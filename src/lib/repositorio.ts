@@ -107,6 +107,8 @@ export interface Curso {
   titulo: string;
   resumen: string;
   descripcion: string;
+  /** Act. 17: título, resumen y descripción en quechua (null en los cursos del administrador). */
+  qu: TextosQuechua | null;
   sobre: string;
   aprenderas: string[];
   categoria: Categoria;
@@ -138,12 +140,21 @@ interface PreguntaInterna extends Pregunta {
   correcta: number;
 }
 
+/** Act. 17: textos del curso en quechua (los módulos y las clases siguen en español). */
+export interface TextosQuechua {
+  titulo: string;
+  resumen: string;
+  descripcion: string;
+}
+
 /** Lo que muestra una tarjeta del catálogo. */
 export interface CursoResumen {
   id: number;
   slug: string;
   titulo: string;
   resumen: string;
+  /** Versión en quechua del título y el resumen, o null si no hay. */
+  qu: { titulo: string; resumen: string } | null;
   categoria: Categoria;
   nivel: Nivel;
   horas: number;
@@ -331,7 +342,8 @@ function desdePublicado(p: CursoPublicado): Curso {
     categoria: p.categoria,
     nivel: p.nivel,
     horas: p.horas,
-    precio: 0, // los cursos del administrador aún no tienen precio ni fecha de inicio
+    qu: null, // ni traducción al quechua…
+    precio: 0, // …ni precio ni fecha de inicio: los cursos del administrador aún no los tienen
     inicio: null,
     etiqueta: 'nuevo',
     color: COLOR_CATEGORIA[p.categoria],
@@ -504,7 +516,8 @@ function cursosVisibles(): Curso[] {
 
 function aResumen(c: Curso): CursoResumen {
   const buscable = normalizarBusqueda(
-    [c.titulo, c.resumen, ...c.temas, ...clasesDe(c).map((cl) => cl.titulo)].join(' · '),
+    // Act. 17: también se encuentra por su título y resumen en quechua.
+    [c.titulo, c.resumen, c.qu?.titulo ?? '', c.qu?.resumen ?? '', ...c.temas, ...clasesDe(c).map((cl) => cl.titulo)].join(' · '),
   );
   return {
     id: c.id,
@@ -515,6 +528,7 @@ function aResumen(c: Curso): CursoResumen {
     nivel: c.nivel,
     horas: c.horas,
     clases: c.totalClases,
+    qu: c.qu && { titulo: c.qu.titulo, resumen: c.qu.resumen },
     precio: c.precio,
     inicio: c.inicio,
     etiqueta: c.etiqueta,

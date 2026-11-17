@@ -1,4 +1,4 @@
-// Selector de idioma (Act. 17) · español / runasimi, sin recargar la página.
+// Selector de idioma (Act. 17) · español / quechua, sin recargar la página.
 // Al elegir un idioma:
 //   1. guarda la cookie "idioma" (1 año, SameSite=Lax, path=/): la próxima carga ya llega traducida
 //      desde el servidor (middleware.ts → Astro.locals.idioma), sin parpadeo;
@@ -85,8 +85,8 @@ export function iniciarSelector(grupo: HTMLElement): void {
       if (!esIdioma(elegido) || boton.getAttribute('aria-pressed') === 'true') return;
       for (const b of opciones) b.setAttribute('aria-pressed', String(b === boton));
       cambiarIdioma(elegido);
-      // El aviso lleva las dos palabras de la etiqueta visible ("Simi / Idioma: Runasimi").
-      retroalimentar(boton, 'exito', `${t('qu', 'idioma.etiqueta')} / ${t('es', 'idioma.etiqueta')}: ${t(elegido, `idioma.${elegido}`)}`);
+      // "Idioma: Quechua" / "Idioma: Español"
+      retroalimentar(boton, 'exito', `${t(elegido, 'idioma.etiqueta')}: ${t(elegido, `idioma.${elegido}`)}`);
       await esperar(ESPERA_EXITO_MS);
       ponerEstado(boton, 'normal');
     });

@@ -20,6 +20,8 @@ interface CursoResumen {
   slug: string;
   titulo: string;
   resumen: string;
+  /** Act. 17: título y resumen en quechua (null en los cursos del administrador). */
+  qu: { titulo: string; resumen: string } | null;
   categoria: string;
   nivel: 'basico' | 'intermedio' | 'avanzado';
   horas: number;
@@ -112,8 +114,13 @@ function iniciar(raiz: HTMLElement): void {
     portada.style.setProperty('--portada', c.color);
     $<HTMLElement>('[data-portada-icono]', t).append(plantilla(`icono-${c.icono}`, raiz));
     if (c.etiqueta) $<HTMLElement>('[data-portada-etiqueta]', t).append(plantilla(`etiqueta-${c.etiqueta}`, raiz));
-    $<HTMLElement>('[data-titulo]', t).textContent = c.titulo;
-    $<HTMLElement>('[data-resumen]', t).textContent = c.resumen;
+    // Act. 17: título y resumen en quechua si el curso los tiene; si no, en español (con su lang).
+    const textos = idioma === 'qu' && c.qu ? { ...c.qu, lang: 'qu' } : { titulo: c.titulo, resumen: c.resumen, lang: 'es' };
+    const titulo = $<HTMLElement>('[data-titulo]', t);
+    const resumen = $<HTMLElement>('[data-resumen]', t);
+    titulo.textContent = textos.titulo;
+    resumen.textContent = textos.resumen;
+    titulo.lang = resumen.lang = textos.lang;
     $<HTMLElement>('[data-clases]', t).textContent = tx('catalogo.clases', { n: c.clases });
     $<HTMLElement>('[data-horas]', t).textContent = tx('catalogo.horas', { n: c.horas });
     $<HTMLElement>('[data-nivel]', t).textContent = tx(`catalogo.nivelesTarjeta.${c.nivel}`);
@@ -125,7 +132,9 @@ function iniciar(raiz: HTMLElement): void {
     const ver = $<HTMLAnchorElement>('[data-ver]', t);
     ver.href = `/cursos/${c.slug}`;
     ver.dataset.slug = c.slug;
-    $<HTMLElement>('[data-ver-titulo]', t).textContent = `: ${c.titulo}`;
+    const verTitulo = $<HTMLElement>('[data-ver-titulo]', t);
+    verTitulo.textContent = `: ${textos.titulo}`;
+    verTitulo.lang = textos.lang;
     // Ley de Hick: solo la tarjeta destacada lleva la acción amarilla (y solo en /catalogo).
     if (destacadoPrincipal && c.etiqueta === 'destacado') ver.classList.replace('boton--secundario', 'boton--principal');
     pintarAvance(t, c.slug);
@@ -270,6 +279,7 @@ function iniciar(raiz: HTMLElement): void {
   if (traducido) {
     document.addEventListener(EVENTO_IDIOMA, (e) => {
       idioma = (e as CustomEvent<Idioma>).detail;
+      anuncio.textContent = ''; // el último aviso ("6 cursos") quedaría en el idioma anterior
       if (cargado) pintar(false);
     });
   }

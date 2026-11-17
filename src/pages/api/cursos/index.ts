@@ -1,4 +1,4 @@
-// GET /api/cursos  →  { cursos: CursoResumen[] }  (público)
+// GET /api/cursos  →  { cursos: CursoResumen[] }  (público; con precio, inicio y qu: { titulo, resumen } desde la Act. 17)
 // Lo pide el catálogo ("/" y "/catalogo") desde el navegador; los filtros de categoría,
 // nivel y búsqueda se aplican allí sobre esta lista (son pocos cursos).
 // En desarrollo: ?simular=error responde con fallo (estado de error con "Reintentar").

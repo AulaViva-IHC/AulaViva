@@ -1,6 +1,6 @@
 {
   "meta": { "titulo": "Cursos con certificado verificable", "saltar": "Saltar al contenido", "descripcion": "Cursos cortos con clases en video, subtítulos y un certificado con código y QR que cualquiera puede verificar.", "logo": "AulaViva, ir al inicio" },
-  "idioma": { "etiqueta": "Idioma", "es": "Español", "qu": "Runasimi" },
+  "idioma": { "etiqueta": "Idioma", "es": "Español", "qu": "Quechua" },
   "nav": { "cursos": "Cursos", "comoFunciona": "Cómo funciona", "verificar": "Verificar certificado", "iniciarSesion": "Iniciar sesión", "crearCuenta": "Crear cuenta", "irInicio": "Ir a mi Inicio", "abriendo": "Abriendo…", "principal": "Principal" },
   "heroe": { "badge": "Curso destacado", "tituloRespaldo": "Aprende con cursos cortos y certifícate", "parcial": "El curso destacado aparecerá al reconectar; el catálogo de abajo funciona.", "verCurso": "Ver el curso", "verTodos": "Ver todos los cursos", "abriendoCurso": "Abriendo curso…", "bajando": "Bajando…", "cargado": "Curso destacado cargado.", "sigueSinCargar": "El curso destacado sigue sin cargar. Revisa tu conexión.", "region": "Curso destacado", "h1": "AulaViva: cursos virtuales con certificado verificable" },
   "ilustracion": { "modulo": "Módulo", "certificado": "Certificado", "aprobacion": "Certificado de aprobación" },

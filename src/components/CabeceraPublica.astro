@@ -2,7 +2,7 @@
 // Cabecera pública (01-catalogo, 02-detalle, 10-verificar): logo, 3 enlaces y la cuenta.
 // Ley de Hick: aquí no hay botón amarillo; la acción principal es la de cada página.
 // Sin sesión: "Iniciar sesión" (enlace) y "Crear cuenta" (secundario). Con sesión: "Ir a mi Inicio".
-// Act. 17: selector de idioma (Español / Runasimi) antes de la cuenta; textos con data-i18n.
+// Act. 17: selector de idioma ("Idioma": Español / Quechua) antes de la cuenta; textos con data-i18n.
 import Logo from './Logo.astro';
 import Boton from './Boton.astro';
 import Icono from './Icono.astro';
@@ -46,7 +46,8 @@ const ENLACES: { id: SeccionPublica; clave: string; href: string }[] = [
   </nav>
   <div class="cabecera-publica__cuenta">
     <div class="idioma" role="group" aria-labelledby="idioma-etiqueta" data-selector-idioma>
-      <span class="idioma__etiqueta" id="idioma-etiqueta"><span lang="qu">{tBase('qu', 'idioma.etiqueta')}</span> / <span lang="es">{tBase('es', 'idioma.etiqueta')}</span></span>
+      <!-- "Idioma" y los nombres "Español" / "Quechua" son iguales en los dos idiomas: no cambian con el selector -->
+      <span class="idioma__etiqueta" id="idioma-etiqueta" lang="es">{tBase(idioma, 'idioma.etiqueta')}</span>
       <span class="idioma__opciones">
         {
           IDIOMAS.map((i) => (

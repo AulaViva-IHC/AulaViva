@@ -20,6 +20,8 @@ export interface CursoDemo {
   resumen: string;
   /** Bajada del detalle del curso. */
   descripcion: string;
+  /** Act. 17: título, resumen y descripción en quechua (catálogo y encabezado de "/"). Módulos y clases siguen en español. */
+  qu: { titulo: string; resumen: string; descripcion: string };
   /** Pestaña "Descripción". */
   sobre: string;
   aprenderas: string[];
@@ -50,6 +52,11 @@ export const catalogoDemo: readonly CursoDemo[] = [
     titulo: 'Diseño de interfaces con Figma',
     resumen: 'Diseña pantallas claras y pruébalas con personas.',
     descripcion: 'De las heurísticas de usabilidad a un prototipo navegable que pruebas con personas reales.',
+    qu: {
+      titulo: 'Figmawan pantallakunata diseñay',
+      resumen: 'Chuya pantallakunata diseñay, runakunawan pruebay.',
+      descripcion: 'Usabilidad heurísticakunamanta qallarispa, chiqap runakunawan pruebanayki prototipokama.',
+    },
     sobre:
       'Aprende a diseñar interfaces que la gente entiende a la primera. Empiezas por los principios de usabilidad, construyes componentes reutilizables en Figma y terminas con un prototipo que pruebas con usuarios reales.',
     aprenderas: [
@@ -126,6 +133,11 @@ export const catalogoDemo: readonly CursoDemo[] = [
     titulo: 'Python desde cero',
     resumen: 'Escribe tus primeros programas paso a paso.',
     descripcion: 'Programa desde la primera clase: variables, listas, funciones y un proyecto final que resuelve un problema real.',
+    qu: {
+      titulo: 'Pythonta qallariymanta yachay',
+      resumen: 'Ñawpaq programaykikunata sapa ñanpi qillqay.',
+      descripcion: 'Ñawpaq yachachikuymantapacha programay: variablekuna, listakuna, funcionkuna, tukupaypitaq chiqap sasachakuyta allichaq proyecto.',
+    },
     sobre:
       'Un curso para quien nunca ha programado. Cada clase termina con un ejercicio corto y al final construyes una pequeña aplicación de consola.',
     aprenderas: [
@@ -201,6 +213,11 @@ export const catalogoDemo: readonly CursoDemo[] = [
     titulo: 'Análisis de datos con Excel',
     resumen: 'Convierte datos en decisiones con tablas y gráficos.',
     descripcion: 'Limpia, resume y presenta datos con fórmulas, tablas dinámicas y paneles que se entienden de un vistazo.',
+    qu: {
+      titulo: 'Excelwan datokunata qawariy',
+      resumen: 'Tablakunawan graficokunawan datokunata akllanakunaman tikray.',
+      descripcion: 'Formulakunawan, tabla dinamicakunawan, utqaylla hamutanapaq panelkunawan datokunata pichay, pisiyachiy, rikuchiy.',
+    },
     sobre:
       'Para quien ya usa Excel y quiere sacarle provecho a sus datos. Trabajas con un archivo de ventas real de principio a fin.',
     aprenderas: [
@@ -269,6 +286,11 @@ export const catalogoDemo: readonly CursoDemo[] = [
     titulo: 'Fundamentos de redes de computadoras',
     resumen: 'Entiende cómo se conectan los equipos y arma una red.',
     descripcion: 'Del cable al router: cómo viaja la información, cómo se reparten las direcciones IP y cómo armar una red pequeña.',
+    qu: {
+      titulo: 'Computadorakunapa redninpa tiksinkuna',
+      resumen: 'Imaynatam equipokuna tinkinakunku yachay, huk redtataq ruway.',
+      descripcion: 'Cablemanta routerkama: imaynatam willakuy purin, imaynatam IP direccionkuna rakinakun, imaynatam huchuy redta ruwanki.',
+    },
     sobre:
       'Conoce las piezas de una red y cómo se comunican. Practicas con un simulador gratuito y terminas diseñando la red de una oficina.',
     aprenderas: [
@@ -347,6 +369,11 @@ export const catalogoDemo: readonly CursoDemo[] = [
     titulo: 'Comunicación efectiva',
     resumen: 'Expón tus ideas con claridad y seguridad.',
     descripcion: 'Ordena tus ideas, adapta tu mensaje a quien te escucha y presenta con seguridad, en persona o en línea.',
+    qu: {
+      titulo: 'Allin willanakuy',
+      resumen: 'Yuyayniykikunata chuyata, mana manchakuspa willay.',
+      descripcion: 'Yuyayniykikunata allichay, uyariqniykiman hina rimayniykita tupachiy, mana manchakuspa rikuchiy, runakunapa ñawpaqninpi utaq internetpi.',
+    },
     sobre:
       'Un curso práctico para estudiantes y profesionales. Grabas tres presentaciones cortas y recibes una guía para mejorar cada una.',
     aprenderas: [
@@ -405,6 +432,11 @@ export const catalogoDemo: readonly CursoDemo[] = [
     titulo: 'Introducción a la inteligencia artificial',
     resumen: 'Conoce cómo funciona la IA y úsala con criterio.',
     descripcion: 'Qué hay detrás de los modelos de IA, cómo aprenden, qué pueden y qué no pueden hacer, y cómo usarlos con responsabilidad.',
+    qu: {
+      titulo: 'Inteligencia artificialman yaykuy',
+      resumen: 'IA imayna llamkasqanta riqsiy, allin yuyaywan llamkachiy.',
+      descripcion: 'IA modelokunapa qipanpi ima kasqan, imaynata yachanku, ima atinku mana atinkuchu, imaynata allin yuyaywan llamkachina.',
+    },
     sobre:
       'Un recorrido por los conceptos clave de la inteligencia artificial con ejemplos y ejercicios. Requiere bases de programación y estadística.',
     aprenderas: [
