@@ -2,7 +2,7 @@
   "meta": { "titulo": "Chiqanchakuq certificadoyuq yachaykuna", "saltar": "Ukuman riy", "descripcion": "Pisi yachaykuna videopi yachachikuywan subtitulokunawan, codigoyuq QR-niyuq certificadowan, pipas chiqanchanampaq.", "logo": "AulaViva, ir al inicio" },
   "idioma": { "etiqueta": "Idioma", "es": "Español", "qu": "Quechua" },
   "nav": { "cursos": "Yachaykuna", "comoFunciona": "Imaynam llamkan", "verificar": "Certificadota chiqanchay", "iniciarSesion": "Yaykuy", "crearCuenta": "Cuentaykita kamay", "irInicio": "Qallariyniyman riy", "abriendo": "Kichachkan…", "principal": "Hatun ñan" },
-  "heroe": { "badge": "Akllasqa yachay", "tituloRespaldo": "Pisi yachaykunawan yachay, certificadoykitapas chaskiy", "parcial": "Akllasqa yachayqa internet kutimuptinmi rikurinqa; uraypi yachaykunaqa llamkanmi.", "verCurso": "Yachayta qaway", "verTodos": "Llapan yachaykunata qaway", "abriendoCurso": "Yachayta kichachkan…", "bajando": "Uraykuchkan…", "cargado": "Akllasqa yachay apamusqañam.", "sigueSinCargar": "Akllasqa yachayqa manaraqmi rikurinchu. Internetniykita qaway.", "region": "Akllasqa yachay", "h1": "AulaViva: cursos virtuales con certificado verificable" },
+  "heroe": { "badge": "Akllasqa yachay", "tituloRespaldo": "Pisi yachaykunawan yachay, certificadoykitapas chaskiy", "parcial": "Akllasqa yachayqa internet kutimuptinmi rikurinqa; uraypi yachaykunaqa llamkanmi.", "verCurso": "Yachayta qaway", "verTodos": "Llapan yachaykunata qaway", "abriendoCurso": "Yachayta kichachkan…", "bajando": "Uraykuchkan…", "cargado": "Akllasqa yachay apamusqañam.", "sigueSinCargar": "Akllasqa yachayqa manaraqmi rikurinchu. Internet-niykita qaway.", "region": "Akllasqa yachay", "h1": "AulaViva: cursos virtuales con certificado verificable" },
   "ilustracion": { "modulo": "Raki", "certificado": "Certificado", "aprobacion": "Atipasqa certificado" },
   "beneficios": {
     "ritmo": { "titulo": "Allillamanta yachay", "texto": "Munasqayki pachapi ñawpaqman riy, mana kamachisqa pachayuq." },
@@ -22,7 +22,7 @@
     "limpiar": "Akllasqakunata pichay", "ningunoAnuncio": "Manam mayqan yachaypas tupanchu. Akllasqakunata pichayta atinki.",
     "filtrosQuitados": "Akllasqakuna pichasqañam. Llapan yachaykunam rikurichkan.",
     "errorTitulo": "Manam yachaykunata apamuyta atirqanchikchu", "errorAnuncio": "Manam yachaykunata apamuyta atirqanchikchu. «Yapamanta ruway» nisqata ñitiy.",
-    "siguenSinCargar": "Yachaykunaqa manaraqmi apamusqachu. Internetniykita qaway, hinaspa yapamanta ruway.",
+    "siguenSinCargar": "Yachaykunaqa manaraqmi apamusqachu. Internet-niykita qaway, hinaspa yapamanta ruway.",
     "cargados": "Yachaykuna apamusqañam.", "cargando": "Yachaykunata apamuchkan",
     "verCurso": "Yachayta qaway", "destacado": "Akllasqa", "nuevo": "Musuq", "inscrito": "Qillqasqa", "aprobado": "Atipasqa",
     "inscritoAvance": "Qillqasqa · {n} %",
@@ -32,10 +32,10 @@
     "avanceCargado": "Tu avance se cargó.",
     "avanceSigue": "Tu avance sigue sin cargar. Revisa tu conexión y vuelve a intentarlo."
   },
-  "error": { "titulo": "Manam kay paginata apamuyta atirqanchikchu", "texto": "Internetniykita qaway, hinaspa yapamanta ruway.", "reintentar": "Yapamanta ruway", "reintentando": "Yapamanta ruwachkan…", "cargado": "¡Apamusqañam!" },
+  "error": { "titulo": "Manam kay paginata apamuyta atirqanchikchu", "texto": "Internet-niykita qaway, hinaspa yapamanta ruway.", "reintentar": "Yapamanta ruway", "reintentando": "Yapamanta ruwachkan…", "cargado": "¡Apamusqañam!" },
   "parcial": { "titulo": "Manam kay rakita apamuyta atirqanchikchu", "texto": "El resto de la página funciona; esta parte aparecerá al reconectar.", "reconectar": "Yapamanta tinkiy", "reconectando": "Yapamanta tinkichkan…", "conectado": "¡Tinkisqañam!" },
   "ciclo": {
-    "titulo": "Kaynatam AulaVivapi yachanki", "bajada": "Tawa ñan, sapa rakipi kutipakuq.",
+    "titulo": "Kaynatam AulaViva-pi yachanki", "bajada": "Tawa ñan, sapa rakipi kutipakuq.",
     "mira": { "titulo": "Qaway", "texto": "Pisi videokuna subtitulokunayuq, sapa yachaypa imarayku kasqanta imayna kasqantapas willakuq." },
     "practica": { "titulo": "Kamarikuy", "texto": "Yachasqaykita kikiyki ruwayniykipi churanaykipaq ruwanakuna qillqakunapas." },
     "certifica": { "titulo": "Certificakuy", "texto": "Codigoyuq QR-niyuq certificado, pipas chiqanchanampaq." },

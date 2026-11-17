@@ -53,7 +53,7 @@ export const catalogoDemo: readonly CursoDemo[] = [
     resumen: 'Diseña pantallas claras y pruébalas con personas.',
     descripcion: 'De las heurísticas de usabilidad a un prototipo navegable que pruebas con personas reales.',
     qu: {
-      titulo: 'Figmawan pantallakunata diseñay',
+      titulo: 'Figma: pantallakunata diseñay',
       resumen: 'Chuya pantallakunata diseñay, runakunawan pruebay.',
       descripcion: 'Usabilidad heurísticakunamanta qallarispa, chiqap runakunawan pruebanayki prototipokama.',
     },
@@ -134,7 +134,7 @@ export const catalogoDemo: readonly CursoDemo[] = [
     resumen: 'Escribe tus primeros programas paso a paso.',
     descripcion: 'Programa desde la primera clase: variables, listas, funciones y un proyecto final que resuelve un problema real.',
     qu: {
-      titulo: 'Pythonta qallariymanta yachay',
+      titulo: 'Python: qallariymanta yachay',
       resumen: 'Ñawpaq programaykikunata sapa ñanpi qillqay.',
       descripcion: 'Ñawpaq yachachikuymantapacha programay: variablekuna, listakuna, funcionkuna, tukupaypitaq chiqap sasachakuyta allichaq proyecto.',
     },
@@ -214,7 +214,7 @@ export const catalogoDemo: readonly CursoDemo[] = [
     resumen: 'Convierte datos en decisiones con tablas y gráficos.',
     descripcion: 'Limpia, resume y presenta datos con fórmulas, tablas dinámicas y paneles que se entienden de un vistazo.',
     qu: {
-      titulo: 'Excelwan datokunata qawariy',
+      titulo: 'Excel: datokunata qawariy',
       resumen: 'Tablakunawan graficokunawan datokunata akllanakunaman tikray.',
       descripcion: 'Formulakunawan, tabla dinamicakunawan, utqaylla hamutanapaq panelkunawan datokunata pichay, pisiyachiy, rikuchiy.',
     },
@@ -372,7 +372,7 @@ export const catalogoDemo: readonly CursoDemo[] = [
     qu: {
       titulo: 'Allin willanakuy',
       resumen: 'Yuyayniykikunata chuyata, mana manchakuspa willay.',
-      descripcion: 'Yuyayniykikunata allichay, uyariqniykiman hina rimayniykita tupachiy, mana manchakuspa rikuchiy, runakunapa ñawpaqninpi utaq internetpi.',
+      descripcion: 'Yuyayniykikunata allichay, uyariqniykiman hina rimayniykita tupachiy, mana manchakuspa rikuchiy, runakunapa ñawpaqninpi utaq internet-pi.',
     },
     sobre:
       'Un curso práctico para estudiantes y profesionales. Grabas tres presentaciones cortas y recibes una guía para mejorar cada una.',
@@ -433,7 +433,7 @@ export const catalogoDemo: readonly CursoDemo[] = [
     resumen: 'Conoce cómo funciona la IA y úsala con criterio.',
     descripcion: 'Qué hay detrás de los modelos de IA, cómo aprenden, qué pueden y qué no pueden hacer, y cómo usarlos con responsabilidad.',
     qu: {
-      titulo: 'Inteligencia artificialman yaykuy',
+      titulo: 'Inteligencia artificial: qallariy yachay',
       resumen: 'IA imayna llamkasqanta riqsiy, allin yuyaywan llamkachiy.',
       descripcion: 'IA modelokunapa qipanpi ima kasqan, imaynata yachanku, ima atinku mana atinkuchu, imaynata allin yuyaywan llamkachina.',
     },
