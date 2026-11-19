@@ -32,13 +32,10 @@ const RADIO = 96;
 const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
 ---
 
-<App titulo="Resultado" activo="mis-cursos" simular={simular}>
+<App titulo="Resultado" activo="mis-cursos" simular={simular} barraContraste>
   <div class="resultado" data-resultado data-curso={cursoId} aria-busy="true">
     <!-- Ideal (con skeleton) -->
     <Tarjeta class="resultado__tarjeta" data-region="contenido">
-      <div class="confeti" aria-hidden="true" data-confeti hidden>
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => <span class={`confeti__pieza confeti__pieza--${i}`} />)}
-      </div>
       <p class="resultado__ceja" data-ceja>
         <span class="skeleton sk sk--ceja" aria-hidden="true"></span>
       </p>
@@ -333,30 +330,6 @@ const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
     display: none;
   }
 
-  /* Confeti decorativo (solo si aprueba; sin movimiento con prefers-reduced-motion) */
-  .confeti[hidden] {
-    display: none;
-  }
-  .confeti__pieza {
-    position: absolute;
-    width: 12px;
-    height: 22px;
-    border-radius: 3px;
-    animation: caer 1.2s ease-out both;
-  }
-  .confeti__pieza--0 { left: 9%; top: 6%; background: var(--yellow); transform: rotate(18deg); }
-  .confeti__pieza--1 { left: 24%; top: 9%; background: var(--lila); transform: rotate(-24deg); }
-  .confeti__pieza--2 { left: 16%; top: 16%; width: 12px; height: 12px; border-radius: 50%; background: var(--mint-acento); }
-  .confeti__pieza--3 { left: 12%; top: 29%; width: 10px; height: 10px; border-radius: 50%; background: var(--lila); }
-  .confeti__pieza--4 { right: 18%; top: 7%; background: var(--mint-acento); transform: rotate(40deg); }
-  .confeti__pieza--5 { right: 25%; top: 15%; background: var(--lila); transform: rotate(-12deg); }
-  .confeti__pieza--6 { right: 10%; top: 19%; width: 16px; height: 16px; border-radius: 50%; background: var(--yellow); }
-  .confeti__pieza--7 { right: 11%; top: 32%; width: 22px; height: 12px; background: var(--yellow); transform: rotate(-30deg); }
-  @keyframes caer {
-    from { opacity: 0; translate: 0 -24px; }
-    to { opacity: 1; translate: 0 0; }
-  }
-
   /* Modal */
   .confirmar,
   .corregir {
@@ -417,9 +390,6 @@ const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .confeti__pieza {
-      animation: none;
-    }
     .anillo__avance {
       transition: none;
     }

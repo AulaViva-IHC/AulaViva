@@ -3,15 +3,18 @@
 // El menú (estudiante o admin) sale del rol del usuario, salvo que se indique.
 import Publico from './Publico.astro';
 import Sidebar, { type Menu } from '../components/Sidebar.astro';
+import InterruptorContraste from '../components/InterruptorContraste.astro';
 
 interface Props {
   titulo: string;
   activo: string;
   menu?: Menu;
   simular?: string;
+  /** Act. 18: barra con el interruptor "Alto contraste" para las páginas sin Topbar (Clase, Evaluación, Resultado). */
+  barraContraste?: boolean;
 }
 
-const { titulo, activo, simular } = Astro.props;
+const { titulo, activo, simular, barraContraste = false } = Astro.props;
 const usuario = Astro.locals.usuario!;
 const menu: Menu = Astro.props.menu ?? (usuario.rol === 'admin' ? 'admin' : 'estudiante');
 ---
@@ -21,6 +24,7 @@ const menu: Menu = Astro.props.menu ?? (usuario.rol === 'admin' ? 'admin' : 'est
   <div class="app">
     <Sidebar menu={menu} activo={activo} usuario={usuario} />
     <main class="app__principal" id="contenido" tabindex="-1">
+      {barraContraste && <div class="app__barra"><InterruptorContraste /></div>}
       <slot />
     </main>
   </div>
@@ -40,6 +44,14 @@ const menu: Menu = Astro.props.menu ?? (usuario.rol === 'admin' ? 'admin' : 'est
     min-width: 0;
     padding: var(--e5) var(--e6) var(--e6);
     outline: none;
+  }
+  .app__barra {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: calc(var(--e3) - var(--e5)); /* más cerca del contenido que el resto de bloques */
+  }
+  .app__barra :global(.contraste:not([aria-pressed='true'], [data-estado='exito'])) {
+    background: var(--white);
   }
   .saltar {
     position: absolute;

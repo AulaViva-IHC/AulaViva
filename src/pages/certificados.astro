@@ -354,7 +354,7 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
     margin: 0;
     padding: 18px;
     border-radius: var(--radio-tarjeta);
-    background: linear-gradient(135deg, var(--indigo) 0 78%, var(--yellow) 78% 82%, var(--indigo) 82%);
+    background: var(--indigo); /* Act. 18: marco sólido, sin la cinta diagonal con degradado */
     container-type: inline-size;
   }
   .certificado__hoja {
@@ -365,11 +365,7 @@ const ICONOS: IconoCurso[] = ['pluma', 'codigo', 'grafico', 'red', 'chat', 'chis
     gap: 1.6cqw;
     padding: 5cqw 6cqw 4.5cqw;
     border-radius: 2px;
-    background-color: #fbfaf6;
-    background-image:
-      linear-gradient(rgb(23 21 59 / 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(23 21 59 / 0.04) 1px, transparent 1px);
-    background-size: 22px 22px;
+    background: #fbfaf6; /* mismo papel que el PDF; Act. 18: sin la trama de cuadrícula */
     color: var(--ink);
     text-align: center;
     overflow: hidden;

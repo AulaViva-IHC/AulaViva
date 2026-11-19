@@ -49,7 +49,6 @@ const propsMarco = usuario
       <section class="heroe oscuro" aria-labelledby="titulo-verificar">
         <Badge tono="lila">Pública, sin crear cuenta</Badge>
         <h1 class="heroe__titulo" id="titulo-verificar" tabindex="-1" data-titulo-pagina>Verifica un certificado</h1>
-        <span class="heroe__linea" aria-hidden="true"></span>
         <p class="heroe__texto">Escribe el código de 10 caracteres que aparece en el certificado o escanea su QR.</p>
       </section>
     )
@@ -90,7 +89,7 @@ const propsMarco = usuario
           </div>
           <p class="formulario__otros">
             <span>Otros resultados posibles:</span>
-            <Badge tono="neutro">No encontrado</Badge>
+            <Badge tono="neutro" icono="buscar">No encontrado</Badge>
             <Badge tono="rojo">Anulado</Badge>
           </p>
         </form>
@@ -109,7 +108,6 @@ const propsMarco = usuario
               <path fill="#fff" d="M1 1h5v5H1zM15 1h5v5h-5zM1 15h5v5H1z"></path>
               <path fill="#17153B" d="M2 2h3v3H2zM16 2h3v3h-3zM2 16h3v3H2z"></path>
             </svg>
-            <span class="escaner__linea"></span>
           </div>
           <video class="escaner__video" playsinline muted data-video hidden aria-label="Vista de la cámara"></video>
           <canvas data-lienzo hidden></canvas>
@@ -211,11 +209,6 @@ const propsMarco = usuario
     font-weight: 800;
     letter-spacing: -0.03em;
     outline: none;
-  }
-  .heroe__linea {
-    width: 40px;
-    height: 3px;
-    background: var(--white);
   }
   .heroe__texto {
     max-width: 46ch;
@@ -326,21 +319,6 @@ const propsMarco = usuario
     width: 100%;
     height: 100%;
     shape-rendering: crispEdges;
-  }
-  .escaner__linea {
-    position: absolute;
-    left: -16px;
-    right: -16px;
-    top: 50%;
-    height: 3px;
-    border-radius: 2px;
-    background: var(--indigo3);
-    box-shadow: 0 0 12px var(--indigo3);
-    animation: barrer 2.2s ease-in-out infinite alternate;
-  }
-  @keyframes barrer {
-    from { top: 8%; }
-    to { top: 92%; }
   }
   .escaner__video {
     width: 184px;
@@ -526,11 +504,6 @@ const propsMarco = usuario
     }
     .veredicto__datos {
       grid-template-columns: minmax(0, 1fr);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .escaner__linea {
-      animation: none;
     }
   }
 </style>

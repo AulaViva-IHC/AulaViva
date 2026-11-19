@@ -1,0 +1,316 @@
+/* AulaViva · Modo alto contraste (Act. 18 · Microsoft Inclusive Design: exclusión situacional)
+   Escenario: verificar un certificado bajo el sol, con baja visión o con los ojos dilatados.
+
+   Se activa con <html data-contraste="alto">:
+     · el interruptor "Alto contraste" (cookie contraste=alto; el servidor pone el atributo, sin parpadeo);
+     · o, si no hay cookie, la preferencia del sistema @media (prefers-contrast: more): un script en línea
+       del <head> (Publico.astro) pone el atributo antes de pintar. Con la cookie contraste=normal no se activa.
+   Con @media (forced-colors: active) manda el sistema (colores forzados de Windows): al final de este archivo.
+
+   Reglas: texto en 700 con contraste ≥ 7:1 (negro o índigo #1B1750 sobre blanco; blanco sobre índigo),
+   sin degradados, sin sombras y sin fondos pastel (blanco o índigo sólido), borde sólido de 2 px en
+   botones, campos, chips, tarjetas y pestañas, foco de 3 px y estados con icono + palabra en negrita.
+   Excepción documentada (CLAUDE.md §5.4 y §5.5): solo en este modo, el hover no sube la sombra y las
+   regiones se separan con borde en vez de fondo.
+   Se usa !important a propósito: es una preferencia de la persona que debe ganar a los estilos de cada
+   componente (igual que una hoja de estilo de usuario). */
+
+/* ─── 1. Tokens: pasteles → blanco; textos y estados ≥ 7:1 ─────────────────────────── */
+:root[data-contraste='alto'] {
+  --ink: #000000;      /* 21:1 sobre blanco */
+  --ink2: #1b1750;     /* 16,3:1 */
+  --ink3: #1b1750;
+  --indigo3: #1b1750;  /* enlaces y selección: el índigo más oscuro */
+  --paper: #ffffff;
+  --indigo-t: #ffffff;
+  --mint: #ffffff;
+  --mint-d: #ffffff;
+  --lila: #ffffff;
+  --yellow-t: #ffffff;
+  --red-t: #ffffff;
+  --org-t: #ffffff;
+  --grn-t: #ffffff;
+  --red: #7f1d1d;      /* 10,0:1 */
+  --org: #7c2d12;      /* 9,4:1 */
+  --grn: #14532d;      /* 9,1:1 */
+  --sombra-1: none;
+  --sombra-2: none;
+  --anillo: 0 0 0 0 transparent;
+  --foco: #000000;
+  /* Borde de 2 px: negro sobre blanco, blanco sobre índigo */
+  --ac-borde: #000000;
+  color-scheme: light;
+}
+:root[data-contraste='alto'] .oscuro {
+  --foco: #ffffff;
+  --ac-borde: #ffffff;
+}
+
+/* ─── 2. Texto en negrita ─────────────────────────────────────────────────────────── */
+:root[data-contraste='alto'] body,
+:root[data-contraste='alto'] body * {
+  font-weight: 700 !important;
+}
+:root[data-contraste='alto'] body {
+  background: #ffffff;
+  color: #000000;
+}
+/* Enlaces siempre subrayados: no dependen del color */
+:root[data-contraste='alto'] a:not(.boton, .logo, .lateral__item, .cabecera-publica__enlace, .en-progreso, .curso__enlace) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* Textos blancos semitransparentes sobre índigo → blanco sólido (16:1) */
+:root[data-contraste='alto'] .oscuro :is(p, li, span, a, h1, h2, h3, dt, dd, time, small, strong):not(.badge, .badge *, .boton, .boton *, .lateral__avatar, .skeleton) {
+  color: #ffffff !important;
+}
+
+/* ─── 3. Sin degradados ni sombras ────────────────────────────────────────────────── */
+:root[data-contraste='alto'] :is(.skeleton, .sk, .boton, .boton__barra, .certificado, .certificado__hoja) {
+  background-image: none !important;
+}
+:root[data-contraste='alto'] :is(
+    .boton, .modal, .senal, .buscador__panel, .buscador__control, .barra__campana, .campo__control,
+    .obtenido, .en-progreso, .opcion, .num, .veredicto__circulo, .stepper__circulo, .paso__circulo,
+    .idioma__opcion, .filtro-categoria, .filtro-nivel, .categoria, .pestanas__pestana, .pestanas,
+    .cabecera-publica__enlace, .pestanas, .marca, .certificado__firma, .certificado__sello, .muestra,
+    .contraste, .atajos__interruptor
+  ) {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+:root[data-contraste='alto'] .modal::backdrop {
+  background: rgb(0 0 0 / 0.75);
+}
+/* Fondos casi blancos escritos a mano → blanco */
+:root[data-contraste='alto'] :is(.certificado__hoja, .lateral__item:hover) {
+  background: #ffffff;
+}
+:root[data-contraste='alto'] .lateral__item:hover {
+  background: transparent !important;
+  text-decoration: underline;
+}
+/* Skeleton: sin brillo animado; se ve por su borde */
+:root[data-contraste='alto'] :is(.skeleton, .sk) {
+  border: 2px dashed var(--ac-borde) !important;
+  background: #ffffff !important;
+  animation: none !important;
+}
+:root[data-contraste='alto'] .oscuro :is(.skeleton, .sk) {
+  background: transparent !important;
+}
+
+/* ─── 4. Borde sólido de 2 px en controles, chips, tarjetas y pestañas ───────────── */
+:root[data-contraste='alto'] :is(
+    .boton, button:not(.enlace, .lateral__item, .ver-password, .lateral__abrir), .campo__control,
+    .buscador__control, .tarjeta, .badge, .idioma__opcion, .filtro-categoria, .filtro-nivel, .categoria,
+    .pestanas__pestana, .pestana, .opcion, .num, .obtenido, .en-progreso, .curso, .barra__campana,
+    .modal, .senal, .buscador__panel, .pista, .veredicto, .beneficio, .ciclo__paso, .paso-cert, .aviso,
+    .inscripcion, .stepper__circulo, .mi-curso, .aviso-n, select, textarea,
+    input:is([type='text'], [type='email'], [type='search'], [type='password'], [type='url'], [type='number']):not(.campo__control *, .buscador__control *)
+  ) {
+  border: 2px solid var(--ac-borde) !important;
+}
+/* El campo con error mantiene su borde rojo (además del icono y el mensaje) */
+:root[data-contraste='alto'] .campo.is-error .campo__control {
+  border-color: var(--red) !important;
+}
+/* Botón principal: conserva el amarillo de la acción principal (CLAUDE.md §5.2; negro sobre amarillo 14,5:1)
+   y gana borde negro. Botón secundario: blanco con borde. */
+:root[data-contraste='alto'] .boton--principal {
+  background: var(--yellow) !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
+:root[data-contraste='alto'] .boton--secundario {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+:root[data-contraste='alto'] .boton[data-estado='exito'] {
+  background: #ffffff !important;
+  color: var(--grn) !important;
+  border-color: var(--grn) !important;
+}
+:root[data-contraste='alto'] .boton[data-estado='error'] {
+  border-color: var(--red) !important;
+}
+/* Hover: sin sombra; se subraya el texto (además de crecer 2 %) */
+:root[data-contraste='alto'] .boton:hover .boton__contenido {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ─── 5. Seleccionado / actual: índigo sólido con texto blanco (además del check) ── */
+:root[data-contraste='alto'] :is(
+    .idioma__opcion[aria-pressed='true'], .filtro-categoria[aria-pressed='true'], .filtro-nivel[aria-pressed='true'],
+    .categoria[aria-pressed='true'], .obtenido[aria-pressed='true'], .pestanas__pestana[aria-selected='true'],
+    .pestana[aria-current='page'], .opcion:has(input:checked), .contraste[aria-pressed='true'],
+    .atajos__interruptor[aria-pressed='true']
+  ) {
+  background: var(--indigo) !important;
+  border-color: var(--indigo) !important;
+  color: #ffffff !important;
+}
+:root[data-contraste='alto'] :is(
+    .idioma__opcion[aria-pressed='true'], .filtro-categoria[aria-pressed='true'], .filtro-nivel[aria-pressed='true'],
+    .categoria[aria-pressed='true'], .obtenido[aria-pressed='true'], .pestanas__pestana[aria-selected='true'],
+    .pestana[aria-current='page'], .opcion:has(input:checked), .contraste[aria-pressed='true'],
+    .atajos__interruptor[aria-pressed='true']
+  ) :is(span, svg, p, kbd):not(.badge, .badge *, .opcion__letra, .opcion__atajo, .obtenido__icono, .obtenido__icono *) {
+  color: #ffffff !important;
+}
+/* Letra y número del atajo de la opción elegida: blanco con texto negro */
+:root[data-contraste='alto'] .opcion:has(input:checked) :is(.opcion__letra, .opcion__atajo) {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+/* Estado de éxito del selector de idioma: verde oscuro con check */
+:root[data-contraste='alto'] :is(.idioma__opcion, .contraste)[data-estado='exito'] {
+  background: #ffffff !important;
+  border-color: var(--grn) !important;
+  color: var(--grn) !important;
+}
+/* Página actual en la cabecera pública: subrayado grueso */
+:root[data-contraste='alto'] .cabecera-publica__enlace[aria-current='page'] {
+  color: #000000 !important;
+  text-decoration: underline 3px;
+  text-underline-offset: 6px;
+}
+/* Menú lateral: ítem actual con borde blanco */
+:root[data-contraste='alto'] .lateral__item[aria-current='page'] {
+  border: 2px solid #ffffff !important;
+}
+:root[data-contraste='alto'] .lateral__item :is(svg) {
+  color: #ffffff !important;
+}
+:root[data-contraste='alto'] .lateral__avatar {
+  border: 2px solid #ffffff;
+}
+/* Evaluación: navegador de preguntas */
+:root[data-contraste='alto'] .num[data-respondida] {
+  background: var(--indigo) !important;
+  color: #ffffff !important;
+}
+:root[data-contraste='alto'] .num[aria-current='step'] {
+  outline: 3px solid #000000;
+  outline-offset: 3px;
+  text-decoration: underline 3px;
+  text-underline-offset: 4px;
+}
+:root[data-contraste='alto'] .muestra {
+  border: 2px solid #000000;
+}
+:root[data-contraste='alto'] .muestra--actual {
+  outline: 3px solid #000000;
+  outline-offset: 1px;
+}
+/* Barras de progreso: el riel (antes gris) se ve por su borde */
+:root[data-contraste='alto'] .progreso {
+  border: 2px solid var(--ac-borde);
+  background: #ffffff;
+}
+:root[data-contraste='alto'] .progreso__avance {
+  background: var(--indigo) !important;
+}
+/* Evaluación (Act. 18, una mano): número del atajo con borde y barra fija con línea superior */
+:root[data-contraste='alto'] .opcion__atajo {
+  border: 2px solid currentColor;
+}
+@media (max-width: 640px) {
+  :root[data-contraste='alto'] .pregunta__nav {
+    box-shadow: none !important;
+    border-top: 2px solid #000000;
+  }
+}
+/* Índice de la clase, Stepper y ruta de Inicio: el anillo de estado pasa a borde */
+:root[data-contraste='alto'] .marca {
+  border: 2px solid currentColor;
+}
+:root[data-contraste='alto'] :is(.stepper__paso[data-estado='actual'] .stepper__circulo, .paso[data-estado='en-curso'] .paso__circulo) {
+  outline: 3px solid #000000;
+  outline-offset: 3px;
+}
+/* Certificado: línea de firma y sello con borde (sin sombra) */
+:root[data-contraste='alto'] .certificado__firma {
+  border-top: 2px solid #000000;
+}
+:root[data-contraste='alto'] .certificado__sello {
+  border: 2px solid #000000;
+}
+/* Pestañas de Pestanas.astro y del acceso: la línea de abajo pasa a borde */
+:root[data-contraste='alto'] .pestanas {
+  border-bottom: 2px solid #000000;
+}
+
+/* ─── 6. Foco de 3 px sólido (negro sobre claro, blanco sobre índigo) ─────────────── */
+:root[data-contraste='alto'] :focus-visible {
+  outline: 3px solid var(--foco) !important;
+  outline-offset: 2px !important;
+}
+:root[data-contraste='alto'] .opcion:has(input:focus-visible) {
+  outline: 3px solid var(--foco) !important;
+  outline-offset: 3px !important;
+}
+:root[data-contraste='alto'] .campo__control:has(:is(input, textarea, select):focus),
+:root[data-contraste='alto'] .buscador__control:has(input:focus) {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* ─── 7. Estados siempre con icono + palabra en negrita ───────────────────────────── */
+/* Insignias: fondo blanco, borde y texto del color del estado */
+:root[data-contraste='alto'] .badge {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+:root[data-contraste='alto'] .badge--rojo { color: var(--red) !important; border-color: var(--red) !important; }
+:root[data-contraste='alto'] .badge--naranja { color: var(--org) !important; border-color: var(--org) !important; }
+:root[data-contraste='alto'] .badge--verde,
+:root[data-contraste='alto'] .badge--sugerido,
+:root[data-contraste='alto'] .badge--nuevo { color: var(--grn) !important; border-color: var(--grn) !important; }
+:root[data-contraste='alto'] .badge--destacado { background: var(--yellow) !important; }
+/* Avisos: borde del color del estado */
+:root[data-contraste='alto'] .aviso--error { border-color: var(--red) !important; }
+:root[data-contraste='alto'] .aviso--advertencia { border-color: var(--org) !important; }
+/* Resultado de /verificar: región blanca con borde del estado; círculo sólido con icono blanco */
+:root[data-contraste='alto'] .veredicto {
+  border-width: 3px !important;
+}
+:root[data-contraste='alto'] .veredicto[data-tono='valido'] { border-color: var(--grn) !important; }
+:root[data-contraste='alto'] .veredicto[data-tono='anulado'] { border-color: var(--red) !important; }
+:root[data-contraste='alto'] .veredicto[data-tono='no-encontrado'] { border-color: #000000 !important; }
+:root[data-contraste='alto'] .veredicto[data-tono='no-encontrado'] .veredicto__circulo { background: #000000 !important; }
+:root[data-contraste='alto'] .veredicto__titulo {
+  font-weight: 800 !important;
+}
+/* Señal flotante (cancelación / progreso) y modal: blanco con borde */
+:root[data-contraste='alto'] :is(.senal, .modal) {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* ─── 8. Colores forzados del sistema (Windows contraste alto): manda el sistema ──── */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight !important;
+    outline-offset: 2px !important;
+  }
+  :is(.boton, .campo__control, .buscador__control, .tarjeta, .badge, .idioma__opcion, .filtro-categoria,
+      .filtro-nivel, .pestanas__pestana, .opcion, .num, .obtenido, .contraste, .atajos__interruptor) {
+    border: 2px solid ButtonText !important;
+  }
+  /* Seleccionado: el color de selección del sistema (los anillos con sombra desaparecen aquí) */
+  :is(.idioma__opcion[aria-pressed='true'], .filtro-categoria[aria-pressed='true'], .filtro-nivel[aria-pressed='true'],
+      .obtenido[aria-pressed='true'], .pestanas__pestana[aria-selected='true'], .opcion:has(input:checked),
+      .num[aria-current='step'], .contraste[aria-pressed='true'], .atajos__interruptor[aria-pressed='true']) {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+  .skeleton {
+    border: 2px dashed CanvasText;
+  }
+  /* Las esquinas del lector QR son información: se dibujan con el color de texto del sistema */
+  .escaner__visor::before {
+    forced-color-adjust: none;
+  }
+}

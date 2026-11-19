@@ -29,12 +29,8 @@ const BENEFICIOS: { icono: NombreIcono; id: string }[] = [
   { icono: 'medalla', id: 'qr' },
 ];
 
-const CICLO: { id: string; icono: NombreIcono }[] = [
-  { id: 'mira', icono: 'pantalla' },
-  { id: 'practica', icono: 'lapiz' },
-  { id: 'certifica', icono: 'medalla' },
-  { id: 'evalua', icono: 'portapapeles' },
-];
+// Act. 18: en orden de lectura (la rueda que los ordenaba en círculo se quitó)
+const CICLO = ['mira', 'practica', 'evalua', 'certifica'];
 
 const PASOS: { clave: string; icono: NombreIcono }[] = [
   { clave: 'pasos.crearCuenta', icono: 'usuario-mas' },
@@ -70,13 +66,11 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
           <Badge tono="lila"><span data-i18n="heroe.badge">{t('heroe.badge')}</span></Badge>
           <!-- Contenido del curso: portada.ts lo pinta en el idioma actual y ajusta el lang -->
           <h2 class="heroe__titulo" lang="es" data-destacado-titulo></h2>
-          <span class="heroe__linea" aria-hidden="true"></span>
           <p class="heroe__bajada" lang="es" data-destacado-descripcion></p>
         </div>
 
         <div class="heroe__contenido" data-destacado-error hidden>
           <h2 class="heroe__titulo" data-i18n="heroe.tituloRespaldo">{t('heroe.tituloRespaldo')}</h2>
-          <span class="heroe__linea" aria-hidden="true"></span>
           <EstadoParcial tono="oscuro" texto={t('heroe.parcial')} i18n claveTexto="heroe.parcial" multimodal />
         </div>
 
@@ -96,35 +90,6 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
           <Boton variante="secundario" href="#cursos" class="heroe__todos" textoCargando={t('heroe.bajando')} claveCargando="heroe.bajando">
             <span data-i18n="heroe.verTodos">{t('heroe.verTodos')}</span>
           </Boton>
-        </div>
-      </div>
-
-      <div class="ilustracion" aria-hidden="true">
-        <svg class="ilustracion__montes" viewBox="0 0 440 300" preserveAspectRatio="xMidYMax meet" focusable="false">
-          <path class="monte monte--atras" d="M150 300 300 120 440 300Z" />
-          <path class="monte" d="M0 300 80 205 120 240 205 130 245 175 305 98 360 160 380 145 440 300Z" />
-          <path class="ilustracion__ruta" d="M30 282 C 90 260, 110 215, 150 200 S 200 160, 240 150 S 300 140, 330 110 S 380 60, 420 25" />
-          <circle cx="30" cy="282" r="8" fill="#FFD23F" />
-          <circle cx="240" cy="150" r="8" fill="#D9CCF7" />
-          <circle cx="430" cy="140" r="4" fill="#FFD23F" />
-        </svg>
-        <span class="chip chip--m1"><span data-i18n="ilustracion.modulo">{t('ilustracion.modulo')}</span> 1</span>
-        <span class="chip chip--m4"><span data-i18n="ilustracion.modulo">{t('ilustracion.modulo')}</span> 4</span>
-        <span class="chip chip--cert" data-i18n="ilustracion.certificado">{t('ilustracion.certificado')}</span>
-        <span class="ilustracion__check"><Icono nombre="check" tamano={22} /></span>
-        <div class="mini-cert">
-          <span class="mini-cert__cinta"></span>
-          <span class="mini-cert__ceja" data-i18n="ilustracion.aprobacion">{t('ilustracion.aprobacion')}</span>
-          <span class="mini-cert__nombre">Gonzalo O. Barreto Geri</span>
-          <span class="mini-cert__raya"></span>
-          <span class="mini-cert__raya mini-cert__raya--corta"></span>
-          <span class="mini-cert__pie">
-            <span class="mini-cert__codigo">K7Q2M9XPD4</span>
-            <svg class="mini-cert__qr" viewBox="0 0 7 7" focusable="false">
-              <path d="M0 0h3v3H0zM4 0h3v3H4zM0 4h3v3H0zM4 4h1v1H4zM6 4h1v1H6zM5 5h1v1H5zM4 6h1v1H4zM6 6h1v1H6z" fill="#17153B" />
-              <path d="M1 1h1v1H1zM5 1h1v1H5zM1 5h1v1H1z" fill="#fff" />
-            </svg>
-          </span>
         </div>
       </div>
     </section>
@@ -159,29 +124,16 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
         <h2 class="seccion__titulo" id="ciclo-titulo" data-i18n="ciclo.titulo">{t('ciclo.titulo')}</h2>
         <p class="seccion__bajada" data-i18n="ciclo.bajada">{t('ciclo.bajada')}</p>
       </header>
-      <div class="ciclo__cuerpo">
-        <div class="ciclo__rueda" aria-hidden="true">
-          {
-            CICLO.map((p) => (
-              <span class:list={['cuadrante', `cuadrante--${p.id}`]}>
-                <span class="cuadrante__texto" data-i18n={`ciclo.${p.id}.titulo`}>{t(`ciclo.${p.id}.titulo`)}</span>
-                <Icono nombre={p.icono} tamano={26} />
-              </span>
-            ))
-          }
-          <span class="ciclo__centro"><Icono nombre="reintentar" tamano={30} /></span>
-        </div>
-        <ol class="ciclo__pasos">
-          {
-            CICLO.map((p) => (
-              <li class:list={['ciclo__paso', `ciclo__paso--${p.id}`]}>
-                <h3 class="ciclo__nombre" data-i18n={`ciclo.${p.id}.titulo`}>{t(`ciclo.${p.id}.titulo`)}</h3>
-                <p class="ciclo__texto" data-i18n={`ciclo.${p.id}.texto`}>{t(`ciclo.${p.id}.texto`)}</p>
-              </li>
-            ))
-          }
-        </ol>
-      </div>
+      <ol class="ciclo__pasos">
+        {
+          CICLO.map((id) => (
+            <li class="ciclo__paso">
+              <h3 class="ciclo__nombre" data-i18n={`ciclo.${id}.titulo`}>{t(`ciclo.${id}.titulo`)}</h3>
+              <p class="ciclo__texto" data-i18n={`ciclo.${id}.texto`}>{t(`ciclo.${id}.texto`)}</p>
+            </li>
+          ))
+        }
+      </ol>
     </section>
 
     <!-- Cómo obtengo mi certificado -->
@@ -191,7 +143,7 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
         {
           PASOS.map((p, i) => (
             <li class="paso-cert">
-              <span class:list={['paso-cert__icono', i === PASOS.length - 1 && 'paso-cert__icono--final']}>
+              <span class="paso-cert__icono">
                 <Icono nombre={p.icono} tamano={26} />
               </span>
               <Badge tono="lila"><span data-i18n="pasos.paso" data-i18n-n={i + 1}>{t('pasos.paso', { n: i + 1 })}</span></Badge>
@@ -225,12 +177,8 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
   }
 
   /* ─── Encabezado ───────────────────────────────────── */
+  /* Act. 18 (minimalismo): sin ilustración; el texto ocupa todo el encabezado */
   .heroe {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: var(--e5);
-    align-items: center;
-    min-height: 480px;
     padding: var(--e6) var(--e7) 104px;
     background: var(--indigo);
     color: var(--white);
@@ -239,7 +187,7 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
     display: flex;
     flex-direction: column;
     gap: var(--e4);
-    max-width: 560px;
+    max-width: 880px;
   }
   .heroe__contenido {
     display: flex;
@@ -259,13 +207,8 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
     letter-spacing: -0.03em;
     overflow-wrap: anywhere; /* Act. 17: solo parte palabras que no caben (quechua, estrés) */
   }
-  .heroe__linea {
-    width: 40px;
-    height: 3px;
-    background: var(--white);
-  }
   .heroe__bajada {
-    max-width: 48ch;
+    max-width: 64ch;
     font-size: 1.125rem;
     line-height: 1.75rem;
     color: rgb(255 255 255 / 0.85);
@@ -285,119 +228,6 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
   .sk--titulo { width: 90%; height: 56px; }
   .sk--linea { width: 80%; height: 20px; }
   .sk--corto { width: 55%; }
-
-  /* Ilustración (decorativa) */
-  .ilustracion {
-    position: relative;
-    justify-self: end;
-    width: min(100%, 460px);
-    aspect-ratio: 440 / 300;
-  }
-  .ilustracion__montes {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-  .monte {
-    fill: var(--indigo2);
-    stroke: rgb(255 255 255 / 0.85);
-    stroke-width: 1.5;
-  }
-  .monte--atras {
-    fill: #221d63;
-  }
-  .ilustracion__ruta {
-    fill: none;
-    stroke: var(--mint-acento);
-    stroke-width: 3;
-    stroke-dasharray: 1 8;
-    stroke-linecap: round;
-  }
-  /* Chips de la ilustración: ancho según el texto (sin ancho fijo) y hasta 2 líneas si no caben */
-  .chip {
-    position: absolute;
-    min-width: fit-content;
-    max-width: 48%;
-    text-align: center;
-    padding: 2px 10px;
-    border-radius: 999px;
-    background: var(--lila);
-    color: var(--ink);
-    font-size: var(--t-nota);
-    line-height: var(--lh-nota);
-    font-weight: 700;
-  }
-  .chip--m1 { left: 9%; bottom: 8%; }
-  .chip--m4 { left: 50%; top: 52%; }
-  .chip--cert { right: 4%; top: 16%; background: var(--yellow); }
-  .ilustracion__check {
-    position: absolute;
-    right: 8%;
-    top: -2%;
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--mint-acento);
-    color: var(--indigo);
-  }
-  .mini-cert {
-    position: absolute;
-    left: 14%;
-    top: -4%;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: 44%;
-    padding: 18px 16px 14px;
-    border-radius: 4px;
-    background: #fbfaf6;
-    color: var(--ink);
-    transform: rotate(-5deg);
-  }
-  .mini-cert__cinta {
-    position: absolute;
-    left: 30%;
-    top: -8px;
-    width: 32%;
-    height: 14px;
-    background: var(--mint-acento);
-  }
-  .mini-cert__ceja {
-    font-size: 10px;
-    line-height: 12px;
-    color: var(--ink2);
-  }
-  .mini-cert__nombre {
-    font-size: 12px;
-    line-height: 16px;
-    font-weight: 800;
-  }
-  .mini-cert__raya {
-    height: 4px;
-    border-radius: 2px;
-    background: #dcdbe8;
-  }
-  .mini-cert__raya--corta {
-    width: 60%;
-  }
-  .mini-cert__pie {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    margin-top: 10px;
-  }
-  .mini-cert__codigo {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-  }
-  .mini-cert__qr {
-    width: 26px;
-    height: 26px;
-  }
 
   /* ─── Beneficios ───────────────────────────────────── */
   .beneficios {
@@ -486,79 +316,25 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
     outline: none;
     scroll-margin-top: 72px;
   }
-  .ciclo__cuerpo {
-    position: relative;
-    display: grid;
-    place-items: center;
-    max-width: 1000px;
-    margin: 0 auto;
-    width: 100%;
-  }
-  .ciclo__rueda {
-    position: relative;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    width: 320px;
-    height: 320px;
-  }
-  .cuadrante {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--e2);
-    background: var(--indigo3);
-    color: var(--white);
-    font-weight: 700;
-    font-size: 1.125rem;
-  }
-  .cuadrante__texto {
-    max-width: 100%;
-    padding: 0 var(--e1);
-    text-align: center;
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-  }
-  .cuadrante--mira { border-radius: 100% 0 0 0; background: var(--indigo); padding: 24px 0 0 32px; }
-  .cuadrante--practica { border-radius: 0 100% 0 0; padding: 24px 32px 0 0; }
-  .cuadrante--certifica { border-radius: 0 0 0 100%; padding: 0 0 24px 32px; order: 3; }
-  .cuadrante--evalua { border-radius: 0 0 100% 0; padding: 0 32px 24px 0; order: 4; }
-  .ciclo__centro {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    display: grid;
-    place-items: center;
-    width: 76px;
-    height: 76px;
-    border-radius: 50%;
-    background: var(--indigo-t);
-    color: var(--indigo);
-    transform: translate(-50%, -50%);
-  }
+  /* Act. 18 (minimalismo): sin la rueda de cuadrantes (repetía la lista); queda solo la lista */
   .ciclo__pasos {
-    position: absolute;
-    inset: 0;
     display: grid;
-    grid-template-columns: 1fr 360px 1fr;
-    grid-template-rows: 1fr 1fr;
-    margin: 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--e4);
+    width: 100%;
+    max-width: 1152px;
+    margin: 0 auto;
     padding: 0;
     list-style: none;
-    pointer-events: none;
   }
   .ciclo__paso {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     gap: var(--e1);
-    max-width: 300px;
+    padding: var(--e4);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
   }
-  .ciclo__paso--mira { grid-column: 1; grid-row: 1; }
-  .ciclo__paso--practica { grid-column: 3; grid-row: 1; justify-self: end; }
-  .ciclo__paso--certifica { grid-column: 1; grid-row: 2; }
-  .ciclo__paso--evalua { grid-column: 3; grid-row: 2; justify-self: end; }
   .ciclo__nombre {
     font-size: var(--t-h2);
     line-height: var(--lh-h2);
@@ -619,10 +395,6 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
     background: var(--indigo);
     color: var(--white);
   }
-  .paso-cert__icono--final {
-    background: var(--yellow);
-    color: var(--ink);
-  }
   .paso-cert__texto {
     font-weight: 700;
     overflow-wrap: anywhere;
@@ -648,10 +420,7 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
       margin-right: var(--e4);
     }
     .ciclo__pasos {
-      grid-template-columns: 1fr 340px 1fr;
-    }
-    .ciclo__paso {
-      max-width: 220px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .pasos__lista {
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -662,16 +431,11 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
   }
   @media (max-width: 899px) {
     .heroe {
-      grid-template-columns: minmax(0, 1fr);
       padding-top: var(--e5);
     }
     .heroe__titulo {
       font-size: 2.5rem;
       line-height: 3rem;
-    }
-    .ilustracion {
-      justify-self: center;
-      width: min(100%, 380px);
     }
     .beneficios {
       grid-template-columns: minmax(0, 1fr);
@@ -686,39 +450,6 @@ const PASOS: { clave: string; icono: NombreIcono }[] = [
     .seccion__titulo {
       font-size: var(--t-h1);
       line-height: var(--lh-h1);
-    }
-    .ciclo__cuerpo {
-      gap: var(--e5);
-    }
-    .ciclo__rueda {
-      width: 260px;
-      height: 260px;
-    }
-    /* Rueda chica: letra y relleno menores para que cada palabra quepa entera (quechua, estrés) */
-    .cuadrante {
-      gap: var(--e1);
-      font-size: 0.875rem;
-    }
-    .cuadrante--mira { padding: 16px 0 0 16px; }
-    .cuadrante--practica { padding: 16px 16px 0 0; }
-    .cuadrante--certifica { padding: 0 0 16px 16px; }
-    .cuadrante--evalua { padding: 0 16px 16px 0; }
-    .ciclo__centro {
-      width: 60px;
-      height: 60px;
-    }
-    .ciclo__pasos {
-      position: static;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-template-rows: auto;
-      gap: var(--e4);
-      pointer-events: auto;
-    }
-    .ciclo__paso {
-      grid-column: auto !important;
-      grid-row: auto !important;
-      justify-self: stretch !important;
-      max-width: none;
     }
     .pasos__lista {
       grid-template-columns: repeat(2, minmax(0, 1fr));

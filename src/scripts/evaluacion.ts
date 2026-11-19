@@ -4,10 +4,14 @@
 // Autoguardado (Act. 10): al elegir una opción → "Guardando…" (giro) → "Guardada" con check,
 //   earcon y vibración suaves (§5.8, acción frecuente) y aviso al lector de pantalla.
 // Envío: el modal avisa cuántas faltan; "Enviar evaluación" (BotonMultimodal completo) no se envía dos veces.
+// Act. 18 · modo de una mano: atajos 1–9 y A–I (según cuántas opciones tenga la pregunta) eligen la opción
+//   con el mismo autoguardado, Enter pasa a la siguiente y ← → cambian de pregunta. Solo con el foco dentro
+//   de la evaluación, nunca en un campo de texto ni con Ctrl/Alt/Cmd (WCAG 2.1.4), ni con el modal abierto;
+//   una tecla mantenida (repetición) no cuenta dos veces (temblor). Interruptor recordado en localStorage.
 import { ponerEstado, estaOcupado } from './boton';
 import { procesar, retroalimentar } from './multimodal';
 import { abrirModal, cerrarModal } from './modal';
-import { $, anunciar, completarCarga, enfocar, ESPERA_EXITO_MS, esperar, pedirJSON, plantilla, simulacion } from './util';
+import { $, anunciar, completarCarga, enfocar, ESPERA_EXITO_MS, esperar, guardarLocal, leerLocal, pedirJSON, plantilla, simulacion } from './util';
 
 interface Pregunta {
   numero: number;
@@ -32,7 +36,10 @@ interface Resumen {
   continuarClaseId: number | null;
 }
 
-const LETRAS = ['A', 'B', 'C', 'D', 'E', 'F'];
+/** Hasta 9 opciones con atajo: 1–9 y A–I. */
+const LETRAS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
+const MAX_ATAJOS = 9;
+const CLAVE_ATAJOS = 'aulaviva:atajos';
 const simular = simulacion();
 const sufijo = simular ? `simular=${simular}` : '';
 const conSufijo = (url: string) => (sufijo ? `${url}${url.includes('?') ? '&' : '?'}${sufijo}` : url);
@@ -57,6 +64,10 @@ const navegador = $<HTMLElement>('[data-navegador]', raiz);
 const respuestasError = $<HTMLElement>('[data-respuestas-error]', raiz);
 const reconectar = $<HTMLElement>('[data-accion="reconectar"]', respuestasError);
 const abrirEnvio = $<HTMLButtonElement>('[data-abrir-envio]', raiz);
+const abrirEnvioMovil = $<HTMLButtonElement>('[data-abrir-envio-movil]', raiz);
+const campoOpciones = $<HTMLElement>('[data-campo-opciones]', form);
+const atajosAyuda = $<HTMLElement>('[data-atajos-ayuda]', form);
+const atajosInterruptor = $<HTMLButtonElement>('[data-atajos-interruptor]', form);
 const enviar = $<HTMLButtonElement>('[data-enviar]');
 const envioError = $<HTMLElement>('[data-envio-error]');
 
@@ -127,10 +138,20 @@ function pintarPregunta(): void {
       check.className = 'opcion__check';
       check.setAttribute('aria-hidden', 'true');
       check.append(plantilla('ic-check'));
-      label.append(input, letra, t, check);
+      label.append(input, letra, t);
+      // Número del atajo (la ayuda de arriba ya lo dice al lector de pantalla)
+      if (k < MAX_ATAJOS) {
+        const atajo = document.createElement('kbd');
+        atajo.className = 'opcion__atajo';
+        atajo.textContent = String(k + 1);
+        atajo.setAttribute('aria-hidden', 'true');
+        label.append(atajo);
+      }
+      label.append(check);
       return label;
     }),
   );
+  pintarAyudaAtajos(Math.min(p.opciones.length, MAX_ATAJOS));
   guardado.replaceChildren();
   delete guardado.dataset.estado;
   guardadoError.hidden = true;
@@ -227,13 +248,94 @@ $<HTMLButtonElement>('[data-reguardar]', form).addEventListener('click', () => {
 anterior.addEventListener('click', () => {
   if (actual > 0) irA(actual - 1, true);
 });
-siguiente.addEventListener('click', () => {
+/** El botón "Enviar evaluación" visible: el del navegador o, en ≤ 640 px, el de la barra fija. */
+const enviarVisible = () => (abrirEnvioMovil.offsetParent !== null ? abrirEnvioMovil : abrirEnvio);
+
+function avanzar(): void {
   if (actual < intento!.preguntas.length - 1) irA(actual + 1, true);
-  else enfocar(abrirEnvio);
+  else enfocar(enviarVisible());
+}
+siguiente.addEventListener('click', avanzar);
+
+// ─── Act. 18 · Atajos de teclado (modo de una mano) ──────────────────
+let atajos = leerLocal(CLAVE_ATAJOS) !== 'no';
+
+/** "Atajos: 1–4 para responder, Enter para seguir" con el rango real de la pregunta. */
+function pintarAyudaAtajos(n: number): void {
+  const rango = n > 1 ? `1–${n}` : '1';
+  atajosAyuda.textContent = `Atajos: ${rango} para responder, Enter para seguir`;
+}
+
+function pintarAtajos(): void {
+  raiz.dataset.atajos = atajos ? 'si' : 'no';
+  atajosInterruptor.setAttribute('aria-pressed', String(atajos));
+  $<HTMLElement>('[data-atajos-estado]', atajosInterruptor).textContent = atajos ? 'activados' : 'desactivados';
+  atajosAyuda.hidden = !atajos;
+  if (atajos) campoOpciones.setAttribute('aria-describedby', 'atajos-ayuda');
+  else campoOpciones.removeAttribute('aria-describedby');
+}
+pintarAtajos();
+
+atajosInterruptor.addEventListener('click', async () => {
+  atajos = !atajos;
+  guardarLocal(CLAVE_ATAJOS, atajos ? null : 'no'); // try/catch dentro: sin almacenamiento, sigue igual
+  pintarAtajos();
+  retroalimentar(atajosInterruptor, 'exito', atajos ? 'Atajos de teclado activados' : 'Atajos de teclado desactivados');
+  await esperar(ESPERA_EXITO_MS);
+  ponerEstado(atajosInterruptor, 'normal');
+});
+
+/** WCAG 2.1.4: los atajos de una tecla no actúan mientras se escribe. */
+function esCampoDeTexto(el: EventTarget | null): boolean {
+  if (!(el instanceof HTMLElement)) return false;
+  if (el.isContentEditable || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) return true;
+  if (el instanceof HTMLInputElement) return !['radio', 'checkbox', 'button', 'submit', 'reset'].includes(el.type);
+  return false;
+}
+
+/** Elige la opción k de la pregunta visible (dispara el mismo autoguardado que el clic). */
+function elegir(k: number): void {
+  const input = opciones.querySelectorAll<HTMLInputElement>('input[type="radio"]')[k];
+  if (!input) return;
+  input.focus();
+  if (input.checked) return; // ya estaba elegida: no se guarda otra vez
+  input.checked = true;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+raiz.addEventListener('keydown', (e) => {
+  if (!atajos || !intento || form.hidden || contenido.hidden) return;
+  if (e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey || e.isComposing) return;
+  if (esCampoDeTexto(e.target) || document.querySelector('dialog[open]')) return;
+
+  const total = Math.min(intento.preguntas[actual].opciones.length, MAX_ATAJOS);
+  const tecla = e.key;
+  let k = -1;
+  if (/^[1-9]$/.test(tecla)) k = Number(tecla) - 1;
+  else if (tecla.length === 1) k = LETRAS.indexOf(tecla.toUpperCase());
+  if (k >= 0) {
+    if (k >= total) return; // fuera del rango de esta pregunta: no hace nada
+    e.preventDefault();
+    if (!e.repeat) elegir(k);
+    return;
+  }
+
+  // Enter sobre un botón o un enlace conserva su acción normal
+  const enControl = (e.target as HTMLElement).closest('button, a, summary');
+  if (tecla === 'Enter' && !enControl) {
+    e.preventDefault();
+    if (!e.repeat) avanzar();
+  } else if (tecla === 'ArrowRight' || tecla === 'ArrowLeft') {
+    // También sobre los radios: ← → cambian de pregunta (↑ ↓ siguen moviéndose entre opciones)
+    e.preventDefault();
+    if (e.repeat) return;
+    if (tecla === 'ArrowRight') avanzar();
+    else if (actual > 0) irA(actual - 1, true);
+  }
 });
 
 // ─── Envío ──────────────────────────────────────────────────────────
-abrirEnvio.addEventListener('click', () => {
+function abrirModalEnvio(): void {
   if (!intento) return;
   const faltan = intento.preguntas.length - respondidas();
   const titulo = $<HTMLElement>('#modal-enviar [data-modal-titulo]');
@@ -252,7 +354,9 @@ abrirEnvio.addEventListener('click', () => {
   ponerEstado(enviar, 'normal');
   // Foco en la acción segura: revisar (prevención de errores).
   abrirModal('modal-enviar', $<HTMLElement>('[data-revisar]'));
-});
+}
+abrirEnvio.addEventListener('click', abrirModalEnvio);
+abrirEnvioMovil.addEventListener('click', abrirModalEnvio);
 
 $<HTMLButtonElement>('[data-revisar]').addEventListener('click', () => {
   cerrarModal('modal-enviar');

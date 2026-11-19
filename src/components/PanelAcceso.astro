@@ -1,6 +1,6 @@
 ---
 // Panel índigo de las pantallas de acceso (login y registro), referencia 03-iniciar-sesion:
-// logo, mensaje, ruta de avance y la tarjeta "Esta semana" con su semáforo.
+// logo, mensaje y la tarjeta "Esta semana" con su semáforo.
 // "Esta semana" se carga aparte (src/scripts/esta-semana.ts): si falla, solo esa parte
 // muestra "No se pudo cargar esta parte" (estado parcial) y el formulario sigue funcionando.
 // En móvil (< 900 px) el panel se reduce a una franja con el logo.
@@ -24,42 +24,10 @@ const { titulo, texto, textoParcial } = Astro.props;
 
   <div class="panel__cuerpo">
     <div class="panel__mensaje">
-      <span class="panel__raya" aria-hidden="true"></span>
       <h2 class="display panel__titulo">{titulo}</h2>
       <p class="panel__texto">{texto}</p>
     </div>
 
-    <svg class="ruta" viewBox="0 0 840 200" aria-hidden="true" focusable="false">
-      <path
-        d="M30 172 C 110 160, 160 150, 210 136 S 320 98, 385 100 S 500 82, 560 70 S 680 58, 760 58"
-        fill="none"
-        stroke="#BFE9E2"
-        stroke-width="5"
-        stroke-linecap="round"
-        stroke-dasharray="0 16"></path>
-      {
-        [
-          [30, 172],
-          [210, 136],
-          [385, 100],
-        ].map(([x, y]) => (
-          <g>
-            <circle cx={x} cy={y} r="20" fill="#4B44B8" />
-            <path
-              d={`M${x - 8} ${y} l5.5 5.5 L${x + 9} ${y - 7}`}
-              fill="none"
-              stroke="#fff"
-              stroke-width="3.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </g>
-        ))
-      }
-      <circle cx="560" cy="70" r="24" fill="#FFD23F"></circle>
-      <circle cx="560" cy="70" r="8" fill="#17153B"></circle>
-      <circle cx="760" cy="58" r="20" fill="#2A2477" stroke="#4B44B8" stroke-width="3"></circle>
-    </svg>
   </div>
 
   <section class="semana" aria-labelledby="semana-titulo" aria-busy="true" data-semana>
@@ -124,12 +92,6 @@ const { titulo, texto, textoParcial } = Astro.props;
     flex-direction: column;
     gap: var(--e4);
   }
-  .panel__raya {
-    width: 40px;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--yellow);
-  }
   .panel__titulo {
     max-width: 14ch;
     color: var(--white);
@@ -140,12 +102,6 @@ const { titulo, texto, textoParcial } = Astro.props;
     line-height: 1.75rem;
     color: rgb(255 255 255 / 0.8);
   }
-  .ruta {
-    width: 100%;
-    max-width: 520px;
-    height: auto;
-  }
-
   .semana {
     display: flex;
     flex-direction: column;

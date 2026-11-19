@@ -2,7 +2,9 @@
 // Barra superior de las páginas con menú lateral: título (h1) y, a la derecha,
 // el buscador con sugerencias y búsquedas recientes (referencia 04b-inicio-buscador).
 // Ranuras: "migas" (ruta sobre el título), "bajada" (texto bajo el título) y "acciones" (a la derecha).
+// Act. 18: interruptor "Alto contraste" siempre a la derecha.
 import Icono from './Icono.astro';
+import InterruptorContraste from './InterruptorContraste.astro';
 
 interface Props {
   titulo: string;
@@ -70,6 +72,7 @@ const { titulo, buscador = false, notificaciones = false } = Astro.props;
       )
     }
     <slot name="acciones" />
+    <InterruptorContraste />
   </div>
 </header>
 
@@ -247,6 +250,10 @@ const { titulo, buscador = false, notificaciones = false } = Astro.props;
     min-height: 40px;
   }
 
+  /* Sobre el fondo gris de la app, el interruptor es blanco (como la campana) */
+  .barra__acciones :global(.contraste:not([aria-pressed='true'], [data-estado='exito'])) {
+    background: var(--white);
+  }
   .barra__campana {
     display: grid;
     place-items: center;

@@ -49,6 +49,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Prueba de estrés de traducciones (solo desarrollo): ?i18n=estres alarga cada texto un 35 %.
   context.locals.estres = import.meta.env.DEV && searchParams.get('i18n') === 'estres';
 
+  // Act. 18: alto contraste desde la cookie (la guarda el interruptor). Así el servidor pinta
+  // <html data-contraste> y no hay parpadeo. Sin cookie decide prefers-contrast (ver Publico.astro).
+  const contraste = context.cookies.get('contraste')?.value;
+  context.locals.contraste = contraste === 'alto' || contraste === 'normal' ? contraste : null;
+
   if (SOLO_SIN_SESION.includes(pathname) && usuario && !simulando) {
     return context.redirect(destinoPorRol(usuario));
   }

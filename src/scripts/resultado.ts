@@ -75,7 +75,6 @@ function pintar(r: Resultado, primerNombre: string): void {
   $<HTMLElement>('[data-veredicto]').hidden = false;
   $<HTMLElement>('[data-badge-aprobado]').hidden = !aprobo;
   $<HTMLElement>('[data-badge-desaprobado]').hidden = aprobo;
-  $<HTMLElement>('[data-confeti]').hidden = !aprobo;
   $<HTMLElement>('[data-titulo-esqueleto]')?.remove();
   const quedan = r.intentosMax - r.intentosUsados;
   $<HTMLElement>('[data-titulo]').textContent = aprobo ? `¡Aprobaste, ${primerNombre}!` : `Esta vez no alcanzó, ${primerNombre}`;

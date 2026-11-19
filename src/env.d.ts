@@ -8,5 +8,7 @@ declare namespace App {
     idioma: import('./i18n').Idioma;
     /** Prueba de estrés de traducciones (?i18n=estres, solo desarrollo). */
     estres: boolean;
+    /** Alto contraste (cookie "contraste"): 'alto', 'normal' o null si no eligió (manda prefers-contrast). Act. 18. */
+    contraste: 'alto' | 'normal' | null;
   }
 }

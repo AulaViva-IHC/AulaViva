@@ -1,9 +1,9 @@
 {
   "meta": { "titulo": "Chiqanchakuq yachay qillqayuq yachaykuna", "saltar": "Ukuman riy", "descripcion": "Pisi yachaykuna videopi yachachikuywan subtitulokunawan, codigoyuq QR-niyuq yachay qillqawan, pipas chiqanchanampaq.", "logo": "AulaViva, ir al inicio" },
   "idioma": { "etiqueta": "Idioma", "es": "Español", "qu": "Quechua" },
+  "contraste": { "etiqueta": "Chuya rikuy", "activado": "Chuya rikuy kachkanñam", "desactivado": "Chuya rikuy wañuchisqañam" },
   "nav": { "cursos": "Yachaykuna", "comoFunciona": "Imaynam llamkan", "verificar": "Yachay qillqata chiqanchay", "iniciarSesion": "Yaykuy", "crearCuenta": "Cuentaykita kamay", "irInicio": "Qallariyniyman riy", "abriendo": "Kichachkan…", "principal": "Hatun ñan" },
   "heroe": { "badge": "Akllasqa yachay", "tituloRespaldo": "Pisi yachaykunawan yachay, yachay qillqaykitapas chaskiy", "parcial": "Akllasqa yachayqa internet kutimuptinmi rikurinqa; uraypi yachaykunaqa llamkanmi.", "verCurso": "Yachayta qaway", "verTodos": "Llapan yachaykunata qaway", "abriendoCurso": "Yachayta kichachkan…", "bajando": "Uraykuchkan…", "cargado": "Akllasqa yachay apamusqañam.", "sigueSinCargar": "Akllasqa yachayqa manaraqmi rikurinchu. Internet-niykita qaway.", "region": "Akllasqa yachay", "h1": "AulaViva: cursos virtuales con certificado verificable" },
-  "ilustracion": { "modulo": "Raki", "certificado": "Yachay qillqa", "aprobacion": "Atipasqa yachay qillqa" },
   "beneficios": {
     "ritmo": { "titulo": "Allillamanta yachay", "texto": "Munasqayki pachapi ñawpaqman riy, mana kamachisqa pachayuq." },
     "subtitulos": { "titulo": "Subtitulokunayuq yachachikuykuna", "texto": "Pisi videokuna, subtitulokunayuq, materialkunayuqpas." },

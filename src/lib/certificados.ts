@@ -59,10 +59,9 @@ export async function pdfCertificado(c: CertificadoVista, origen: string): Promi
     p.drawText(t, { x: (W - font.widthOfTextAtSize(t, size)) / 2, y, size, font, color });
   };
 
-  // Marco índigo con detalle amarillo
+  // Marco índigo sólido (Act. 18: sin la franja amarilla decorativa, igual que la vista previa)
   p.drawRectangle({ x: 0, y: 0, width: W, height: H, color: INDIGO });
   p.drawRectangle({ x: 18, y: 18, width: W - 36, height: H - 36, color: PAPEL });
-  p.drawRectangle({ x: W - 300, y: 0, width: 70, height: 18, color: AMARILLO });
 
   // Logo
   p.drawRectangle({ x: 60, y: H - 98, width: 36, height: 36, color: AMARILLO });

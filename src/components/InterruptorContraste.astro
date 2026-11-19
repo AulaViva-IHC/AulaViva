@@ -1,0 +1,90 @@
+---
+// Interruptor "Alto contraste" (Act. 18 · diseño inclusivo, exclusión situacional: sol, baja visión,
+// ojos dilatados). Botón con aria-pressed, 44 px, icono + texto. Al pulsarlo se aplica al instante
+// (src/scripts/contraste.ts), guarda la cookie contraste=alto|normal (1 año) y confirma con la firma de Éxito.
+// Está en CabeceraPublica (junto al idioma, con i18n), en Topbar y en App.astro con `barraContraste`
+// (Clase, Evaluación y Resultado, que no tienen Topbar).
+import Icono from './Icono.astro';
+import { traductor } from '../i18n';
+
+interface Props {
+  /** Act. 17: textos en el idioma de la página (cabecera pública). Sin él, en español. */
+  i18n?: boolean;
+}
+const { i18n = false } = Astro.props;
+const { idioma, estres, contraste } = Astro.locals;
+const t = traductor(i18n ? idioma : 'es', i18n && estres);
+const k = (clave: string) => (i18n ? clave : undefined);
+---
+
+<button
+  type="button"
+  class="contraste"
+  aria-pressed={contraste === 'alto' ? 'true' : 'false'}
+  lang={i18n ? idioma : 'es'}
+  data-i18n-lang={i18n ? '' : undefined}
+  data-contraste-interruptor
+  data-anuncio-activado={t('contraste.activado')}
+  data-anuncio-desactivado={t('contraste.desactivado')}
+  data-i18n-attr={i18n ? 'data-anuncio-activado:contraste.activado;data-anuncio-desactivado:contraste.desactivado' : undefined}
+>
+  <Icono nombre="contraste" tamano={18} />
+  <span data-i18n={k('contraste.etiqueta')}>{t('contraste.etiqueta')}</span>
+  <span class="contraste__check" aria-hidden="true"><Icono nombre="check" tamano={16} /></span>
+</button>
+
+<script>
+  import { iniciarContraste } from '../scripts/contraste';
+  for (const b of document.querySelectorAll<HTMLButtonElement>('[data-contraste-interruptor]')) iniciarContraste(b);
+</script>
+
+<style>
+  .contraste {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: fit-content;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radio-control);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+      background-color var(--t-rapido) ease-out,
+      transform var(--t-rapido) ease-out;
+  }
+  .contraste:hover {
+    background: var(--indigo-t);
+  }
+  .contraste:active {
+    transform: scale(0.97);
+    transition-duration: 40ms;
+  }
+  /* Activado: fondo de selección + borde + check (nunca solo color), como el selector de idioma */
+  .contraste[aria-pressed='true'] {
+    background: var(--indigo-t);
+    color: var(--indigo3);
+    box-shadow: inset 0 0 0 2px var(--indigo3);
+  }
+  .contraste__check {
+    display: none;
+  }
+  .contraste[aria-pressed='true'] .contraste__check {
+    display: inline-grid;
+  }
+  .contraste[data-estado='exito'] {
+    background: var(--grn-t);
+    color: var(--grn);
+    box-shadow: inset 0 0 0 2px var(--grn);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .contraste:active {
+      transform: none;
+    }
+  }
+</style>

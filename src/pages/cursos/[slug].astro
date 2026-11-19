@@ -132,7 +132,6 @@ const esEstudiante = usuario?.rol === 'estudiante';
               <Badge tono="lila">Nivel {nivel}</Badge>
             </div>
             <h1 class="detalle__titulo" id="curso-titulo">{curso.titulo}</h1>
-            <span class="detalle__linea" aria-hidden="true" />
             <p class="detalle__bajada">{curso.descripcion}</p>
             <ul class="hechos">
               {hechos.map((h) => (
@@ -476,11 +475,6 @@ const esEstudiante = usuario?.rol === 'estudiante';
     font-weight: 800;
     letter-spacing: -0.03em;
   }
-  .detalle__linea {
-    width: 40px;
-    height: 3px;
-    background: var(--white);
-  }
   .detalle__bajada {
     max-width: 52ch;
     font-size: 1.125rem;
@@ -502,7 +496,7 @@ const esEstudiante = usuario?.rol === 'estudiante';
     gap: var(--e2);
   }
   .hechos :global(svg) {
-    color: var(--mint-acento);
+    flex: none; /* Act. 18: el icono toma el color del texto (sin acento decorativo) */
   }
 
   /* ─── Tarjeta de inscripción ─── */

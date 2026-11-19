@@ -46,7 +46,7 @@ else if (!vista) Astro.response.status = 404;
 const titulo = vista ? `${vista.clase.codigo} ${vista.clase.titulo}` : 'Clase';
 ---
 
-<App titulo={titulo} activo="mis-cursos" simular={simular}>
+<App titulo={titulo} activo="mis-cursos" simular={simular} barraContraste>
   {
     fallo && (
       <Tarjeta data-reintentar-pagina>

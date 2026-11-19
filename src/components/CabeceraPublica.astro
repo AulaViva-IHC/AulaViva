@@ -3,9 +3,11 @@
 // Ley de Hick: aquí no hay botón amarillo; la acción principal es la de cada página.
 // Sin sesión: "Iniciar sesión" (enlace) y "Crear cuenta" (secundario). Con sesión: "Ir a mi Inicio".
 // Act. 17: selector de idioma ("Idioma": Español / Quechua) antes de la cuenta; textos con data-i18n.
+// Act. 18: interruptor "Alto contraste" junto al selector de idioma.
 import Logo from './Logo.astro';
 import Boton from './Boton.astro';
 import Icono from './Icono.astro';
+import InterruptorContraste from './InterruptorContraste.astro';
 import { destinoPorRol } from '../lib/auth';
 import { IDIOMAS, t as tBase, traductor } from '../i18n';
 
@@ -59,6 +61,7 @@ const ENLACES: { id: SeccionPublica; clave: string; href: string }[] = [
         }
       </span>
     </div>
+    <InterruptorContraste i18n />
     {
       usuario ? (
         <Boton variante="secundario" href={destinoPorRol(usuario)} textoCargando={t('nav.abriendo')} claveCargando="nav.abriendo">

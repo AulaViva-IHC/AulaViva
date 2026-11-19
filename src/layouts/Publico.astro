@@ -6,6 +6,7 @@ import '@fontsource-variable/inter';
 import '../styles/tokens.css';
 import '../styles/base.css';
 import '../styles/animaciones.css';
+import '../styles/contraste.css';
 import Logo from '../components/Logo.astro';
 import RegionesVivas from '../components/RegionesVivas.astro';
 import CabeceraPublica, { type SeccionPublica } from '../components/CabeceraPublica.astro';
@@ -34,7 +35,7 @@ const {
   claveTitulo,
   claveDescripcion,
 } = Astro.props;
-const { idioma, estres } = Astro.locals;
+const { idioma, estres, contraste } = Astro.locals;
 const tr = traductor(idioma, estres);
 // Solo las páginas traducidas (con claveTitulo) cambian <html lang>; el resto sigue en español
 // y la cabecera y el pie llevan su propio lang.
@@ -49,6 +50,7 @@ const descripcionFinal = claveDescripcion ? tr(claveDescripcion) : descripcion;
   data-i18n-modo={estres ? 'estres' : undefined}
   data-i18n-titulo={claveTitulo}
   data-i18n-descripcion={claveDescripcion}
+  data-contraste={contraste ?? undefined}
 >
   <head>
     <meta charset="utf-8" />
@@ -57,6 +59,23 @@ const descripcionFinal = claveDescripcion ? tr(claveDescripcion) : descripcion;
     <meta name="theme-color" content="#1B1750" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{tituloFinal} · AulaViva</title>
+    <!-- Act. 18: sin cookie de contraste, la preferencia del sistema (prefers-contrast: more) activa el
+         alto contraste antes de pintar; si la cambia con la página abierta, se sigue. -->
+    <script is:inline>
+      (function () {
+        var html = document.documentElement;
+        if (html.dataset.contraste || !window.matchMedia) return;
+        var consulta = window.matchMedia('(prefers-contrast: more)');
+        var aplicar = function () {
+          if (html.dataset.contrasteElegido) return;
+          if (consulta.matches) html.dataset.contraste = 'alto';
+          else delete html.dataset.contraste;
+          document.dispatchEvent(new CustomEvent('contraste:cambio'));
+        };
+        aplicar();
+        if (consulta.addEventListener) consulta.addEventListener('change', aplicar);
+      })();
+    </script>
   </head>
   <body data-simular={simular || undefined}>
     {seccion && <CabeceraPublica activo={seccion} />}

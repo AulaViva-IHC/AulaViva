@@ -9,6 +9,11 @@
 //   error    → no cargó la evaluación: "Reintentar"
 //   parcial  → cargaron las preguntas pero no tus respuestas guardadas: "Reconectar"
 // Ley de Hick: la única acción amarilla es "Enviar evaluación". Lógica: src/scripts/evaluacion.ts.
+// Act. 18 · modo de una mano (temblor, brazo enyesado, en el bus): atajos 1–9 / A–I para responder,
+// Enter para seguir y ← → para cambiar de pregunta (solo con el foco dentro de la evaluación y nunca en
+// un campo de texto, WCAG 2.1.4), con interruptor "Atajos de teclado" guardado en este dispositivo.
+// Filas de opción enteras clicables (≥ 48 px) y, en ≤ 640 px, la barra Anterior / Siguiente / Enviar
+// fija abajo sin tapar el foco (WCAG 2.4.11). Enviar sigue pidiendo confirmación.
 import App from '../../layouts/App.astro';
 import Tarjeta from '../../components/Tarjeta.astro';
 import Boton from '../../components/Boton.astro';
@@ -29,7 +34,7 @@ const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : 
 const cursoId = Number(Astro.params.id) || 0;
 ---
 
-<App titulo="Evaluación final" activo="mis-cursos" simular={simular}>
+<App titulo="Evaluación final" activo="mis-cursos" simular={simular} barraContraste>
   <div class="evaluacion" data-evaluacion data-curso={cursoId} aria-busy="true">
     <!-- Contenido (con skeleton mientras carga) -->
     <div class="evaluacion__contenido" data-region="contenido">
@@ -70,8 +75,15 @@ const cursoId = Number(Astro.params.id) || 0;
               <Badge tono="nuevo">Opción múltiple</Badge>
               <span class="guardado" data-guardado aria-hidden="true"></span>
             </p>
-            <fieldset class="pregunta__campo">
+            <fieldset class="pregunta__campo" aria-describedby="atajos-ayuda" data-campo-opciones>
               <legend class="pregunta__enunciado" id="pregunta-enunciado" tabindex="-1" data-enunciado></legend>
+              <div class="atajos">
+                <p class="atajos__ayuda" id="atajos-ayuda" data-atajos-ayuda>Atajos: 1–4 para responder, Enter para seguir</p>
+                <button type="button" class="atajos__interruptor" aria-pressed="true" data-atajos-interruptor>
+                  <Icono nombre="teclado" tamano={18} />
+                  <span>Atajos de teclado: <span data-atajos-estado aria-hidden="true">activados</span></span>
+                </button>
+              </div>
               <div class="opciones" data-opciones></div>
             </fieldset>
             <p class="aviso aviso--error" role="alert" data-guardado-error hidden>
@@ -87,6 +99,11 @@ const cursoId = Number(Astro.params.id) || 0;
               <BotonMultimodal variante="secundario" modo="toque" data-siguiente>
                 <span data-siguiente-texto>Siguiente</span>
                 <Icono nombre="flecha-der" tamano={18} />
+              </BotonMultimodal>
+              <!-- Solo en ≤ 640 px (el del navegador se oculta): una sola acción amarilla a la vista -->
+              <BotonMultimodal variante="principal" modo="toque" class="pregunta__enviar" data-abrir-envio-movil>
+                <Icono nombre="enviar" tamano={18} />
+                Enviar evaluación
               </BotonMultimodal>
             </div>
           </form>
@@ -105,7 +122,7 @@ const cursoId = Number(Astro.params.id) || 0;
           <div class="navegador__parcial" data-respuestas-error hidden>
             <EstadoParcial texto="Tus respuestas guardadas no cargaron. Puedes seguir respondiendo; al reconectar verás las anteriores." multimodal />
           </div>
-          <BotonMultimodal variante="principal" bloque modo="toque" data-abrir-envio>
+          <BotonMultimodal variante="principal" bloque modo="toque" class="navegador__enviar" data-abrir-envio>
             <Icono nombre="enviar" tamano={18} />
             Enviar evaluación
           </BotonMultimodal>
@@ -310,7 +327,64 @@ const cursoId = Number(Astro.params.id) || 0;
     flex-direction: column;
     gap: var(--e3);
   }
+
+  /* Act. 18 · atajos de teclado: ayuda breve + interruptor (recordado en este dispositivo) */
+  .atajos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e2) var(--e3);
+    margin-bottom: var(--e3);
+  }
+  .atajos__ayuda {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    font-weight: 600;
+  }
+  .atajos__ayuda[hidden] {
+    display: none;
+  }
+  .atajos__interruptor {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: fit-content;
+    min-height: 44px;
+    margin-left: auto;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radio-control);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: var(--t-pequeno);
+    line-height: var(--lh-pequeno);
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+      background-color var(--t-rapido) ease-out,
+      transform var(--t-rapido) ease-out;
+  }
+  .atajos__interruptor:hover {
+    background: var(--indigo-t);
+  }
+  .atajos__interruptor:active {
+    transform: scale(0.97);
+    transition-duration: 40ms;
+  }
+  .atajos__interruptor[aria-pressed='true'] {
+    background: var(--indigo-t);
+    color: var(--indigo3);
+    box-shadow: inset 0 0 0 2px var(--indigo3);
+  }
+  .atajos__interruptor[data-estado='exito'] {
+    background: var(--grn-t);
+    color: var(--grn);
+    box-shadow: inset 0 0 0 2px var(--grn);
+  }
   /* Opción: relleno gris, sin borde; seleccionada → fondo de selección + check (Gestalt §5.5) */
+  /* Toda la fila es el <label>: se pulsa en cualquier punto (mín. 48 px; aquí 72) */
   .opciones :global(.opcion) {
     position: relative;
     display: flex;
@@ -357,6 +431,24 @@ const cursoId = Number(Astro.params.id) || 0;
   .opciones :global(.opcion__texto) {
     flex: 1;
   }
+  /* Número del atajo dentro de la opción (se oculta si los atajos están desactivados) */
+  .opciones :global(.opcion__atajo) {
+    display: grid;
+    flex: none;
+    place-items: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 var(--e2);
+    border-radius: var(--radio-control);
+    background: var(--white);
+    color: var(--ink2);
+    font-family: inherit;
+    font-size: var(--t-pequeno);
+    font-weight: 800;
+  }
+  .evaluacion[data-atajos='no'] :global(.opcion__atajo) {
+    display: none;
+  }
   .opciones :global(.opcion__check) {
     display: none;
     color: var(--indigo3);
@@ -377,6 +469,9 @@ const cursoId = Number(Astro.params.id) || 0;
     display: flex;
     justify-content: space-between;
     gap: var(--e3);
+  }
+  .pregunta__nav :global(.pregunta__enviar) {
+    display: none;
   }
   [data-guardado-error] .enlace {
     margin-left: auto;
@@ -474,6 +569,37 @@ const cursoId = Number(Astro.params.id) || 0;
       order: -1;
     }
   }
+  /* Act. 18 · una mano: en ≤ 640 px la barra Anterior / Siguiente / Enviar queda fija abajo, al
+     alcance del pulgar. scroll-padding-bottom reserva su alto para que el foco nunca quede debajo (WCAG 2.4.11). */
+  @media (max-width: 640px) {
+    :global(html:has([data-evaluacion])) {
+      scroll-padding-bottom: 152px;
+    }
+    .pregunta__nav {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--e2);
+      margin: 0 calc(-1 * var(--e4)) calc(-1 * var(--e4));
+      padding: 12px var(--e4);
+      border-radius: 0 0 var(--radio-tarjeta) var(--radio-tarjeta);
+      background: var(--white);
+      box-shadow: inset 0 2px 0 var(--paper); /* separa la barra del contenido que pasa por debajo */
+    }
+    .pregunta__nav :global(.boton) {
+      width: 100%;
+      padding: 0 12px;
+    }
+    .pregunta__nav :global(.pregunta__enviar) {
+      display: inline-grid;
+      grid-column: 1 / -1;
+    }
+    :global(.navegador__enviar) {
+      display: none !important;
+    }
+  }
   @media (max-width: 599px) {
     .cabeza__titulo {
       font-size: var(--t-h1);
@@ -496,7 +622,8 @@ const cursoId = Number(Astro.params.id) || 0;
     .opciones :global(.opcion:hover),
     .opciones :global(.opcion:active),
     .navegador__botones :global(.num:hover),
-    .navegador__botones :global(.num:active) {
+    .navegador__botones :global(.num:active),
+    .atajos__interruptor:active {
       transform: none;
     }
   }
