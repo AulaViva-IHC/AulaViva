@@ -21,6 +21,8 @@ const SIMULABLES = [
   '/actividad-14', '/actividad-16', // Act. 14 y 16 (para auditar con Lighthouse sin iniciar sesión)
   // /verificar no está: en /estados se muestra la versión pública (10-verificar).
 ];
+// Fase 7: las pantallas del administrador en /estados usan el administrador de prueba.
+const SIMULABLES_ADMIN = ['/admin', '/api/admin'];
 
 function empiezaCon(ruta: string, prefijo: string): boolean {
   return ruta === prefijo || ruta.startsWith(prefijo + '/');
@@ -39,6 +41,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // En desarrollo, ?simular=… sin sesión de estudiante usa el estudiante de prueba.
   if (simulando && SIMULABLES.some((p) => empiezaCon(pathname, p)) && usuario?.rol !== 'estudiante') {
     usuario = await buscarUsuarioPorId(1);
+  }
+  if (simulando && SIMULABLES_ADMIN.some((p) => empiezaCon(pathname, p)) && usuario?.rol !== 'admin') {
+    usuario = await buscarUsuarioPorId(2);
   }
   context.locals.usuario = usuario;
 
