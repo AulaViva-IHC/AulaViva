@@ -1,15 +1,17 @@
 ---
 // Layout del administrador: el mismo menú lateral con las secciones de admin.
 // El middleware ya exige rol admin en /admin/*.
+// `simular` (solo desarrollo) pasa el estado forzado de /estados al <body data-simular>.
 import App from './App.astro';
 
 interface Props {
   titulo: string;
   activo: string;
+  simular?: string;
 }
-const { titulo, activo } = Astro.props;
+const { titulo, activo, simular } = Astro.props;
 ---
 
-<App titulo={titulo} activo={activo} menu="admin">
+<App titulo={titulo} activo={activo} menu="admin" simular={simular}>
   <slot />
 </App>

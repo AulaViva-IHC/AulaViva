@@ -1,0 +1,71 @@
+---
+// Franja de resumen del administrador (región gris con hasta 3 cifras, Gestalt: región común).
+// La llena iniciarResumen() de src/scripts/admin-util.ts con GET /api/admin/panel.
+// Es la parte "secundaria" de Cursos, Usuarios y Certificados: si falla, estado parcial
+// ("No se pudo cargar esta parte" + "Reconectar") y la lista de la pantalla sigue funcionando.
+// Vive en src/pages/admin/ (archivo con "_", no es ruta) porque es solo del administrador.
+import EstadoParcial from '../../components/EstadoParcial.astro';
+import { textosAdmin } from './_textos';
+
+interface Props {
+  cifras: { clave: string; etiqueta: string }[];
+}
+const { cifras } = Astro.props;
+const { ta } = textosAdmin(Astro.locals.idioma, Astro.locals.estres);
+---
+
+<section class="resumen" aria-label={ta('comun.resumenRegion')} aria-busy="true" data-resumen>
+  <dl class="resumen__cifras" data-resumen-cifras>
+    {
+      cifras.map((c) => (
+        <div class="resumen__cifra">
+          <dt>{c.etiqueta}</dt>
+          <dd class="skeleton resumen__valor" data-cifra={c.clave}>&nbsp;</dd>
+        </div>
+      ))
+    }
+  </dl>
+  <div data-resumen-parcial hidden>
+    <EstadoParcial texto={ta('comun.resumenParcial')} multimodal />
+  </div>
+</section>
+
+<style>
+  .resumen {
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+  }
+  .resumen__cifras {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e3) var(--e5);
+    margin: 0;
+  }
+  .resumen__cifras[hidden],
+  [data-resumen-parcial][hidden] {
+    display: none;
+  }
+  .resumen__cifra {
+    display: flex;
+    align-items: baseline;
+    gap: var(--e1);
+  }
+  dt {
+    order: 2;
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+  }
+  .resumen__valor {
+    order: 1;
+    min-width: 2ch;
+    margin: 0;
+    font-size: var(--t-h2);
+    line-height: var(--lh-h2);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  :global(:root[data-contraste='alto']) .resumen {
+    border: 2px solid var(--ac-borde);
+  }
+</style>

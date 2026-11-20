@@ -1,0 +1,313 @@
+/* Estilos comunes de las pantallas del administrador (Fase 7). Se importan desde cada página de admin.
+   Mismo sistema que el resto (tokens.css): regiones por FONDO, nunca con líneas divisorias (Gestalt §5.5);
+   en alto contraste (Act. 18) las filas y regiones ganan borde de 2 px. */
+
+/* Migas: "Panel › Certificados" */
+.migas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink2);
+}
+.migas a {
+  color: var(--ink2);
+  font-weight: 500;
+}
+.migas .migas__flecha {
+  transform: rotate(-90deg);
+}
+.migas [aria-current] {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.adm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e4);
+}
+.adm [hidden],
+.coincide[hidden],
+.aviso-flotante[hidden],
+[data-accion-crear][hidden] {
+  display: none !important;
+}
+
+/* Herramientas sobre la tabla: búsqueda y filtros (24 px entre grupos) */
+.adm__herramientas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--e3) var(--e4);
+}
+.adm__buscar {
+  flex: 1 1 320px;
+  max-width: 480px;
+}
+.adm__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.adm__filtros legend {
+  float: left;
+  margin-right: var(--e1);
+  color: var(--ink2);
+  font-weight: 600;
+}
+
+/* Chips de filtro: misma clase que los del catálogo (contraste.css ya los cubre) */
+.filtro-nivel {
+  min-width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  padding: var(--e1) var(--e3);
+  line-height: 1.25;
+  text-align: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--ink2);
+  font-size: var(--t-pequeno);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--t-rapido) ease-out,
+    color var(--t-rapido) ease-out,
+    transform var(--t-rapido) ease-out;
+}
+.filtro-nivel:hover {
+  background: var(--indigo-t);
+  color: var(--ink);
+}
+.filtro-nivel[aria-pressed='true'] {
+  background: var(--indigo-t);
+  color: var(--indigo3);
+  box-shadow: inset 0 0 0 2px var(--indigo3);
+}
+.filtro-nivel:active {
+  transform: scale(0.97);
+  transition-duration: 40ms;
+}
+.filtro-nivel__n {
+  margin-left: var(--e1);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tabla: tarjeta blanca; cada fila es una región gris (sin líneas divisorias) */
+.tabla-adm__envoltura {
+  overflow-x: auto;
+  padding: var(--e2) var(--e3) var(--e3);
+  border-radius: var(--radio-tarjeta);
+  background: var(--white);
+}
+.tabla-adm__envoltura:focus-visible {
+  outline: 4px solid var(--indigo3);
+  outline-offset: 2px;
+}
+.tabla-adm {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: separate;
+  border-spacing: 0 var(--e2);
+}
+.tabla-adm caption {
+  padding: var(--e1) 0;
+  color: var(--ink2);
+  font-size: var(--t-pequeno);
+  text-align: left;
+}
+.tabla-adm th,
+.tabla-adm td {
+  padding: 12px var(--e3);
+  text-align: left;
+  vertical-align: middle;
+}
+.tabla-adm thead th {
+  padding-block: var(--e1);
+  color: var(--ink2);
+  font-size: var(--t-pequeno);
+  font-weight: 700;
+}
+.tabla-adm tbody :is(th, td) {
+  background: var(--paper);
+}
+.tabla-adm tbody tr > :first-child {
+  border-radius: var(--radio-control) 0 0 var(--radio-control);
+}
+.tabla-adm tbody tr > :last-child {
+  border-radius: 0 var(--radio-control) var(--radio-control) 0;
+}
+.tabla-adm tbody th {
+  font-weight: 700;
+}
+.tabla-adm .celda-num {
+  font-variant-numeric: tabular-nums;
+}
+.tabla-adm .derecha {
+  text-align: right;
+}
+.tabla-adm .sk-fila td {
+  height: 64px;
+}
+.tabla-adm .sk-fila .skeleton {
+  display: block;
+  height: 20px;
+  border-radius: var(--radio-control);
+}
+.tabla-adm__sub {
+  display: block;
+  color: var(--ink2);
+  font-size: var(--t-pequeno);
+  font-weight: 500;
+}
+
+/* Código de certificado: letras separadas para leerlo y copiarlo sin confundirse */
+.codigo {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+/* Fila anulada: región roja suave + insignia "Anulado" con icono (nunca solo color) */
+.tabla-adm tbody tr.fila--anulada > * {
+  background: var(--red-t);
+}
+.tabla-adm tbody tr.fila--apagada > * {
+  color: var(--ink2);
+}
+.fila__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--e2);
+}
+.fila__motivo {
+  display: block;
+  max-width: 220px;
+  margin-left: auto;
+  color: var(--ink2);
+  font-size: var(--t-pequeno);
+  text-align: right;
+}
+
+/* Vacío dentro de la tabla (la búsqueda no encontró nada): sale con "Limpiar búsqueda" */
+.adm__sin-resultados {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2) var(--e3);
+  padding: var(--e3);
+  border-radius: var(--radio-tarjeta);
+  background: var(--white);
+}
+
+/* Lo que falta para habilitar el botón de una acción irreversible */
+.faltan {
+  margin: 0;
+  color: var(--ink2);
+  font-size: var(--t-pequeno);
+  line-height: var(--lh-pequeno);
+}
+.faltan:empty {
+  display: none;
+}
+.faltan[data-listo] {
+  color: var(--grn);
+  font-weight: 600;
+}
+.coincide {
+  display: flex;
+  align-items: center;
+  gap: var(--e1);
+  margin: 0;
+  color: var(--grn);
+  font-size: var(--t-pequeno);
+  font-weight: 600;
+}
+.casilla {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px var(--e3);
+  border-radius: var(--radio-control);
+  background: var(--paper);
+  cursor: pointer;
+}
+.casilla input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: var(--indigo3);
+}
+.campo-confirmacion input {
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.modal-nombre {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Aviso flotante tras anular (admin-10). Es visual: el lector ya oyó el anuncio de retroalimentar(). */
+.aviso-flotante {
+  position: fixed;
+  bottom: var(--e5);
+  left: 50%;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  max-width: min(560px, calc(100vw - 32px));
+  padding: var(--e3) var(--e4);
+  border-radius: 999px;
+  background: var(--indigo);
+  color: var(--white);
+  font-weight: 600;
+  transform: translateX(-50%);
+  animation: aviso-flotante-entra 200ms ease-out;
+}
+@keyframes aviso-flotante-entra {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filtro-nivel:active { transform: none; }
+  .aviso-flotante { animation: none; }
+}
+
+/* Alto contraste (Act. 18): sin fondos pastel → las regiones se separan con borde de 2 px */
+:root[data-contraste='alto'] .tabla-adm__envoltura,
+:root[data-contraste='alto'] .adm__sin-resultados,
+:root[data-contraste='alto'] .casilla {
+  border: 2px solid var(--ac-borde);
+}
+:root[data-contraste='alto'] .tabla-adm tbody :is(th, td) {
+  border-block: 2px solid var(--ac-borde);
+}
+:root[data-contraste='alto'] .tabla-adm tbody tr > :first-child {
+  border-left: 2px solid var(--ac-borde);
+}
+:root[data-contraste='alto'] .tabla-adm tbody tr > :last-child {
+  border-right: 2px solid var(--ac-borde);
+}
+:root[data-contraste='alto'] .tabla-adm tbody tr.fila--anulada > * {
+  border-color: var(--red);
+}
+:root[data-contraste='alto'] .aviso-flotante {
+  border: 3px solid #ffffff;
+  outline: 2px solid #000000;
+}
