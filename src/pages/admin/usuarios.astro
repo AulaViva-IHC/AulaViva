@@ -1,11 +1,126 @@
 ---
-// "Usuarios" todavía no existe: página Próximamente con el mismo layout.
-import Proximamente from '../../components/Proximamente.astro';
+// Usuarios (estudiantes) · Fase 7 (sin referencia en Figma; mismo sistema de diseño). Solo consulta.
+// Partes que se piden por separado:
+//   lista    → GET /api/admin/usuarios (principal)
+//   resumen  → GET /api/admin/panel (secundaria: si falla, parcial y la lista sigue)
+// 5 estados (?simular=, ver /estados?p=admin-usuarios):
+//   ideal    → tabla con buscador (nombre o correo)
+//   vacío    → aún no hay estudiantes: "Ver los cursos"
+//   cargando → skeleton de 5 filas
+//   error    → no cargó la lista: "Reintentar"
+//   parcial  → la lista cargó, el resumen no: "Reconectar"
+// Nunca se muestran contraseñas. Lógica del navegador: src/scripts/admin-usuarios.ts.
+import Admin from '../../layouts/Admin.astro';
+import Topbar from '../../components/Topbar.astro';
+import Tarjeta from '../../components/Tarjeta.astro';
+import Campo from '../../components/Campo.astro';
+import Boton from '../../components/Boton.astro';
+import Icono from '../../components/Icono.astro';
+import EstadoVacio from '../../components/EstadoVacio.astro';
+import EstadoError from '../../components/EstadoError.astro';
+import Resumen from './_Resumen.astro';
+import { textosAdmin } from './_textos';
+import './_admin.css';
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const { ta, textosCliente } = textosAdmin(Astro.locals.idioma, Astro.locals.estres);
 ---
 
-<Proximamente
-  titulo="Usuarios"
-  activo="usuarios"
-  texto="Aquí podrás ver y administrar a los estudiantes."
-  icono="usuarios"
-/>
+<Admin titulo={ta('usuarios.titulo')} activo="usuarios" simular={simular}>
+  <Topbar titulo={ta('usuarios.titulo')}>
+    <nav slot="migas" aria-label={ta('comun.migas')}>
+      <ol class="migas">
+        <li><a href="/admin">{ta('comun.panel')}</a></li>
+        <li aria-hidden="true"><Icono nombre="chevron" tamano={16} class="migas__flecha" /></li>
+        <li aria-current="page">{ta('usuarios.titulo')}</li>
+      </ol>
+    </nav>
+    <Fragment slot="bajada">{ta('usuarios.bajada')}</Fragment>
+  </Topbar>
+
+  <div class="adm" data-usuarios aria-busy="true">
+    <Resumen
+      cifras={[
+        { clave: 'estudiantes', etiqueta: ta('comun.cifraEstudiantes') },
+        { clave: 'inscripciones', etiqueta: ta('comun.cifraInscripciones') },
+        { clave: 'validos', etiqueta: ta('comun.cifraValidos') },
+      ]}
+    />
+
+    <div class="adm" data-region="contenido">
+      <div class="adm__herramientas">
+        <Campo id="buscar-usuario" etiqueta={ta('usuarios.buscar')} type="search" autocomplete="off" spellcheck="false" class="adm__buscar">
+          <Icono slot="antes" nombre="buscar" />
+        </Campo>
+      </div>
+
+      <div class="tabla-adm__envoltura" tabindex="0" role="region" aria-labelledby="tabla-usuarios-titulo">
+        <table class="tabla-adm">
+          <caption id="tabla-usuarios-titulo" data-caption>{ta('usuarios.titulo')}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{ta('usuarios.colEstudiante')}</th>
+              <th scope="col">{ta('usuarios.colRegistro')}</th>
+              <th scope="col">{ta('usuarios.colCursos')}</th>
+              <th scope="col">{ta('usuarios.colAprobados')}</th>
+              <th scope="col">{ta('usuarios.colCertificados')}</th>
+              <th scope="col">{ta('usuarios.colAcceso')}</th>
+            </tr>
+          </thead>
+          <tbody data-filas>
+            {
+              [0, 1, 2, 3, 4].map(() => (
+                <tr class="sk-fila" aria-hidden="true">
+                  {[0, 1, 2, 3, 4, 5].map(() => (
+                    <td><span class="skeleton" /></td>
+                  ))}
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="adm__sin-resultados" data-sin-resultados hidden>
+        <p data-sin-resultados-texto></p>
+        <Boton variante="secundario" data-limpiar>
+          <Icono nombre="cerrar" tamano={18} />
+          {ta('comun.limpiarBusqueda')}
+        </Boton>
+      </div>
+    </div>
+
+    <Tarjeta data-region="vacio" hidden>
+      <EstadoVacio titulo={ta('usuarios.vacioTitulo')} texto={ta('usuarios.vacioTexto')} icono="usuarios">
+        <Boton variante="principal" href="/admin/cursos" textoCargando={ta('comun.abriendo')}>{ta('usuarios.vacioAccion')}</Boton>
+      </EstadoVacio>
+    </Tarjeta>
+
+    <Tarjeta data-region="error" hidden>
+      <EstadoError titulo={ta('usuarios.errorTitulo')} texto={ta('comun.errorTexto')} multimodal />
+    </Tarjeta>
+  </div>
+  <p class="solo-lector" aria-live="polite" data-anuncio></p>
+
+  <template data-plantilla="fila">
+    <tr>
+      <th scope="row">
+        <span data-nombre></span>
+        <span class="tabla-adm__sub" data-correo></span>
+      </th>
+      <td class="celda-num" data-registro></td>
+      <td class="celda-num" data-cursos></td>
+      <td class="celda-num" data-aprobados></td>
+      <td class="celda-num" data-certificados></td>
+      <td data-acceso></td>
+    </tr>
+  </template>
+
+  <script type="application/json" id="textos-admin" set:html={JSON.stringify(textosCliente('usuarios'))} />
+</Admin>
+
+<script>
+  import '../../scripts/admin-usuarios';
+</script>

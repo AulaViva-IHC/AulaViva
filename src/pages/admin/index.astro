@@ -1,11 +1,258 @@
 ---
-// "Panel" todavía no existe: página Próximamente con el mismo layout.
-import Proximamente from '../../components/Proximamente.astro';
+// Panel del administrador · Fase 7 (sin referencia en Figma; mismo sistema de diseño).
+// Partes que se piden por separado:
+//   cifras   → GET /api/admin/panel (principal)
+//   últimos  → GET /api/admin/certificados?limite=5 (secundaria: si falla, parcial y las cifras siguen)
+// 5 estados (?simular=, ver /estados?p=admin-panel):
+//   ideal    → 4 cifras (cada una lleva a su pantalla) y los 5 últimos certificados
+//   vacío    → aún no hay cursos: "Crear curso"
+//   cargando → skeleton de las cifras y de la lista
+//   error    → no cargaron las cifras: "Reintentar"
+//   parcial  → las cifras cargaron, los últimos certificados no: "Reconectar"
+// Única acción amarilla: "Crear curso". Lógica del navegador: src/scripts/admin-panel.ts.
+import Admin from '../../layouts/Admin.astro';
+import Topbar from '../../components/Topbar.astro';
+import Tarjeta from '../../components/Tarjeta.astro';
+import Boton from '../../components/Boton.astro';
+import Badge from '../../components/Badge.astro';
+import Icono from '../../components/Icono.astro';
+import EstadoVacio from '../../components/EstadoVacio.astro';
+import EstadoError from '../../components/EstadoError.astro';
+import EstadoParcial from '../../components/EstadoParcial.astro';
+import { textosAdmin } from './_textos';
+import './_admin.css';
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const { ta, textosCliente } = textosAdmin(Astro.locals.idioma, Astro.locals.estres);
+const usuario = Astro.locals.usuario!;
+
+const CIFRAS = [
+  { clave: 'cursos', etiqueta: ta('panel.cursosPublicados'), href: '/admin/cursos', icono: 'libro' },
+  { clave: 'estudiantes', etiqueta: ta('comun.cifraEstudiantes'), href: '/admin/usuarios', icono: 'usuarios' },
+  { clave: 'inscripciones', etiqueta: ta('comun.cifraInscripciones'), href: '/admin/cursos', icono: 'portapapeles' },
+  { clave: 'validos', etiqueta: ta('comun.cifraValidos'), href: '/admin/certificados', icono: 'medalla' },
+] as const;
 ---
 
-<Proximamente
-  titulo="Panel"
-  activo="panel"
-  texto="Aquí verás el resumen de cursos, inscripciones y certificados."
-  icono="cuadricula"
-/>
+<Admin titulo={ta('panel.titulo')} activo="panel" simular={simular}>
+  <Topbar titulo={ta('panel.titulo')}>
+    <Fragment slot="bajada">{usuario.nombre} · {ta('panel.bajada')}</Fragment>
+    <span slot="acciones" data-accion-crear>
+      <Boton variante="principal" href="/admin/cursos/nuevo" textoCargando={ta('comun.abriendo')}>
+        <Icono nombre="mas" tamano={18} />
+        {ta('comun.crearCurso')}
+      </Boton>
+    </span>
+  </Topbar>
+
+  <div class="adm" data-panel aria-busy="true">
+    <section class="adm" data-region="contenido" aria-labelledby="cifras-titulo">
+      <h2 class="solo-lector" id="cifras-titulo">{ta('panel.cifrasTitulo')}</h2>
+      <ul class="cifras">
+        {
+          CIFRAS.map((c) => (
+            <li>
+              <a class="cifra" href={c.href} data-cifra-enlace={c.clave}>
+                <span class="cifra__icono" aria-hidden="true">
+                  <Icono nombre={c.icono} tamano={24} />
+                </span>
+                <span class="cifra__valor skeleton" data-valor={c.clave}>&nbsp;</span>
+                <span class="cifra__etiqueta">{c.etiqueta}</span>
+                <span class="cifra__detalle" data-detalle={c.clave} />
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <Tarjeta class="ultimos" aria-labelledby="ultimos-titulo">
+        <div class="ultimos__cabecera">
+          <h2 class="ultimos__titulo" id="ultimos-titulo" tabindex="-1">{ta('panel.ultimosTitulo')}</h2>
+          <a class="enlace ultimos__todos" href="/admin/certificados">{ta('panel.verTodos')}</a>
+        </div>
+        <ul class="ultimos__lista" data-ultimos>
+          {[0, 1, 2].map(() => <li class="skeleton ultimos__sk" aria-hidden="true" />)}
+        </ul>
+        <p class="secundario" data-ultimos-vacio hidden>{ta('panel.ultimosVacio')}</p>
+        <div class="ultimos__parcial" data-ultimos-error hidden>
+          <EstadoParcial texto={ta('panel.ultimosParcial')} multimodal />
+        </div>
+      </Tarjeta>
+    </section>
+
+    <Tarjeta data-region="vacio" hidden>
+      <EstadoVacio titulo={ta('panel.vacioTitulo')} texto={ta('panel.vacioTexto')} icono="libro">
+        <Boton variante="principal" href="/admin/cursos/nuevo" textoCargando={ta('comun.abriendo')}>
+          <Icono nombre="mas" tamano={18} />
+          {ta('comun.crearCurso')}
+        </Boton>
+      </EstadoVacio>
+    </Tarjeta>
+
+    <Tarjeta data-region="error" hidden>
+      <EstadoError titulo={ta('panel.errorTitulo')} texto={ta('comun.errorTexto')} multimodal />
+    </Tarjeta>
+  </div>
+  <p class="solo-lector" aria-live="polite" data-anuncio></p>
+
+  <template data-plantilla="ultimo">
+    <li class="ultimo">
+      <span class="ultimo__textos">
+        <span class="ultimo__nombre" data-estudiante></span>
+        <span class="ultimo__curso" data-curso></span>
+      </span>
+      <span class="codigo ultimo__codigo" data-codigo></span>
+      <span class="ultimo__fecha" data-fecha></span>
+      <span data-estado></span>
+    </li>
+  </template>
+  <template data-plantilla="valido"><Badge tono="verde">{ta('certificados.valido')}</Badge></template>
+  <template data-plantilla="anulado"><Badge tono="rojo">{ta('certificados.anulado')}</Badge></template>
+
+  <script type="application/json" id="textos-admin" set:html={JSON.stringify(textosCliente('panel', 'certificados'))} />
+</Admin>
+
+<script>
+  import '../../scripts/admin-panel';
+</script>
+
+<style>
+  .cifras {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    gap: var(--e3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cifra {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      'icono valor'
+      'icono etiqueta'
+      'icono detalle';
+    column-gap: var(--e3);
+    align-items: center;
+    height: 100%;
+    padding: var(--e4);
+    border-radius: var(--radio-tarjeta);
+    background: var(--white);
+    color: var(--ink);
+    transition: transform var(--t-rapido) ease-out;
+  }
+  .cifra:hover {
+    text-decoration: none;
+    transform: scale(1.02);
+  }
+  .cifra:active {
+    transform: scale(0.97);
+    transition-duration: 40ms;
+  }
+  .cifra__icono {
+    grid-area: icono;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--indigo-t);
+    color: var(--indigo3);
+  }
+  .cifra__valor {
+    grid-area: valor;
+    min-width: 3ch;
+    justify-self: start;
+    font-size: var(--t-h1);
+    line-height: var(--lh-h1);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .cifra__etiqueta {
+    grid-area: etiqueta;
+    font-weight: 700;
+  }
+  .cifra__detalle {
+    grid-area: detalle;
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+  }
+  .ultimos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+  }
+  .ultimos__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e2);
+  }
+  .ultimos__titulo {
+    font-size: var(--t-h2);
+    line-height: var(--lh-h2);
+    font-weight: 800;
+    outline: none;
+  }
+  .ultimos__todos {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+  }
+  .ultimos__lista {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ultimos__sk {
+    display: block;
+    height: 64px;
+    border-radius: var(--radio-tarjeta);
+  }
+  .ultimos__parcial {
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+  }
+  .ultimos__lista :global(.ultimo) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e2) var(--e4);
+    padding: var(--e3);
+    border-radius: var(--radio-tarjeta);
+    background: var(--paper);
+  }
+  .ultimos__lista :global(.ultimo__textos) {
+    display: flex;
+    flex: 1 1 240px;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .ultimos__lista :global(.ultimo__nombre) {
+    font-weight: 700;
+  }
+  .ultimos__lista :global(.ultimo__curso),
+  .ultimos__lista :global(.ultimo__fecha) {
+    color: var(--ink2);
+    font-size: var(--t-pequeno);
+  }
+  :global(:root[data-contraste='alto']) .cifra,
+  :global(:root[data-contraste='alto']) .ultimos__lista :global(.ultimo),
+  :global(:root[data-contraste='alto']) .ultimos__parcial {
+    border: 2px solid var(--ac-borde);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cifra:hover,
+    .cifra:active {
+      transform: none;
+    }
+  }
+</style>
