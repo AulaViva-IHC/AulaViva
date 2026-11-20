@@ -1,10 +1,11 @@
+// GET  /api/admin/cursos  →  { cursos: CursoAdmin[] }   (Fase 7: lista con inscritos y estado; ?simular=vacio | error)
 // POST /api/admin/cursos  { curso: CursoBorrador }  →  JSON   (solo rol admin)
 //   201 { ok, id, slug, titulo }
 //   401 / 403 sin sesión o sin rol admin
 //   422 { error: 'validacion', errores: { ruta: mensaje } }
 // Vuelve a validar TODO con las mismas reglas del navegador (src/lib/validacion-curso.ts).
 import type { APIRoute } from 'astro';
-import { crearCurso, listarInstructores, type CursoNuevo } from '../../../lib/repositorio';
+import { crearCurso, listarCursosAdmin, listarInstructores, type CursoNuevo } from '../../../lib/repositorio';
 import {
   LIMITES,
   hoyEnLima,
@@ -13,7 +14,9 @@ import {
   type ModuloBorrador,
   type PreguntaBorrador,
 } from '../../../lib/validacion-curso';
-import { json, leerCuerpo } from '../../../lib/respuestas';
+import { json, leerCuerpo, simulacionDe } from '../../../lib/respuestas';
+import { formatearFecha } from '../../../i18n';
+import { soloAdmin } from './_admin';
 
 const txt = (v: unknown, max = 2000) => (typeof v === 'string' ? v.slice(0, max) : '');
 const archivo = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 200) : null);
@@ -116,4 +119,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const publicado = await crearCurso(curso, usuario.id);
   return json({ ok: true, id: publicado.id, slug: publicado.slug, titulo: publicado.titulo }, 201);
+};
+
+export const GET: APIRoute = async ({ url, locals }) => {
+  const sinPermiso = soloAdmin(locals.usuario);
+  if (sinPermiso) return sinPermiso;
+  const simular = simulacionDe(url);
+  if (simular === 'error') return json({ error: 'no-disponible' }, 503);
+  if (simular === 'vacio') return json({ cursos: [] });
+  const cursos = await listarCursosAdmin();
+  return json({
+    cursos: cursos.map((c) => ({
+      ...c,
+      publicacion: c.fechaPublicacion ? formatearFecha(`${c.fechaPublicacion}T12:00:00-05:00`) : null,
+    })),
+  });
 };

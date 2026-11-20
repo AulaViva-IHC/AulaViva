@@ -1,11 +1,251 @@
 ---
-// "Cursos" todavía no existe: página Próximamente con el mismo layout.
-import Proximamente from '../../../components/Proximamente.astro';
+// Lista de cursos del administrador · Fase 7 (sin referencia en Figma; mismo sistema de diseño).
+// Partes que se piden por separado:
+//   lista    → GET /api/admin/cursos (principal: inscritos, clases y estado de cada curso)
+//   resumen  → GET /api/admin/panel (secundaria: si falla, parcial y la lista sigue)
+// 5 estados (?simular=, ver /estados?p=admin-cursos):
+//   ideal    → tabla con filtro Todos / Publicados / Programados / Deshabilitados
+//   vacío    → aún no hay cursos: "Crear curso" (la única acción amarilla de la pantalla)
+//   cargando → skeleton de 5 filas
+//   error    → no cargó la lista: "Reintentar"
+//   parcial  → la lista cargó, el resumen no: "Reconectar"
+// Reglas (CLAUDE.md §5.3): un curso con inscritos no se elimina, solo se deshabilita (sale del catálogo;
+// los inscritos lo siguen viendo). Eliminar (solo sin inscritos) es irreversible: escribir ELIMINAR +
+// casilla + espera de 3 s. Habilitar es directo (se puede volver atrás). Lógica: src/scripts/admin-cursos.ts.
+import Admin from '../../../layouts/Admin.astro';
+import Topbar from '../../../components/Topbar.astro';
+import Tarjeta from '../../../components/Tarjeta.astro';
+import Campo from '../../../components/Campo.astro';
+import Boton from '../../../components/Boton.astro';
+import BotonMultimodal from '../../../components/BotonMultimodal.astro';
+import Badge from '../../../components/Badge.astro';
+import Icono from '../../../components/Icono.astro';
+import Modal from '../../../components/Modal.astro';
+import EstadoVacio from '../../../components/EstadoVacio.astro';
+import EstadoError from '../../../components/EstadoError.astro';
+import Resumen from '../_Resumen.astro';
+import { textosAdmin } from '../_textos';
+import { traductor } from '../../../i18n';
+import '../_admin.css';
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const { ta, textosCliente } = textosAdmin(Astro.locals.idioma, Astro.locals.estres);
+const t = traductor(Astro.locals.idioma, Astro.locals.estres);
+// Nombres de categoría y nivel (los mismos del catálogo, Act. 17) para el JavaScript.
+const catalogo = {
+  categorias: Object.fromEntries(['tecnologia', 'diseno', 'negocios', 'habilidades-blandas'].map((c) => [c, t(`catalogo.categorias.${c}`)])),
+  niveles: Object.fromEntries(['basico', 'intermedio', 'avanzado'].map((n) => [n, t(`catalogo.niveles.${n}`)])),
+};
+const FILTROS = [
+  { id: '', texto: ta('cursos.todos') },
+  { id: 'publicado', texto: ta('cursos.publicados') },
+  { id: 'programado', texto: ta('cursos.programados') },
+  { id: 'deshabilitado', texto: ta('cursos.deshabilitados') },
+];
 ---
 
-<Proximamente
-  titulo="Cursos"
-  activo="cursos"
-  texto="Aquí verás la lista de cursos publicados para editarlos o deshabilitarlos. Por ahora puedes crear uno nuevo."
-  icono="libro"
-/>
+<Admin titulo={ta('cursos.titulo')} activo="cursos" simular={simular}>
+  <Topbar titulo={ta('cursos.titulo')}>
+    <nav slot="migas" aria-label={ta('comun.migas')}>
+      <ol class="migas">
+        <li><a href="/admin">{ta('comun.panel')}</a></li>
+        <li aria-hidden="true"><Icono nombre="chevron" tamano={16} class="migas__flecha" /></li>
+        <li aria-current="page">{ta('cursos.titulo')}</li>
+      </ol>
+    </nav>
+    <Fragment slot="bajada">{ta('cursos.bajada')}</Fragment>
+    <span slot="acciones" data-accion-crear>
+      <Boton variante="principal" href="/admin/cursos/nuevo" textoCargando={ta('comun.abriendo')}>
+        <Icono nombre="mas" tamano={18} />
+        {ta('comun.crearCurso')}
+      </Boton>
+    </span>
+  </Topbar>
+
+  <div class="adm" data-cursos aria-busy="true">
+    <Resumen
+      cifras={[
+        { clave: 'estudiantes', etiqueta: ta('comun.cifraEstudiantes') },
+        { clave: 'inscripciones', etiqueta: ta('comun.cifraInscripciones') },
+        { clave: 'validos', etiqueta: ta('comun.cifraValidos') },
+      ]}
+    />
+
+    <div class="adm" data-region="contenido">
+      <div class="adm__herramientas">
+        <fieldset class="adm__filtros">
+          <legend>{ta('cursos.filtro')}</legend>
+          {
+            FILTROS.map((f) => (
+              <button type="button" class="filtro-nivel" aria-pressed={String(f.id === '')} data-filtro={f.id}>
+                {f.texto}
+                <span class="filtro-nivel__n" data-contar={f.id} />
+              </button>
+            ))
+          }
+        </fieldset>
+      </div>
+
+      <div class="tabla-adm__envoltura" tabindex="0" role="region" aria-labelledby="tabla-cursos-titulo">
+        <table class="tabla-adm">
+          <caption id="tabla-cursos-titulo" data-caption>{ta('cursos.titulo')}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{ta('cursos.colCurso')}</th>
+              <th scope="col">{ta('cursos.colClases')}</th>
+              <th scope="col">{ta('cursos.colInscritos')}</th>
+              <th scope="col">{ta('cursos.colEstado')}</th>
+              <th scope="col" class="derecha">{ta('cursos.colAcciones')}</th>
+            </tr>
+          </thead>
+          <tbody data-filas>
+            {
+              [0, 1, 2, 3, 4].map(() => (
+                <tr class="sk-fila" aria-hidden="true">
+                  {[0, 1, 2, 3, 4].map(() => (
+                    <td><span class="skeleton" /></td>
+                  ))}
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="adm__sin-resultados" data-sin-resultados hidden>
+        <p data-sin-resultados-texto></p>
+        <Boton variante="secundario" data-limpiar>
+          <Icono nombre="cerrar" tamano={18} />
+          {ta('cursos.verTodosCursos')}
+        </Boton>
+      </div>
+    </div>
+
+    <Tarjeta data-region="vacio" hidden>
+      <EstadoVacio titulo={ta('cursos.vacioTitulo')} texto={ta('cursos.vacioTexto')} icono="libro">
+        <Boton variante="principal" href="/admin/cursos/nuevo" textoCargando={ta('comun.abriendo')}>
+          <Icono nombre="mas" tamano={18} />
+          {ta('comun.crearCurso')}
+        </Boton>
+      </EstadoVacio>
+    </Tarjeta>
+
+    <Tarjeta data-region="error" hidden>
+      <EstadoError titulo={ta('cursos.errorTitulo')} texto={ta('comun.errorTexto')} multimodal />
+    </Tarjeta>
+  </div>
+  <p class="solo-lector" aria-live="polite" data-anuncio></p>
+
+  <Modal id="modal-deshabilitar" titulo={ta('cursos.deshabilitarTitulo')} icono="alerta">
+    <p data-deshabilitar-texto></p>
+    <p class="secundario">{ta('cursos.deshabilitarNota')}</p>
+    <Fragment slot="acciones">
+      <Boton variante="secundario" data-cancelar-modal>{ta('comun.cancelar')}</Boton>
+      <BotonMultimodal
+        variante="principal"
+        textoCargando={ta('cursos.deshabilitando')}
+        textoExito={ta('cursos.deshabilitado')}
+        data-confirmar-deshabilitar
+      >
+        {ta('cursos.deshabilitarBoton')}
+      </BotonMultimodal>
+    </Fragment>
+  </Modal>
+
+  <Modal id="modal-eliminar" titulo={ta('cursos.eliminarTitulo')} icono="alerta">
+    <p data-eliminar-texto></p>
+    <form class="confirmar-form" novalidate data-form-eliminar>
+      <div class="campo-confirmacion">
+        <Campo id="confirmar-eliminar" etiqueta={ta('cursos.eliminarCampo')} autocomplete="off" spellcheck="false" maxlength={8} required />
+        <p class="coincide" data-coincide hidden><Icono nombre="check" tamano={16} />{ta('cursos.eliminarCoincide')}</p>
+      </div>
+      <label class="casilla">
+        <input type="checkbox" data-casilla />
+        <span>{ta('cursos.eliminarCasilla')}</span>
+      </label>
+      <p class="faltan" id="faltan-eliminar" data-faltan></p>
+    </form>
+    <Fragment slot="acciones">
+      <Boton variante="secundario" data-cancelar-modal>{ta('comun.cancelar')}</Boton>
+      <BotonMultimodal
+        variante="principal"
+        textoCargando={ta('cursos.eliminando')}
+        textoExito={ta('cursos.eliminado')}
+        aria-disabled="true"
+        aria-describedby="faltan-eliminar"
+        data-confirmar-eliminar
+      >
+        <Icono nombre="reloj" tamano={18} />
+        <span data-eliminar-boton-texto>{ta('cursos.eliminar')}</span>
+      </BotonMultimodal>
+    </Fragment>
+  </Modal>
+
+  <template data-plantilla="fila">
+    <tr>
+      <th scope="row">
+        <span tabindex="-1" data-titulo></span>
+        <span class="tabla-adm__sub" data-detalle></span>
+      </th>
+      <td class="celda-num" data-clases></td>
+      <td class="celda-num" data-inscritos></td>
+      <td data-estado></td>
+      <td><div class="fila__acciones" data-acciones></div></td>
+    </tr>
+  </template>
+  <template data-plantilla="publicado"><Badge tono="verde">{ta('cursos.estadoPublicado')}</Badge></template>
+  <template data-plantilla="programado"><Badge tono="naranja">{ta('cursos.estadoProgramado')}</Badge></template>
+  <template data-plantilla="deshabilitado"><Badge tono="neutro" icono="candado">{ta('cursos.estadoDeshabilitado')}</Badge></template>
+  <template data-plantilla="ver">
+    <a class="enlace fila__ver" href="#" data-ver>{ta('cursos.ver')}</a>
+  </template>
+  <template data-plantilla="deshabilitar">
+    <Boton variante="secundario" data-accion-curso="deshabilitar">
+      <Icono nombre="candado" tamano={18} />
+      {ta('cursos.deshabilitar')}
+    </Boton>
+  </template>
+  <template data-plantilla="habilitar">
+    <BotonMultimodal variante="secundario" textoCargando={ta('cursos.habilitando')} textoExito={ta('cursos.habilitado')} data-accion-curso="habilitar">
+      <Icono nombre="reintentar" tamano={18} />
+      {ta('cursos.habilitar')}
+    </BotonMultimodal>
+  </template>
+  <template data-plantilla="eliminar">
+    <Boton variante="secundario" data-accion-curso="eliminar">
+      <Icono nombre="cerrar" tamano={18} />
+      {ta('cursos.eliminar')}
+    </Boton>
+  </template>
+
+  <script type="application/json" id="textos-admin" set:html={JSON.stringify(textosCliente('cursos'))} />
+  <script type="application/json" id="catalogo-admin" set:html={JSON.stringify(catalogo)} />
+</Admin>
+
+<script>
+  import '../../../scripts/admin-cursos';
+</script>
+
+<style>
+  .confirmar-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+    margin-top: var(--e2);
+    text-align: left;
+  }
+  .campo-confirmacion {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e1);
+  }
+  :global(.fila__ver) {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--alto-control);
+    padding: 0 var(--e2);
+    font-weight: 600;
+  }
+</style>
