@@ -2,62 +2,60 @@
 
 ## Quién hace qué
 
-| Integrante | Rama | Responsable de |
+Desde que el PR #2 (parte de administrador) entró a `main`, **Gonzalo hace todos los cambios**.
+
+| Integrante | Rama | Uso |
 |---|---|---|
-| **Gonzalo** | `estudiante` | Todo lo del estudiante (ver abajo) |
-| **Noel** | `admin` | Todo lo del administrador (ver abajo) |
+| **Gonzalo** | `estudiante` | Todo el proyecto: estudiante, administrador y archivos compartidos |
+| **Noel** | `admin` | Solo para terminar las correcciones de su PR #2 |
 
 ### Gonzalo — rama `estudiante`
-- Páginas: `/inicio`, `/catalogo`, `/cursos/[slug]`, `/mis-cursos`, `/clase`, `/evaluacion`, `/resultado`, `/certificados`, `/verificar`, `/notificaciones`, `/actividad-*`.
-- Sus scripts en `src/scripts/` (por ejemplo `inicio.ts`, `catalogo.ts`, `clase.ts`, `evaluacion.ts`…).
-- Sus APIs en `src/pages/api/` (todo lo que **no** está en `src/pages/api/admin/`).
+La rama `estudiante` tiene todo el proyecto. Gonzalo puede cambiar **cualquier archivo**:
+
+- Estudiante: páginas, scripts de `src/scripts/` y APIs de `src/pages/api/`.
+- Administrador: `src/pages/admin/`, `src/pages/api/admin/`, `src/scripts/admin-*.ts`, `src/scripts/crear-curso.ts`, `src/layouts/Admin.astro`.
+- Compartidos: `src/lib/`, `src/styles/`, `src/components/`, `src/i18n/*.json`, `src/middleware.ts`, `src/scripts/multimodal.ts`.
 
 ### Noel — rama `admin`
-- `src/pages/admin/`
-- `src/pages/api/admin/`
-- `src/scripts/crear-curso.ts`
-- `src/layouts/Admin.astro`
-- El menú de administrador del Sidebar (`admin: [...]` en `src/components/Sidebar.astro`).
+Queda solo para cerrar las correcciones pendientes del PR #2. Las actividades nuevas no se hacen en esta rama.
 
-## Archivos compartidos (avisar antes de tocar)
+## Cada actividad se aplica a todo el sistema
 
-Escríbele al otro **antes** de modificar cualquiera de estos:
+Toda actividad nueva se aplica en los **dos lados**:
 
-- `src/lib/repositorio.ts`
-- `src/lib/datos-demo.ts`
-- `src/styles/` (`tokens.css`, `base.css`, `contraste.css`)
-- `src/scripts/multimodal.ts`
-- `src/middleware.ts`
-- `src/i18n/*.json`
-- `src/components/` (Sidebar, Topbar, Boton, Campo y demás componentes compartidos)
+- **Estudiante:** `/`, `/catalogo`, `/cursos/[slug]`, `/inicio`, `/mis-cursos`, `/clase/[id]`, `/evaluacion/[id]`, `/resultado/[id]`, `/certificados`, `/verificar`, `/notificaciones`.
+- **Administrador:** `/admin`, `/admin/cursos`, `/admin/cursos/nuevo`, `/admin/usuarios`, `/admin/certificados`.
+- **Incluidas sus versiones en `/estados`** (solo desarrollo), también las de administrador: `/estados?p=admin-panel`, `admin-cursos`, `admin-usuarios` y `admin-certificados`.
 
-Los cambios en estos archivos van en **commits separados** con un mensaje claro, por ejemplo:
-`Admin: nuevo token --color-alerta en tokens.css`.
+Al planificar una actividad se escribe por separado **qué cambia en estudiante** y **qué cambia en administrador**.
 
-## Flujo diario
+## Flujo de cada actividad
 
-Al empezar (dentro de tu rama):
+Antes de empezar:
 
 ```bash
-git checkout <tu-rama>
+git switch estudiante
 git pull origin main
 ```
 
 Al terminar:
 
 ```bash
+npm run build
+npx astro check          # sin errores
 git add .
-git commit -m "Estudiante: descripción del cambio"
+git commit -m "Act. N: descripción del cambio"   # o "Estudiante: …"
 git push
 ```
 
-Para unir tu trabajo a `main`: abre un **Pull Request** en GitHub de tu rama hacia `main`. Lo revisa y aprueba el otro integrante antes de hacer merge.
+Luego abre un **Pull Request** en GitHub de `estudiante` hacia `main`.
 
 ## Reglas
 
-- **Nada de push directo a `main`.** Todo entra por Pull Request.
-- Commits en español con prefijo **`Estudiante:`** o **`Admin:`**.
+- **Nada de push directo a `main`.** Todo entra por Pull Request desde `estudiante`.
+- Commits en español con prefijo **`Estudiante:`** o **`Act. N:`** (Noel usa `Admin:` solo para las correcciones de su PR #2).
 - Sin coautores de IA en los commits (no agregar líneas `Co-Authored-By` de asistentes).
+- `npm run build` y `npx astro check` deben pasar antes de cada push.
 
 ## Configuración para un integrante nuevo
 
@@ -65,7 +63,7 @@ Para unir tu trabajo a `main`: abre un **Pull Request** en GitHub de tu rama hac
 git clone https://github.com/AulaViva-IHC/AulaViva.git
 cd AulaViva
 npm install
-git checkout admin
+git switch estudiante
 ```
 
 1. Copia `.env.example` como `.env`:
@@ -76,9 +74,9 @@ git checkout admin
    ```bash
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
-3. Pídele el `CLAUDE.md` a tu compañero (no está en git) y ponlo en la raíz del proyecto.
+3. Pide el `CLAUDE.md` (no está en git) y ponlo en la raíz del proyecto.
 4. Los usuarios de prueba están en `src/lib/usuarios-demo.ts`.
 
 ## CLAUDE.md
 
-`CLAUDE.md` está en `.gitignore`, así que no viaja por git. **Cuando uno lo actualice, le pasa la copia al otro** para que los dos trabajen con las mismas reglas.
+`CLAUDE.md` está en `.gitignore`, así que no viaja por git. **Cuando se actualice, se pasa la copia** a quien lo necesite para trabajar con las mismas reglas.
