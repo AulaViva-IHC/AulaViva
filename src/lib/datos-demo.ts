@@ -575,6 +575,43 @@ export const certificadosDemo: readonly CertificadoDemo[] = [
     emitidoEn: '2026-09-03',
     anulado: { motivo: 'Se emitió con un nombre equivocado.', en: '2026-09-20' },
   },
+  // Fase 7 (admin-05-certificados-lista.png): los demás certificados de la lista del administrador.
+  // En la referencia dos códigos llevan "1" (B8V4N1XK3S, Z9L3F7MD1A); aquí cumplen §8 (sin O, 0, I ni 1).
+  { codigo: 'M5P9C2LQ7H', usuarioId: 101, cursoId: 2, nombre: 'Noel Frank Chahuayo Juárez', emitidoEn: '2026-10-09' },
+  { codigo: 'B8V4N2XK3S', usuarioId: 102, cursoId: 3, nombre: 'Ana Lucía Ccori Mendoza', emitidoEn: '2026-10-02' },
+  { codigo: 'T2H6J9QW4E', usuarioId: 103, cursoId: 6, nombre: 'Diego Ramos Quispe', emitidoEn: '2026-09-25' },
+  { codigo: 'Z9L3F7MD2A', usuarioId: 104, cursoId: 4, nombre: 'Rosa Huamán Torres', emitidoEn: '2026-09-18' },
+];
+
+// ─── Estudiantes sin cuenta en la demo (Fase 7, solo para el administrador) ──
+// Dueños de los certificados de arriba. No pueden iniciar sesión (no tienen contraseña):
+// aparecen en /admin/usuarios y cuentan como inscritos en /admin/cursos.
+// En MySQL serán filas normales de `usuarios` (rol estudiante).
+
+export interface EstudianteDemo {
+  id: number;
+  nombre: string;
+  correo: string;
+  creadoEn: string; // AAAA-MM-DD
+}
+
+export const estudiantesDemo: readonly EstudianteDemo[] = [
+  { id: 101, nombre: 'Noel Frank Chahuayo Juárez', correo: 'nchahuayo@correo.com', creadoEn: '2026-08-04' },
+  { id: 102, nombre: 'Ana Lucía Ccori Mendoza', correo: 'accori@correo.com', creadoEn: '2026-08-11' },
+  { id: 103, nombre: 'Diego Ramos Quispe', correo: 'dramos@correo.com', creadoEn: '2026-07-28' },
+  { id: 104, nombre: 'Rosa Huamán Torres', correo: 'rhuaman@correo.com', creadoEn: '2026-07-21' },
+  { id: 105, nombre: 'Luis Alberto Pariona Soto', correo: 'lpariona@correo.com', creadoEn: '2026-09-30' },
+];
+
+/** Inscripciones de esos estudiantes (curso terminado y aprobado, o a medias). */
+export const inscripcionesEstudiantesDemo: readonly InscripcionDemo[] = [
+  { usuarioId: 101, cursoId: 2, completadas: 99, ultimaClase: '1.1', haceHoras: 1000, nota: 16 },
+  { usuarioId: 101, cursoId: 1, completadas: 6, ultimaClase: '1.1', haceHoras: 50, nota: null },
+  { usuarioId: 102, cursoId: 3, completadas: 99, ultimaClase: '1.1', haceHoras: 1200, nota: 20 },
+  { usuarioId: 103, cursoId: 6, completadas: 99, ultimaClase: '1.1', haceHoras: 1400, nota: 16 },
+  { usuarioId: 104, cursoId: 4, completadas: 99, ultimaClase: '1.1', haceHoras: 1600, nota: 16 },
+  { usuarioId: 104, cursoId: 5, completadas: 4, ultimaClase: '1.1', haceHoras: 90, nota: null },
+  { usuarioId: 105, cursoId: 2, completadas: 2, ultimaClase: '1.1', haceHoras: 20, nota: null },
 ];
 
 export interface TareaDemo {

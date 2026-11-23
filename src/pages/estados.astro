@@ -2,6 +2,7 @@
 // Solo desarrollo: los 5 estados (UI Stack) de cada pantalla con datos, lado a lado.
 // Cada vista es un iframe de la pantalla real con ?simular=… (el middleware da 404 en producción).
 // Elegir pantalla: /estados?p=login | registro | inicio | portada | catalogo | detalle | mis-cursos | multimodal
+// Fase 7: admin-panel | admin-cursos | admin-usuarios | admin-certificados
 // "Multimodal" (Act. 12) no es una pantalla: muestra el BotonMultimodal en éxito y error
 // y la tabla de qué canal se activa en cada momento (para la exposición).
 import Publico from '../layouts/Publico.astro';
@@ -171,6 +172,51 @@ const PANTALLAS: Record<string, { titulo: string; ruta: string; estados: Estado[
       { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'Skeleton en las dos listas.' },
       { n: 4, nombre: 'Error', simular: 'error', texto: 'No cargaron los avisos: "Reintentar".' },
       { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'Los avisos se ven; las entregas no cargaron: "Reconectar".' },
+    ],
+  },
+  // Fase 7 · Administrador (el middleware usa el administrador de prueba en /admin con ?simular=).
+  'admin-panel': {
+    titulo: 'Admin · Panel',
+    ruta: '/admin',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: '4 cifras que llevan a su pantalla, últimos certificados y "Crear curso".' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'Aún no hay cursos: una sola acción, "Crear curso".' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'Skeleton en las cifras y en la lista.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'No cargaron las cifras: "Reintentar".' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'Las cifras se ven; los últimos certificados no: "Reconectar".' },
+    ],
+  },
+  'admin-cursos': {
+    titulo: 'Admin · Cursos',
+    ruta: '/admin/cursos',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: 'Con inscritos: "Deshabilitar"; sin inscritos: "Eliminar" (escribir ELIMINAR + casilla + 3 s).' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'Aún no hay cursos: "Crear curso".' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'Skeleton de 5 filas.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'No cargó la lista: "Reintentar".' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'La lista se ve; el resumen no cargó: "Reconectar".' },
+    ],
+  },
+  'admin-usuarios': {
+    titulo: 'Admin · Usuarios',
+    ruta: '/admin/usuarios',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: 'Estudiantes con cursos, aprobados, certificados y último acceso; buscador.' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'Aún no hay estudiantes: "Ver los cursos".' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'Skeleton de 5 filas.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'No cargó la lista: "Reintentar".' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'La lista se ve; el resumen no cargó: "Reconectar".' },
+    ],
+  },
+  'admin-certificados': {
+    titulo: 'Admin · Certificados',
+    ruta: '/admin/certificados',
+    estados: [
+      { n: 1, nombre: 'Ideal', simular: 'ideal', texto: 'Certificados emitidos con buscador y filtro; "Anular" abre la confirmación activa.' },
+      { n: 2, nombre: 'Vacío', simular: 'vacio', texto: 'Aún no hay certificados: "Ver los cursos".' },
+      { n: 3, nombre: 'Cargando', simular: 'cargando', texto: 'Skeleton de 5 filas.' },
+      { n: 4, nombre: 'Error', simular: 'error', texto: 'No cargó la lista: "Reintentar".' },
+      { n: 5, nombre: 'Parcial', simular: 'parcial', texto: 'La lista se ve; el resumen no cargó: "Reconectar".' },
     ],
   },
 };

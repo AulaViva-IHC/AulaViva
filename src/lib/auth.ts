@@ -110,7 +110,7 @@ export async function autenticar(correo: string, password: string, ip: string): 
 
 /** Página de inicio según el rol. */
 export function destinoPorRol(usuario: Pick<Usuario, 'rol'>): string {
-  return usuario.rol === 'admin' ? '/admin/cursos/nuevo' : '/inicio';
+  return usuario.rol === 'admin' ? '/admin' : '/inicio';
 }
 
 /** Acepta solo rutas internas ("/algo"), nunca "//otro-sitio" ni URLs completas. */

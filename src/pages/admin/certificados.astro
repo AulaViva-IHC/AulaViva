@@ -1,11 +1,221 @@
 ---
-// "Certificados" todavía no existe: página Próximamente con el mismo layout.
-import Proximamente from '../../components/Proximamente.astro';
+// Certificados emitidos + Anular (admin-05 a admin-10) · Fase 7.
+// Partes que se piden por separado:
+//   lista    → GET /api/admin/certificados (principal)
+//   resumen  → GET /api/admin/panel (secundaria: si falla, parcial y la lista sigue)
+// 5 estados (?simular= en desarrollo, ver /estados?p=admin-certificados):
+//   ideal    → tabla con buscador (código o estudiante) y filtro Todos / Válidos / Anulados
+//   vacío    → aún no hay certificados: "Ver los cursos"
+//   cargando → skeleton de 5 filas
+//   error    → no cargó la lista: "Reintentar"
+//   parcial  → la lista cargó, el resumen no: "Reconectar"
+// Anular (CLAUDE.md §5.3, confirmación activa): motivo + escribir el código + casilla + espera de 3 s
+// con cuenta regresiva. "Anular" es BotonMultimodal completo (firmas de Éxito / Error, Act. 14);
+// Cancelar, Esc o clic en el fondo suenan con la firma de Cancelación.
+// Decisión de diseño (§5.5 Semejanza): "Anular" usa la variante secundaria, no el contorno rojo de la
+// referencia; el campo de búsqueda va con relleno y sin borde; "Filtrar" son chips visibles (Hick: 3 opciones).
+// Lógica del navegador: src/scripts/admin-certificados.ts.
+import Admin from '../../layouts/Admin.astro';
+import Topbar from '../../components/Topbar.astro';
+import Tarjeta from '../../components/Tarjeta.astro';
+import Campo from '../../components/Campo.astro';
+import Boton from '../../components/Boton.astro';
+import BotonMultimodal from '../../components/BotonMultimodal.astro';
+import Badge from '../../components/Badge.astro';
+import Icono from '../../components/Icono.astro';
+import Modal from '../../components/Modal.astro';
+import EstadoVacio from '../../components/EstadoVacio.astro';
+import EstadoError from '../../components/EstadoError.astro';
+import Resumen from './_Resumen.astro';
+import { MOTIVOS_ANULACION } from '../../lib/repositorio';
+import { textosAdmin } from './_textos';
+import './_admin.css';
+
+const SIMULACIONES = ['ideal', 'vacio', 'cargando', 'error', 'parcial'];
+const pedido = Astro.url.searchParams.get('simular') ?? '';
+const simular = import.meta.env.DEV && SIMULACIONES.includes(pedido) ? pedido : '';
+const { ta, textosCliente } = textosAdmin(Astro.locals.idioma, Astro.locals.estres);
 ---
 
-<Proximamente
-  titulo="Certificados"
-  activo="certificados"
-  texto="Aquí verás los certificados emitidos y podrás anularlos. Llega en la Fase 7."
-  icono="medalla"
-/>
+<Admin titulo={ta('certificados.titulo')} activo="certificados" simular={simular}>
+  <Topbar titulo={ta('certificados.titulo')}>
+    <nav slot="migas" aria-label={ta('comun.migas')}>
+      <ol class="migas">
+        <li><a href="/admin">{ta('comun.panel')}</a></li>
+        <li aria-hidden="true"><Icono nombre="chevron" tamano={16} class="migas__flecha" /></li>
+        <li aria-current="page">{ta('certificados.migas')}</li>
+      </ol>
+    </nav>
+    <Fragment slot="bajada">{ta('certificados.bajada')}</Fragment>
+  </Topbar>
+
+  <div class="adm" data-certificados aria-busy="true">
+    <Resumen
+      cifras={[
+        { clave: 'validos', etiqueta: ta('comun.cifraValidos') },
+        { clave: 'anulados', etiqueta: ta('comun.cifraAnulados') },
+        { clave: 'inscripciones', etiqueta: ta('comun.cifraInscripciones') },
+      ]}
+    />
+
+    <div class="adm" data-region="contenido">
+      <div class="adm__herramientas">
+        <Campo
+          id="buscar-certificado"
+          etiqueta={ta('certificados.buscar')}
+          type="search"
+          autocomplete="off"
+          spellcheck="false"
+          class="adm__buscar"
+          data-buscar
+        >
+          <Icono slot="antes" nombre="buscar" />
+        </Campo>
+        <fieldset class="adm__filtros">
+          <legend>{ta('certificados.filtro')}</legend>
+          <button type="button" class="filtro-nivel" aria-pressed="true" data-filtro="">
+            {ta('certificados.todos')}<span class="filtro-nivel__n" data-contar=""></span>
+          </button>
+          <button type="button" class="filtro-nivel" aria-pressed="false" data-filtro="valido">
+            {ta('certificados.validos')}<span class="filtro-nivel__n" data-contar="valido"></span>
+          </button>
+          <button type="button" class="filtro-nivel" aria-pressed="false" data-filtro="anulado">
+            {ta('certificados.anulados')}<span class="filtro-nivel__n" data-contar="anulado"></span>
+          </button>
+        </fieldset>
+      </div>
+
+      <div class="tabla-adm__envoltura" tabindex="0" role="region" aria-labelledby="tabla-cert-titulo">
+        <table class="tabla-adm">
+          <caption id="tabla-cert-titulo" data-caption>{ta('certificados.titulo')}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{ta('certificados.colCodigo')}</th>
+              <th scope="col">{ta('certificados.colEstudiante')}</th>
+              <th scope="col">{ta('certificados.colCurso')}</th>
+              <th scope="col">{ta('certificados.colEmitido')}</th>
+              <th scope="col">{ta('certificados.colEstado')}</th>
+              <th scope="col" class="derecha">{ta('certificados.colAccion')}</th>
+            </tr>
+          </thead>
+          <tbody data-filas>
+            {
+              [0, 1, 2, 3, 4].map(() => (
+                <tr class="sk-fila" aria-hidden="true">
+                  {[0, 1, 2, 3, 4, 5].map(() => (
+                    <td><span class="skeleton" /></td>
+                  ))}
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="adm__sin-resultados" data-sin-resultados hidden>
+        <p>{ta('certificados.sinResultados')}</p>
+        <Boton variante="secundario" data-limpiar>
+          <Icono nombre="cerrar" tamano={18} />
+          {ta('comun.limpiarBusqueda')}
+        </Boton>
+      </div>
+    </div>
+
+    <Tarjeta data-region="vacio" hidden>
+      <EstadoVacio titulo={ta('certificados.vacioTitulo')} texto={ta('certificados.vacioTexto')} icono="medalla">
+        <Boton variante="principal" href="/admin/cursos" textoCargando={ta('comun.abriendo')}>{ta('certificados.vacioAccion')}</Boton>
+      </EstadoVacio>
+    </Tarjeta>
+
+    <Tarjeta data-region="error" hidden>
+      <EstadoError titulo={ta('certificados.errorTitulo')} texto={ta('comun.errorTexto')} multimodal />
+    </Tarjeta>
+  </div>
+  <p class="solo-lector" aria-live="polite" data-anuncio></p>
+  <p class="aviso-flotante" aria-hidden="true" data-aviso-flotante hidden>
+    <Icono nombre="check" tamano={20} />
+    <span data-aviso-texto></span>
+  </p>
+
+  <Modal id="modal-anular" titulo={ta('certificados.modalTitulo')} icono="alerta">
+    <p data-modal-descripcion></p>
+    <form class="anular" novalidate data-form-anular>
+      <Campo id="motivo-anulacion" etiqueta={ta('certificados.motivoEtiqueta')} como="select" ayuda={ta('certificados.motivoAyuda')} required data-motivo>
+        <option value="">{ta('certificados.motivoElige')}</option>
+        {MOTIVOS_ANULACION.map((m) => <option value={m}>{m}</option>)}
+      </Campo>
+      <div class="campo-confirmacion">
+        <Campo
+          id="confirmar-codigo"
+          etiqueta={ta('certificados.codigoEtiqueta', { codigo: '' })}
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          maxlength={10}
+          required
+          data-confirmar
+        />
+        <p class="coincide" data-coincide hidden><Icono nombre="check" tamano={16} />{ta('certificados.codigoCoincide')}</p>
+      </div>
+      <label class="casilla">
+        <input type="checkbox" data-casilla />
+        <span>{ta('certificados.casilla')}</span>
+      </label>
+      <p class="faltan" id="faltan-anular" data-faltan></p>
+    </form>
+    <Fragment slot="acciones">
+      <Boton variante="secundario" data-cancelar-anular>{ta('comun.cancelar')}</Boton>
+      <BotonMultimodal
+        variante="principal"
+        textoCargando={ta('certificados.anulando')}
+        textoExito={ta('certificados.anuladoListo')}
+        aria-disabled="true"
+        aria-describedby="faltan-anular"
+        data-anular
+      >
+        <Icono nombre="reloj" tamano={18} />
+        <span data-anular-texto>{ta('certificados.anular')}</span>
+      </BotonMultimodal>
+    </Fragment>
+  </Modal>
+
+  <template data-plantilla="fila">
+    <tr>
+      <th scope="row"><span class="codigo" tabindex="-1" data-codigo></span></th>
+      <td data-estudiante></td>
+      <td data-curso></td>
+      <td class="celda-num" data-emitido></td>
+      <td data-estado></td>
+      <td class="derecha" data-accion></td>
+    </tr>
+  </template>
+  <template data-plantilla="valido"><Badge tono="verde">{ta('certificados.valido')}</Badge></template>
+  <template data-plantilla="anulado"><Badge tono="rojo">{ta('certificados.anulado')}</Badge></template>
+  <template data-plantilla="anular">
+    <Boton variante="secundario" data-abrir-anular>
+      <Icono nombre="alerta" tamano={18} />
+      {ta('certificados.anularBoton')}
+    </Boton>
+  </template>
+
+  <script type="application/json" id="textos-admin" set:html={JSON.stringify(textosCliente('certificados'))} />
+</Admin>
+
+<script>
+  import '../../scripts/admin-certificados';
+</script>
+
+<style>
+  .anular {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e3);
+    margin-top: var(--e2);
+    text-align: left;
+  }
+  .campo-confirmacion {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e1);
+  }
+</style>

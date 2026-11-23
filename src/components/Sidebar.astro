@@ -26,14 +26,14 @@ const MENUS: Record<Menu, { id: string; texto: string; href: string; icono: Nomb
   ],
   admin: [
     { id: 'panel', texto: 'Panel', href: '/admin', icono: 'cuadricula' },
-    { id: 'cursos', texto: 'Cursos', href: '/admin/cursos/nuevo', icono: 'libro' },
+    { id: 'cursos', texto: 'Cursos', href: '/admin/cursos', icono: 'libro' },
     { id: 'usuarios', texto: 'Usuarios', href: '/admin/usuarios', icono: 'usuarios' },
     { id: 'certificados', texto: 'Certificados', href: '/admin/certificados', icono: 'medalla' },
   ],
 };
 const items = MENUS[menu];
 const subtitulo = menu === 'admin' ? 'Panel de AulaViva' : 'Estudiante';
-const inicio = menu === 'admin' ? '/admin/cursos/nuevo' : '/inicio';
+const inicio = menu === 'admin' ? '/admin' : '/inicio';
 ---
 
 <aside class="lateral oscuro" aria-label="Menú principal" data-lateral>

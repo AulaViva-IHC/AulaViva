@@ -13,7 +13,9 @@ import { normalizarBusqueda } from './validacion';
 import {
   catalogoDemo,
   certificadosDemo,
+  estudiantesDemo,
   inscripcionesDemo,
+  inscripcionesEstudiantesDemo,
   instructoresDemo,
   tareasDemo,
   tareasEjemplo,
@@ -254,6 +256,8 @@ export interface Certificado {
   estado: 'valido' | 'anulado';
   motivo: string | null;
   anuladoEn: Date | null;
+  /** Fase 7: id del administrador que lo anuló (null en los de prueba). */
+  anuladoPor?: number | null;
 }
 
 interface Memoria {
@@ -270,6 +274,10 @@ interface Memoria {
   certificados: Certificado[];
   /** Avisos leídos por usuario (ids de notificaciones). */
   avisosLeidos: Map<number, Set<string>>;
+  /** Fase 7: cursos que el administrador sacó del catálogo (tienen inscritos: no se eliminan). */
+  cursosDeshabilitados: Set<number>;
+  /** Fase 7: cursos eliminados por el administrador (solo los que no tenían inscritos). */
+  cursosEliminados: Set<number>;
 }
 
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
@@ -373,7 +381,7 @@ parcial.intentos ??= [];
 parcial.siguienteIntento ??= 1;
 parcial.registrosRechazados ??= [];
 parcial.cursos ??= [];
-parcial.inscripciones ??= inscripcionesDemo.map((i): Inscripcion => {
+parcial.inscripciones ??= [...inscripcionesDemo, ...inscripcionesEstudiantesDemo].map((i): Inscripcion => {
   const clases = clasesDe(CATALOGO.find((c) => c.id === i.cursoId)!);
   const ahora = Date.now();
   return {
@@ -417,6 +425,8 @@ parcial.certificados ??= certificadosDemo.map((c) => ({
   anuladoEn: c.anulado ? new Date(`${c.anulado.en}T15:00:00Z`) : null,
 }));
 parcial.avisosLeidos ??= new Map();
+parcial.cursosDeshabilitados ??= new Set();
+parcial.cursosEliminados ??= new Set();
 const memoria = parcial as Memoria;
 
 // ─── Usuarios ──────────────────────────────────────────────────────
@@ -511,7 +521,17 @@ export async function registrosRechazadosRecientes(ip: string, desde: Date): Pro
 /** Cursos visibles: los de prueba y los publicados con fecha de hoy o anterior. */
 function cursosVisibles(): Curso[] {
   const hoy = new Date().toISOString().slice(0, 10);
-  return [...CATALOGO, ...memoria.cursos.filter((c) => c.fechaPublicacion <= hoy).map(desdePublicado)];
+  return [...CATALOGO, ...memoria.cursos.filter((c) => c.fechaPublicacion <= hoy).map(desdePublicado)].filter(
+    (c) => !memoria.cursosEliminados.has(c.id), // Fase 7
+  );
+}
+
+/**
+ * Fase 7: lo que se ofrece en el catálogo, la portada y el buscador. Un curso deshabilitado
+ * sale de aquí, pero quien ya estaba inscrito lo sigue viendo (clases, evaluación, certificado).
+ */
+function cursosEnCatalogo(): Curso[] {
+  return cursosVisibles().filter((c) => !memoria.cursosDeshabilitados.has(c.id));
 }
 
 function aResumen(c: Curso): CursoResumen {
@@ -540,7 +560,7 @@ function aResumen(c: Curso): CursoResumen {
 
 /** Todos los cursos publicados: el destacado primero y luego del más antiguo al más nuevo. */
 export async function listarCursos(): Promise<CursoResumen[]> {
-  return cursosVisibles()
+  return cursosEnCatalogo()
     .sort((a, b) => Number(b.etiqueta === 'destacado') - Number(a.etiqueta === 'destacado'))
     .map(aResumen);
 }
@@ -551,7 +571,7 @@ export async function cursoPorSlug(slug: string): Promise<Curso | null> {
 
 /** El curso de la portada pública. */
 export async function cursoDestacado(): Promise<Curso | null> {
-  const cursos = cursosVisibles();
+  const cursos = cursosEnCatalogo();
   return cursos.find((c) => c.etiqueta === 'destacado') ?? cursos[0] ?? null;
 }
 
@@ -604,6 +624,7 @@ export async function inscribir(usuarioId: number, cursoId: number): Promise<Ava
   const curso = cursoPorId(cursoId);
   if (!curso || curso.totalClases === 0) return null;
   let i = memoria.inscripciones.find((x) => x.usuarioId === usuarioId && x.cursoId === cursoId);
+  if (!i && memoria.cursosDeshabilitados.has(cursoId)) return null; // Fase 7: ya no acepta inscripciones
   if (!i) {
     const ahora = new Date();
     i = {
@@ -722,7 +743,7 @@ export async function tareasDeLaSemana(usuarioId: number | null): Promise<Tarea[
 export async function buscarSugerencias(texto: string, limite = 3): Promise<Sugerencia[]> {
   const q = normalizarBusqueda(texto.trim());
   if (q.length < 2) return [];
-  const visibles = cursosVisibles();
+  const visibles = cursosEnCatalogo();
   const cursos = visibles
     .filter((c) => normalizarBusqueda(c.titulo).includes(q))
     .map((c): Sugerencia => ({ tipo: 'curso', texto: c.titulo, slug: c.slug }));
@@ -1233,5 +1254,203 @@ export async function preguntasPublicas(cursoId: number): Promise<{ curso: { id:
   return {
     curso: { id: curso.id, slug: curso.slug, titulo: curso.titulo },
     preguntas: curso.preguntas.map(({ numero, enunciado, opciones }) => ({ numero, enunciado, opciones })),
+  };
+}
+
+// ─── Administrador (Fase 7) ────────────────────────────────────────
+// En MySQL: consultas de solo lectura sobre usuarios, cursos, inscripciones y certificados,
+// y UPDATE de certificados (estado, motivo, anulado_por, anulado_en) y de cursos (deshabilitado).
+
+/** Motivos de anulación que ofrece el modal (admin-06). Queda registrado quién, cuándo y por qué. */
+export const MOTIVOS_ANULACION = [
+  'Datos del estudiante incorrectos',
+  'Emitido por error',
+  'Fraude o copia en la evaluación',
+  'Solicitud del estudiante',
+] as const;
+
+/** Todos los cursos que existen (también los programados y los deshabilitados), sin los eliminados. */
+function cursosDelAdmin(): { curso: Curso; publicado: CursoPublicado | null }[] {
+  return [
+    ...CATALOGO.map((curso) => ({ curso, publicado: null })),
+    ...memoria.cursos.map((p) => ({ curso: desdePublicado(p), publicado: p })),
+  ].filter(({ curso }) => !memoria.cursosEliminados.has(curso.id));
+}
+
+function cursoCualquiera(id: number): Curso | undefined {
+  return cursosDelAdmin().find(({ curso }) => curso.id === id)?.curso;
+}
+
+export interface CertificadoAdmin {
+  codigo: string;
+  /** Nombre confirmado al emitirlo (el que sale en el certificado). */
+  estudiante: string;
+  curso: string;
+  emitidoEn: Date;
+  estado: 'valido' | 'anulado';
+  motivo: string | null;
+  anuladoEn: Date | null;
+  anuladoPor: string | null;
+}
+
+function aCertificadoAdmin(c: Certificado): CertificadoAdmin {
+  return {
+    codigo: c.codigo,
+    estudiante: c.nombre,
+    curso: cursoCualquiera(c.cursoId)?.titulo ?? 'Curso eliminado',
+    emitidoEn: c.emitidoEn,
+    estado: c.estado,
+    motivo: c.motivo,
+    anuladoEn: c.anuladoEn,
+    anuladoPor: c.anuladoPor ? (memoria.usuarios.find((u) => u.id === c.anuladoPor)?.nombre ?? 'Administrador') : null,
+  };
+}
+
+/** Certificados emitidos, del más reciente al más antiguo (admin-05). */
+export async function listarCertificadosAdmin(): Promise<CertificadoAdmin[]> {
+  return [...memoria.certificados].sort((a, b) => b.emitidoEn.getTime() - a.emitidoEn.getTime()).map(aCertificadoAdmin);
+}
+
+/**
+ * Anula un certificado válido (admin-06 a admin-10). La verificación pública pasa a decir "Anulado".
+ * `guardar: false` (simulación de /estados) responde igual pero no cambia nada.
+ */
+export async function anularCertificado(
+  codigo: string,
+  motivo: string,
+  adminId: number,
+  guardar = true,
+): Promise<{ estado: 'ok'; certificado: CertificadoAdmin } | { estado: 'no-encontrado' } | { estado: 'ya-anulado'; certificado: CertificadoAdmin }> {
+  const c = memoria.certificados.find((x) => x.codigo === codigo);
+  if (!c) return { estado: 'no-encontrado' };
+  if (c.estado === 'anulado') return { estado: 'ya-anulado', certificado: aCertificadoAdmin(c) };
+  const anulado: Certificado = { ...c, estado: 'anulado', motivo, anuladoEn: new Date(), anuladoPor: adminId };
+  if (guardar) Object.assign(c, anulado);
+  return { estado: 'ok', certificado: aCertificadoAdmin(anulado) };
+}
+
+export type EstadoCursoAdmin = 'publicado' | 'programado' | 'deshabilitado';
+
+export interface CursoAdmin {
+  id: number;
+  slug: string;
+  titulo: string;
+  categoria: Categoria;
+  nivel: Nivel;
+  instructor: string;
+  totalClases: number;
+  inscritos: number;
+  certificados: number;
+  estado: EstadoCursoAdmin;
+  /** AAAA-MM-DD de publicación (solo los del administrador; los del catálogo de prueba ya están publicados). */
+  fechaPublicacion: string | null;
+  creadoPorAdmin: boolean;
+}
+
+function aCursoAdmin({ curso, publicado }: { curso: Curso; publicado: CursoPublicado | null }): CursoAdmin {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const estado: EstadoCursoAdmin = memoria.cursosDeshabilitados.has(curso.id)
+    ? 'deshabilitado'
+    : publicado && publicado.fechaPublicacion > hoy
+      ? 'programado'
+      : 'publicado';
+  return {
+    id: curso.id,
+    slug: curso.slug,
+    titulo: curso.titulo,
+    categoria: curso.categoria,
+    nivel: curso.nivel,
+    instructor: curso.instructor.nombre,
+    totalClases: curso.totalClases,
+    inscritos: memoria.inscripciones.filter((i) => i.cursoId === curso.id).length,
+    certificados: memoria.certificados.filter((c) => c.cursoId === curso.id && c.estado === 'valido').length,
+    estado,
+    fechaPublicacion: publicado?.fechaPublicacion ?? null,
+    creadoPorAdmin: publicado !== null,
+  };
+}
+
+/** Lista de cursos del administrador: los más nuevos (del admin) primero. */
+export async function listarCursosAdmin(): Promise<CursoAdmin[]> {
+  return cursosDelAdmin().map(aCursoAdmin).sort((a, b) => Number(b.creadoPorAdmin) - Number(a.creadoPorAdmin) || b.id - a.id);
+}
+
+/**
+ * Cambia el estado de un curso (CLAUDE.md §5.3: si tiene inscritos no se elimina, solo se deshabilita).
+ *   deshabilitar → sale del catálogo; los inscritos lo siguen viendo
+ *   habilitar    → vuelve al catálogo
+ *   eliminar     → solo sin inscritos
+ */
+export async function cambiarEstadoCurso(
+  id: number,
+  accion: 'deshabilitar' | 'habilitar' | 'eliminar',
+  guardar = true,
+): Promise<{ estado: 'ok'; curso: CursoAdmin | null } | { estado: 'no-encontrado' } | { estado: 'tiene-inscritos'; inscritos: number }> {
+  const item = cursosDelAdmin().find(({ curso }) => curso.id === id);
+  if (!item) return { estado: 'no-encontrado' };
+  const actual = aCursoAdmin(item);
+  if (accion === 'eliminar') {
+    if (actual.inscritos > 0) return { estado: 'tiene-inscritos', inscritos: actual.inscritos };
+    if (guardar) memoria.cursosEliminados.add(id);
+    return { estado: 'ok', curso: null };
+  }
+  if (!guardar) return { estado: 'ok', curso: { ...actual, estado: accion === 'deshabilitar' ? 'deshabilitado' : 'publicado' } };
+  if (accion === 'deshabilitar') memoria.cursosDeshabilitados.add(id);
+  else memoria.cursosDeshabilitados.delete(id);
+  return { estado: 'ok', curso: aCursoAdmin(item) };
+}
+
+export interface UsuarioAdmin {
+  id: number;
+  nombre: string;
+  correo: string;
+  registradoEn: Date;
+  cursos: number;
+  aprobados: number;
+  certificados: number;
+  /** Último acceso a una clase (null si nunca entró a un curso). */
+  ultimoAcceso: Date | null;
+}
+
+/** Estudiantes (con cuenta y de prueba), del más reciente al más antiguo. Sin contraseñas. */
+export async function listarEstudiantesAdmin(): Promise<UsuarioAdmin[]> {
+  const base = [
+    ...memoria.usuarios.filter((u) => u.rol === 'estudiante').map((u) => ({ id: u.id, nombre: u.nombre, correo: u.correo, registradoEn: u.creadoEn })),
+    ...estudiantesDemo.map((e) => ({ id: e.id, nombre: e.nombre, correo: e.correo, registradoEn: new Date(`${e.creadoEn}T15:00:00Z`) })),
+  ];
+  return base
+    .map((u): UsuarioAdmin => {
+      const suyas = memoria.inscripciones.filter((i) => i.usuarioId === u.id);
+      const accesos = suyas.map((i) => i.ultimoAcceso.getTime());
+      return {
+        ...u,
+        cursos: suyas.length,
+        aprobados: suyas.filter((i) => i.nota !== null).length,
+        certificados: memoria.certificados.filter((c) => c.usuarioId === u.id && c.estado === 'valido').length,
+        ultimoAcceso: accesos.length ? new Date(Math.max(...accesos)) : null,
+      };
+    })
+    .sort((a, b) => b.registradoEn.getTime() - a.registradoEn.getTime());
+}
+
+export interface ResumenAdmin {
+  cursos: { publicados: number; programados: number; deshabilitados: number };
+  estudiantes: number;
+  inscripciones: number;
+  certificados: { validos: number; anulados: number };
+}
+
+/** Cifras del Panel (y de la franja de resumen de cada pantalla del administrador). */
+export async function resumenAdmin(): Promise<ResumenAdmin> {
+  const cursos = cursosDelAdmin().map(aCursoAdmin);
+  const contar = (e: EstadoCursoAdmin) => cursos.filter((c) => c.estado === e).length;
+  return {
+    cursos: { publicados: contar('publicado'), programados: contar('programado'), deshabilitados: contar('deshabilitado') },
+    estudiantes: (await listarEstudiantesAdmin()).length,
+    inscripciones: memoria.inscripciones.filter((i) => cursos.some((c) => c.id === i.cursoId)).length,
+    certificados: {
+      validos: memoria.certificados.filter((c) => c.estado === 'valido').length,
+      anulados: memoria.certificados.filter((c) => c.estado === 'anulado').length,
+    },
   };
 }
