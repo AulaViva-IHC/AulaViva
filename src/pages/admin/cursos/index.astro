@@ -24,6 +24,7 @@ import Modal from '../../../components/Modal.astro';
 import EstadoVacio from '../../../components/EstadoVacio.astro';
 import EstadoError from '../../../components/EstadoError.astro';
 import Resumen from '../_Resumen.astro';
+import TarjetaSam from '../../../components/TarjetaSam.astro';
 import { textosAdmin } from '../_textos';
 import { traductor } from '../../../i18n';
 import '../_admin.css';
@@ -79,7 +80,7 @@ const FILTROS = [
           <legend>{ta('cursos.filtro')}</legend>
           {
             FILTROS.map((f) => (
-              <button type="button" class="filtro-nivel" aria-pressed={String(f.id === '')} data-filtro={f.id}>
+              <button type="button" class="filtro-nivel" aria-pressed={f.id === '' ? 'true' : 'false'} data-filtro={f.id}>
                 {f.texto}
                 <span class="filtro-nivel__n" data-contar={f.id} />
               </button>
@@ -222,6 +223,9 @@ const FILTROS = [
 
   <script type="application/json" id="textos-admin" set:html={JSON.stringify(textosCliente('cursos'))} />
   <script type="application/json" id="catalogo-admin" set:html={JSON.stringify(catalogo)} />
+
+  <!-- Act. 20: tarjeta SAM del flujo B (solo se abre con una prueba SAM activa, al ver el curso publicado) -->
+  {!simular && <TarjetaSam flujo="B" />}
 </Admin>
 
 <script>

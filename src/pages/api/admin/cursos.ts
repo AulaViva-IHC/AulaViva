@@ -1,5 +1,5 @@
 // GET  /api/admin/cursos  →  { cursos: CursoAdmin[] }   (Fase 7: lista con inscritos y estado; ?simular=vacio | error)
-// POST /api/admin/cursos  { curso: CursoBorrador }  →  JSON   (solo rol admin)
+// POST /api/admin/cursos  { curso: CursoBorrador, pruebaSam? }  →  JSON   (solo rol admin; pruebaSam: Act. 20)
 //   201 { ok, id, slug, titulo }
 //   401 / 403 sin sesión o sin rol admin
 //   422 { error: 'validacion', errores: { ruta: mensaje } }
@@ -117,7 +117,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     fechaPublicacion: b.fechaPublicacion,
   };
 
-  const publicado = await crearCurso(curso, usuario.id);
+  // Act. 20: el curso se marca si se publicó durante una prueba SAM (flujo B) para poder borrarlo después.
+  const publicado = await crearCurso(curso, usuario.id, cuerpo.pruebaSam === true);
   return json({ ok: true, id: publicado.id, slug: publicado.slug, titulo: publicado.titulo }, 201);
 };
 

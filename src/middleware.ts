@@ -6,7 +6,8 @@ import { buscarUsuarioPorId } from './lib/repositorio';
 import { COOKIE_IDIOMA, IDIOMA_POR_DEFECTO, esIdioma } from './i18n';
 
 // Páginas que exigen sesión (las APIs privadas revisan la sesión por su cuenta y responden 401).
-const PRIVADAS = ['/inicio', '/mis-cursos', '/certificados', '/clase', '/evaluacion', '/resultado', '/notificaciones', '/actividad-14', '/actividad-16', '/admin'];
+const PRIVADAS = ['/inicio', '/mis-cursos', '/certificados', '/clase', '/evaluacion', '/resultado', '/notificaciones', '/actividad-14', '/actividad-16', '/actividad-20', '/admin'];
+// /actividad-20 (Act. 20) sirve a los dos roles: la prueba SAM cambia de cuenta entre el flujo A y el B.
 // Con sesión no tiene sentido verlas: se va directo al inicio del rol.
 const SOLO_SIN_SESION = ['/login', '/registro'];
 // Solo en desarrollo: /estados muestra estas pantallas (y sus APIs) dentro de iframes sin
@@ -19,6 +20,7 @@ const SIMULABLES = [
   '/evaluacion', '/api/evaluacion', '/resultado', '/api/resultado', '/api/perfil',
   '/certificados', '/api/certificados', '/notificaciones', '/api/notificaciones',
   '/actividad-14', '/actividad-16', // Act. 14 y 16 (para auditar con Lighthouse sin iniciar sesión)
+  '/actividad-20', '/api/actividad-20', // Act. 20: los 5 estados de los resultados SAM
   // /verificar no está: en /estados se muestra la versión pública (10-verificar).
 ];
 // Fase 7: las pantallas del administrador en /estados usan el administrador de prueba.

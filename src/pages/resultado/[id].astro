@@ -7,6 +7,8 @@
 //   cargando → skeleton del anillo y las cifras
 //   error    → no cargó el resultado: "Reintentar"
 //   parcial  → el resultado cargó pero no el estado del certificado: "Reconectar"
+// Act. 20: en el Curso de prueba SAM, con una prueba SAM activa, la tarjeta "¿Cómo te sentiste?" se abre
+// al emitir el certificado (A5) o al ver un resultado desaprobado (A4).
 // Lógica del navegador: src/scripts/resultado.ts.
 import App from '../../layouts/App.astro';
 import Tarjeta from '../../components/Tarjeta.astro';
@@ -19,6 +21,8 @@ import Modal from '../../components/Modal.astro';
 import EstadoVacio from '../../components/EstadoVacio.astro';
 import EstadoError from '../../components/EstadoError.astro';
 import EstadoParcial from '../../components/EstadoParcial.astro';
+import TarjetaSam from '../../components/TarjetaSam.astro';
+import { ID_CURSO_SAM } from '../../lib/repositorio';
 
 const usuario = Astro.locals.usuario!;
 if (usuario.rol === 'admin') return Astro.redirect('/admin/cursos/nuevo');
@@ -169,6 +173,8 @@ const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
       </div>
     </form>
   </Modal>
+
+  {cursoId === ID_CURSO_SAM && !simular && <TarjetaSam flujo="A" />}
 </App>
 
 <script>

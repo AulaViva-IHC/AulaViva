@@ -76,6 +76,27 @@ export function traductor(idioma: Idioma, estres = false) {
   };
 }
 
+/**
+ * Act. 20: textos planos { "sam.titulo": "…", "sam.valencia.n1": "…" } de una o más ramas, en el idioma
+ * pedido, para el JavaScript del navegador (van en un <script type="application/json">).
+ */
+export function textosDeRamas(idioma: Idioma, estres: boolean, ...ramas: string[]): Record<string, string> {
+  const tr = traductor(idioma, estres);
+  const salida: Record<string, string> = {};
+  const recorrer = (nodo: Diccionario, prefijo: string) => {
+    for (const [clave, valor] of Object.entries(nodo)) {
+      const ruta = `${prefijo}.${clave}`;
+      if (typeof valor === 'string') salida[ruta] = tr(ruta);
+      else recorrer(valor, ruta);
+    }
+  };
+  for (const rama of ramas) {
+    const nodo = DICCIONARIOS.es[rama];
+    if (nodo && typeof nodo === 'object') recorrer(nodo, rama);
+  }
+  return salida;
+}
+
 // ─── Formatos regionales ────────────────────────────────────────────
 
 const FECHA = new Intl.DateTimeFormat('es-PE', { timeZone: ZONA, day: '2-digit', month: '2-digit', year: 'numeric' });
