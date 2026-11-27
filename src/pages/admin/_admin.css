@@ -311,15 +311,3 @@
   border: 3px solid #ffffff;
   outline: 2px solid #000000;
 }
-
-/* Act. 20 · B5: el curso recién publicado en una prueba SAM queda resaltado (fondo + borde izquierdo + texto "Nuevo") */
-.tabla-adm tbody tr.fila--sam > * {
-  background: var(--yellow-t);
-}
-.tabla-adm tbody tr.fila--sam > :first-child {
-  box-shadow: inset 4px 0 0 var(--indigo3);
-}
-:root[data-contraste='alto'] .tabla-adm tbody tr.fila--sam > * {
-  border-top: 3px solid #000 !important;
-  border-bottom: 3px solid #000 !important;
-}

@@ -5,7 +5,6 @@ import { abrirModal, cerrarModal } from './modal';
 import { limpiarError, mostrarError } from './campo';
 import { $, $$, anunciar, completarCarga, enfocar, ESPERA_EXITO_MS, esperar, pedirJSON, plantilla } from './util';
 import { confirmacionActiva, guardarEnUrl, iniciarResumen, sufijos, tx } from './admin-util';
-import { abrirTarjetaSam, sesionDelFlujo, terminarFlujoSam } from './sam';
 
 type Estado = 'publicado' | 'programado' | 'deshabilitado';
 type Accion = 'deshabilitar' | 'habilitar' | 'eliminar';
@@ -141,7 +140,6 @@ async function cargar(reintento = false): Promise<boolean> {
     mostrar('contenido');
     pintar();
     anunciar(anuncio, caption.textContent ?? '');
-    samAlVerElCurso();
     return true;
   } catch {
     await completarCarga(inicio);
@@ -152,28 +150,6 @@ async function cargar(reintento = false): Promise<boolean> {
     progreso?.detener();
     raiz.setAttribute('aria-busy', 'false');
   }
-}
-
-// ─── Act. 20 · B5: el administrador ve en la lista el curso que acaba de publicar ───
-// Con una prueba SAM del flujo B y el curso ya publicado (crear-curso.ts guardó su id), el flujo
-// termina aquí: se resalta la fila y se abre la tarjeta SAM.
-function samAlVerElCurso(): void {
-  const sesion = sesionDelFlujo('B');
-  if (!sesion?.publicadoId || sesion.fin || !document.querySelector('[data-sam="B"]')) return;
-  const curso = cursos.find((c) => c.id === sesion.publicadoId);
-  if (!curso) return;
-  terminarFlujoSam('B');
-  if (filtro && curso.estado !== filtro) {
-    filtro = '';
-    guardarEnUrl({ estado: '' });
-    pintar();
-  }
-  const fila = filas.querySelector<HTMLElement>(`tr[data-curso-id="${curso.id}"]`);
-  fila?.classList.add('fila--sam');
-  const suave = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-  fila?.scrollIntoView({ block: 'center', behavior: suave ? 'smooth' : 'auto' });
-  // Un momento para que vea su curso en la lista antes de la tarjeta.
-  window.setTimeout(() => abrirTarjetaSam(), 1200);
 }
 
 for (const chip of chips) {

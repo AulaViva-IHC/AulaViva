@@ -33,7 +33,6 @@ import {
   type TipoArchivo,
 } from '../lib/validacion-curso';
 import { $, $$, anunciar as anunciarEn, CARGA_MINIMA_MS, completarCarga, esperar, pedirJSON, plantilla } from './util';
-import { guardarSesionSam, sesionDelFlujo } from './sam';
 
 // ─── Elementos ─────────────────────────────────────────────────────
 const raiz = $<HTMLElement>('[data-crear]');
@@ -1282,12 +1281,10 @@ async function publicar(): Promise<void> {
   anunciar('Publicando el curso…');
   const inicio = performance.now();
   try {
-    // Act. 20: si hay una prueba SAM del flujo B, el curso se marca para poder borrarlo después.
-    const sam = sesionDelFlujo('B');
-    const { respuesta, datos } = await pedirJSON<{ id?: number; titulo?: string; errores?: Errores }>('/api/admin/cursos', {
+    const { respuesta, datos } = await pedirJSON<{ titulo?: string; errores?: Errores }>('/api/admin/cursos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(sam ? { curso, pruebaSam: true } : { curso }),
+      body: JSON.stringify({ curso }),
     });
     await completarCarga(inicio);
     if (respuesta.status === 401 || respuesta.status === 403) {
@@ -1311,8 +1308,6 @@ async function publicar(): Promise<void> {
 
     // Éxito: verde con check y luego la pantalla de "Curso publicado".
     publicado = true;
-    // Act. 20: B4 hecho; el flujo termina en B5, al ver el curso en /admin/cursos (admin-cursos.ts).
-    if (sam && datos.id) guardarSesionSam({ ...sam, publicadoId: datos.id });
     sucio = false;
     // Visual + earcon + vibración + "Curso publicado" en el mismo instante.
     retroalimentar(btnPublicar, 'exito');
