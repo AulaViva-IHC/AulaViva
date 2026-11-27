@@ -634,3 +634,61 @@ export const tareasEjemplo = [
   { titulo: 'Práctica de tablas dinámicas', curso: 'Análisis de datos con Excel', venceEnDias: 2 },
   { titulo: 'Ejercicios de listas y bucles', curso: 'Python desde cero', venceEnDias: 4 },
 ];
+
+// ─── Act. 20 · Curso de prueba SAM ──────────────────────────────────
+// Solo para la prueba de la escala SAM (flujo A: rendir la evaluación y obtener el certificado).
+// No sale en el catálogo, el buscador, la portada ni las listas del administrador (repositorio.ts lo
+// oculta). Gonzalo (id 1) ya completó sus 2 clases, así cada participante empieza en "Ir a la evaluación".
+// 5 preguntas fáciles: se aprueba con 4 de 5 (16/20). /actividad-20 lo reinicia para cada participante.
+export const ID_CURSO_SAM = 999;
+
+export const cursoPruebaSam: CursoDemo = {
+  id: ID_CURSO_SAM,
+  slug: 'curso-de-prueba-sam',
+  titulo: 'Curso de prueba SAM',
+  resumen: 'Curso corto para probar la evaluación y el certificado.',
+  descripcion: 'Curso de prueba de la Act. 20: rinde la evaluación y obtén tu certificado.',
+  qu: {
+    titulo: 'Curso de prueba SAM',
+    resumen: 'Curso corto para probar la evaluación y el certificado.',
+    descripcion: 'Curso de prueba de la Act. 20: rinde la evaluación y obtén tu certificado.',
+  },
+  sobre: 'Curso de prueba de la Act. 20 (escala SAM). Las clases ya están completas: solo falta la evaluación.',
+  aprenderas: [],
+  categoria: 'habilidades-blandas',
+  nivel: 'basico',
+  horas: 1,
+  precio: 0,
+  inicio: '2026-11-01T09:00:00-05:00',
+  etiqueta: null,
+  color: '#7A3A86',
+  icono: 'chat',
+  instructor: { nombre: 'Equipo AulaViva', rol: 'Curso de prueba (Act. 20)', bio: '' },
+  temas: [],
+  modulos: [
+    {
+      titulo: 'Módulo de prueba',
+      clases: [
+        ['Bienvenida al curso de prueba', 2],
+        ['Cómo se rinde la evaluación', 3],
+      ],
+    },
+  ],
+  preguntas: [
+    ['¿Cuánto es 2 + 2?', ['3', '4', '5', '22'], 1],
+    ['¿Cuántos días tiene una semana?', ['5', '6', '7', '10'], 2],
+    ['¿De qué color es el cielo en un día despejado?', ['Azul', 'Verde', 'Rojo', 'Negro'], 0],
+    ['¿Cuál de estos es un animal?', ['Mesa', 'Perro', 'Libro', 'Silla'], 1],
+    ['¿En qué país está Abancay?', ['Chile', 'Bolivia', 'Perú', 'Ecuador'], 2],
+  ],
+};
+
+/** Gonzalo con las 2 clases completas y sin rendir (último acceso muy antiguo: no aparece en "Continúa"). */
+export const inscripcionSam: InscripcionDemo = {
+  usuarioId: 1,
+  cursoId: ID_CURSO_SAM,
+  completadas: 2,
+  ultimaClase: '1.2',
+  haceHoras: 2000,
+  nota: null,
+};
