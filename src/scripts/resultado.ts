@@ -3,19 +3,16 @@
 //   /api/certificados/estado   → si ya se emitió y con qué nombre (si falla: parcial con "Reconectar")
 // Confirmar y emitir (BotonMultimodal completo): "Emitiendo…" → "¡Emitido!" → Mis certificados.
 // Corregir el nombre: validación al salir del campo y al guardar (mismas reglas que el registro).
-// Act. 20: con una prueba SAM activa (flujo A, Curso de prueba SAM) la tarjeta SAM se abre al emitir (A5)
-// en vez de ir a Mis certificados, o al ver un resultado desaprobado de este intento (A4).
 import { ponerEstado, estaOcupado } from './boton';
 import { procesar, retroalimentar } from './multimodal';
-import { abrirModal, cerrarModal } from './modal';
-import { abrirTarjetaSam, sesionDelFlujo, terminarFlujoSam } from './sam';
+import { abrirModal } from './modal';
 import { limpiarError, mostrarError } from './campo';
 import { $, anunciar, completarCarga, enfocar, ESPERA_EXITO_MS, esperar, pedirJSON, simulacion } from './util';
 import { normalizarNombre, validarNombre } from '../lib/validacion';
 
 interface Resultado {
   curso: { id: number; slug: string; titulo: string };
-  ultimo: { numero: number; correctas: number; total: number; nota: number; enviadoEn?: string };
+  ultimo: { numero: number; correctas: number; total: number; nota: number };
   mejorNota: number;
   aprobado: boolean;
   notaMinima: number;
@@ -186,7 +183,6 @@ async function cargar(reintento = false): Promise<boolean> {
       `${datos.resultado.aprobado ? 'Aprobado' : 'Desaprobado'}. Tu nota: ${datos.resultado.ultimo.nota} de 20.`,
     );
     await cargarCertificado();
-    if (!reintento) samSiDesaprobo(datos.resultado);
     return true;
   } catch {
     await completarCarga(inicio);
@@ -197,19 +193,6 @@ async function cargar(reintento = false): Promise<boolean> {
   } finally {
     raiz.setAttribute('aria-busy', 'false');
   }
-}
-
-// ─── Act. 20 · Tarjeta SAM ──────────────────────────────────────────
-/** A4: desaprobó en un intento de esta prueba → el flujo terminó igual; se mide cómo se siente. */
-const hayTarjetaSam = () => document.querySelector('[data-sam="A"]') !== null; // solo en el Curso de prueba SAM
-
-function samSiDesaprobo(r: Resultado): void {
-  const sesion = sesionDelFlujo('A');
-  if (!hayTarjetaSam() || !sesion || sesion.fin || r.aprobado || !r.ultimo.enviadoEn) return;
-  if (new Date(r.ultimo.enviadoEn).getTime() < sesion.inicio) return; // intento de antes de la prueba
-  terminarFlujoSam('A', { aprobado: false });
-  // Un momento para que vea su nota antes de que aparezca la tarjeta.
-  window.setTimeout(() => abrirTarjetaSam(), 1500);
 }
 
 // ─── Modal "Confirma tu nombre" ─────────────────────────────────────
@@ -312,15 +295,8 @@ emitir.addEventListener('click', async () => {
   }
   await completarCarga(inicio);
   if (status === 201 && datos.destino) {
-    // A5 con prueba SAM: se queda aquí y abre la tarjeta SAM (la hora de fin es la de la emisión).
-    const sam = hayTarjetaSam() && sesionDelFlujo('A') && !sesionDelFlujo('A')?.fin ? terminarFlujoSam('A', { aprobado: true }) : null;
-    retroalimentar(emitir, 'exito', sam ? 'Certificado emitido.' : undefined);
+    retroalimentar(emitir, 'exito');
     await esperar(ESPERA_EXITO_MS);
-    if (sam) {
-      cerrarModal('modal-nombre');
-      pintarAccion(datos.destino.split('codigo=')[1] ?? null);
-      if (abrirTarjetaSam()) return;
-    }
     window.location.assign(datos.destino);
     return;
   }

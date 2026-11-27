@@ -10,13 +10,9 @@
 import { randomInt } from 'node:crypto';
 import { usuariosDemo, type Usuario, type Rol } from './usuarios-demo';
 import { normalizarBusqueda } from './validacion';
-import type { FlujoSam } from './sam';
 import {
   catalogoDemo,
   certificadosDemo,
-  cursoPruebaSam,
-  ID_CURSO_SAM,
-  inscripcionSam,
   estudiantesDemo,
   inscripcionesDemo,
   inscripcionesEstudiantesDemo,
@@ -88,8 +84,6 @@ export interface CursoPublicado extends CursoNuevo {
   slug: string;
   creadoPor: number;
   creadoEn: Date;
-  /** Act. 20: creado durante una prueba SAM (flujo B); "Borrar cursos de prueba" lo quita. */
-  pruebaSam?: boolean;
 }
 
 // ─── Tipos del catálogo ────────────────────────────────────────────
@@ -284,9 +278,6 @@ interface Memoria {
   cursosDeshabilitados: Set<number>;
   /** Fase 7: cursos eliminados por el administrador (solo los que no tenían inscritos). */
   cursosEliminados: Set<number>;
-  /** Act. 20: respuestas de la escala SAM (sobreviven al cambio de cuenta entre flujos). */
-  respuestasSam: RespuestaSam[];
-  siguienteRespuestaSam: number;
 }
 
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
@@ -320,8 +311,6 @@ function desdeDemo(c: CursoDemo): Curso {
 }
 
 const CATALOGO: readonly Curso[] = catalogoDemo.map(desdeDemo);
-/** Act. 20: curso de prueba SAM. Se puede abrir (clase, evaluación, resultado, certificado), pero está oculto. */
-const CURSO_SAM: Curso = desdeDemo(cursoPruebaSam);
 
 const COLOR_CATEGORIA: Record<Categoria, string> = {
   tecnologia: '#1E5E9E',
@@ -438,27 +427,7 @@ parcial.certificados ??= certificadosDemo.map((c) => ({
 parcial.avisosLeidos ??= new Map();
 parcial.cursosDeshabilitados ??= new Set();
 parcial.cursosEliminados ??= new Set();
-parcial.respuestasSam ??= [];
-parcial.siguienteRespuestaSam ??= 1;
-// Act. 20: inscripción de Gonzalo al curso de prueba SAM (aparte, por si la memoria viene de antes).
-if (!parcial.inscripciones.some((i) => i.usuarioId === inscripcionSam.usuarioId && i.cursoId === ID_CURSO_SAM)) {
-  parcial.inscripciones.push(inscripcionSamNueva());
-}
 const memoria = parcial as Memoria;
-
-function inscripcionSamNueva(): Inscripcion {
-  const clases = clasesDe(CURSO_SAM);
-  const ahora = Date.now();
-  return {
-    usuarioId: inscripcionSam.usuarioId,
-    cursoId: ID_CURSO_SAM,
-    inscritoEn: new Date(ahora - (inscripcionSam.haceHoras + 24) * UNA_HORA_MS),
-    completadas: new Set(clases.slice(0, inscripcionSam.completadas).map((c) => c.id)),
-    ultimaClaseId: (clases.find((c) => c.codigo === inscripcionSam.ultimaClase) ?? clases[0]).id,
-    ultimoAcceso: new Date(ahora - inscripcionSam.haceHoras * UNA_HORA_MS),
-    nota: null,
-  };
-}
 
 // ─── Usuarios ──────────────────────────────────────────────────────
 
@@ -552,7 +521,7 @@ export async function registrosRechazadosRecientes(ip: string, desde: Date): Pro
 /** Cursos visibles: los de prueba y los publicados con fecha de hoy o anterior. */
 function cursosVisibles(): Curso[] {
   const hoy = new Date().toISOString().slice(0, 10);
-  return [...CATALOGO, CURSO_SAM, ...memoria.cursos.filter((c) => c.fechaPublicacion <= hoy).map(desdePublicado)].filter(
+  return [...CATALOGO, ...memoria.cursos.filter((c) => c.fechaPublicacion <= hoy).map(desdePublicado)].filter(
     (c) => !memoria.cursosEliminados.has(c.id), // Fase 7
   );
 }
@@ -562,8 +531,7 @@ function cursosVisibles(): Curso[] {
  * sale de aquí, pero quien ya estaba inscrito lo sigue viendo (clases, evaluación, certificado).
  */
 function cursosEnCatalogo(): Curso[] {
-  // Act. 20: el curso de prueba SAM nunca se ofrece (catálogo, portada ni buscador).
-  return cursosVisibles().filter((c) => !memoria.cursosDeshabilitados.has(c.id) && c.id !== ID_CURSO_SAM);
+  return cursosVisibles().filter((c) => !memoria.cursosDeshabilitados.has(c.id));
 }
 
 function aResumen(c: Curso): CursoResumen {
@@ -807,17 +775,15 @@ function crearSlug(titulo: string): string {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 70) || 'curso';
-  const usados = new Set([...CATALOGO, CURSO_SAM, ...memoria.cursos].map((c) => c.slug));
+  const usados = new Set([...CATALOGO, ...memoria.cursos].map((c) => c.slug));
   let slug = base;
   for (let n = 2; usados.has(slug); n++) slug = `${base}-${n}`;
   return slug;
 }
 
-export async function crearCurso(datos: CursoNuevo, creadoPor: number, pruebaSam = false): Promise<CursoPublicado> {
-  let id = Math.max(0, ...CATALOGO.map((c) => c.id), ...memoria.cursos.map((c) => c.id)) + 1;
-  if (id === ID_CURSO_SAM) id++; // Act. 20: ese id es del curso de prueba SAM
+export async function crearCurso(datos: CursoNuevo, creadoPor: number): Promise<CursoPublicado> {
+  const id = Math.max(0, ...CATALOGO.map((c) => c.id), ...memoria.cursos.map((c) => c.id)) + 1;
   const curso: CursoPublicado = { ...datos, id, slug: crearSlug(datos.titulo), creadoPor, creadoEn: new Date() };
-  if (pruebaSam) curso.pruebaSam = true;
   memoria.cursos.push(curso);
   return curso;
 }
@@ -1315,9 +1281,6 @@ function cursoCualquiera(id: number): Curso | undefined {
   return cursosDelAdmin().find(({ curso }) => curso.id === id)?.curso;
 }
 
-/** Act. 20: lo del curso de prueba SAM no ensucia las listas ni las cifras del administrador. */
-const deSam = (x: { cursoId: number }) => x.cursoId === ID_CURSO_SAM;
-
 export interface CertificadoAdmin {
   codigo: string;
   /** Nombre confirmado al emitirlo (el que sale en el certificado). */
@@ -1345,10 +1308,7 @@ function aCertificadoAdmin(c: Certificado): CertificadoAdmin {
 
 /** Certificados emitidos, del más reciente al más antiguo (admin-05). */
 export async function listarCertificadosAdmin(): Promise<CertificadoAdmin[]> {
-  return memoria.certificados
-    .filter((c) => !deSam(c))
-    .sort((a, b) => b.emitidoEn.getTime() - a.emitidoEn.getTime())
-    .map(aCertificadoAdmin);
+  return [...memoria.certificados].sort((a, b) => b.emitidoEn.getTime() - a.emitidoEn.getTime()).map(aCertificadoAdmin);
 }
 
 /**
@@ -1460,13 +1420,13 @@ export async function listarEstudiantesAdmin(): Promise<UsuarioAdmin[]> {
   ];
   return base
     .map((u): UsuarioAdmin => {
-      const suyas = memoria.inscripciones.filter((i) => i.usuarioId === u.id && !deSam(i));
+      const suyas = memoria.inscripciones.filter((i) => i.usuarioId === u.id);
       const accesos = suyas.map((i) => i.ultimoAcceso.getTime());
       return {
         ...u,
         cursos: suyas.length,
         aprobados: suyas.filter((i) => i.nota !== null).length,
-        certificados: memoria.certificados.filter((c) => c.usuarioId === u.id && c.estado === 'valido' && !deSam(c)).length,
+        certificados: memoria.certificados.filter((c) => c.usuarioId === u.id && c.estado === 'valido').length,
         ultimoAcceso: accesos.length ? new Date(Math.max(...accesos)) : null,
       };
     })
@@ -1489,97 +1449,8 @@ export async function resumenAdmin(): Promise<ResumenAdmin> {
     estudiantes: (await listarEstudiantesAdmin()).length,
     inscripciones: memoria.inscripciones.filter((i) => cursos.some((c) => c.id === i.cursoId)).length,
     certificados: {
-      validos: memoria.certificados.filter((c) => c.estado === 'valido' && !deSam(c)).length,
-      anulados: memoria.certificados.filter((c) => c.estado === 'anulado' && !deSam(c)).length,
+      validos: memoria.certificados.filter((c) => c.estado === 'valido').length,
+      anulados: memoria.certificados.filter((c) => c.estado === 'anulado').length,
     },
   };
-}
-
-// ─── Act. 20 · Escala SAM en flujos críticos ───────────────────────
-// En MySQL: respuestas_sam (id, participante, flujo, valencia, activacion, control, paso_dificil,
-// comentario, duracion_seg, aprobado, creado_en). Hoy en memoria: se pierde al reiniciar el servidor.
-
-export type { FlujoSam };
-/** Id del Curso de prueba SAM (las páginas lo usan para mostrar la tarjeta SAM solo en ese curso). */
-export { ID_CURSO_SAM };
-
-export interface RespuestaSam {
-  id: number;
-  participante: string;
-  flujo: FlujoSam;
-  valencia: number; // 1–9
-  activacion: number; // 1–9
-  control: number; // 1–9
-  pasoDificil: string; // "A1"…"A5" o "B1"…"B5"
-  comentario: string;
-  duracionSeg: number;
-  /** Solo flujo A: si aprobó la evaluación (null en el flujo B). */
-  aprobado: boolean | null;
-  fecha: Date;
-}
-
-export async function guardarRespuestaSam(datos: Omit<RespuestaSam, 'id' | 'fecha'>): Promise<RespuestaSam> {
-  const respuesta: RespuestaSam = { ...datos, id: memoria.siguienteRespuestaSam++, fecha: new Date() };
-  memoria.respuestasSam.push(respuesta);
-  return respuesta;
-}
-
-/** Todas las respuestas, de la más antigua a la más nueva. */
-export async function listarRespuestasSam(): Promise<RespuestaSam[]> {
-  return [...memoria.respuestasSam];
-}
-
-/** Id de la última clase del curso de prueba SAM: ahí empieza el flujo A ("Ir a la evaluación"). */
-export function claseInicioSam(): number {
-  return clasesDe(CURSO_SAM).at(-1)!.id;
-}
-
-export interface EstadoPruebasSam {
-  flujoA: { intentosUsados: number; aprobado: boolean; certificado: boolean; listo: boolean };
-  cursosDePrueba: number;
-  respuestas: number;
-  siguienteParticipante: string;
-}
-
-export async function estadoPruebasSam(usuarioId = inscripcionSam.usuarioId): Promise<EstadoPruebasSam> {
-  const intentos = intentosDe(usuarioId, ID_CURSO_SAM);
-  const inscripcion = inscripcionDe(usuarioId, ID_CURSO_SAM);
-  const certificado = memoria.certificados.some((c) => c.usuarioId === usuarioId && deSam(c));
-  const aprobado = (inscripcion?.nota ?? 0) >= CURSO_SAM.evaluacion.notaMinima;
-  const numeros = memoria.respuestasSam.map((r) => Number(r.participante.slice(1))).filter(Number.isFinite);
-  return {
-    flujoA: { intentosUsados: intentos.length, aprobado, certificado, listo: intentos.length === 0 && !certificado },
-    cursosDePrueba: memoria.cursos.filter((c) => c.pruebaSam && !memoria.cursosEliminados.has(c.id)).length,
-    respuestas: memoria.respuestasSam.length,
-    siguienteParticipante: `P${Math.max(0, ...numeros) + 1}`,
-  };
-}
-
-/**
- * Deja el flujo A como nuevo para otro participante: borra los intentos, la nota y el certificado del
- * curso de prueba SAM, vuelve a marcar sus clases como completas y devuelve el nombre de la cuenta de
- * prueba al original (por si alguien lo corrigió en "Confirma tu nombre"). Nada más cambia.
- */
-export async function prepararFlujoSam(usuarioId = inscripcionSam.usuarioId): Promise<void> {
-  memoria.intentosEvaluacion = memoria.intentosEvaluacion.filter((x) => !(x.usuarioId === usuarioId && deSam(x)));
-  memoria.certificados = memoria.certificados.filter((c) => !(c.usuarioId === usuarioId && deSam(c)));
-  memoria.inscripciones = memoria.inscripciones.filter((i) => !(i.usuarioId === usuarioId && deSam(i)));
-  memoria.inscripciones.push(inscripcionSamNueva());
-  const original = usuariosDemo.find((u) => u.id === usuarioId);
-  const usuario = memoria.usuarios.find((u) => u.id === usuarioId);
-  if (original && usuario) usuario.nombre = original.nombre;
-}
-
-/** Borra los cursos creados durante las pruebas SAM (flujo B) y lo que dependa de ellos. Devuelve cuántos. */
-export async function borrarCursosDePruebaSam(): Promise<number> {
-  const ids = new Set(memoria.cursos.filter((c) => c.pruebaSam).map((c) => c.id));
-  memoria.cursos = memoria.cursos.filter((c) => !ids.has(c.id));
-  memoria.inscripciones = memoria.inscripciones.filter((i) => !ids.has(i.cursoId));
-  memoria.intentosEvaluacion = memoria.intentosEvaluacion.filter((x) => !ids.has(x.cursoId));
-  memoria.certificados = memoria.certificados.filter((c) => !ids.has(c.cursoId));
-  for (const id of ids) {
-    memoria.cursosDeshabilitados.delete(id);
-    memoria.cursosEliminados.delete(id);
-  }
-  return ids.size;
 }

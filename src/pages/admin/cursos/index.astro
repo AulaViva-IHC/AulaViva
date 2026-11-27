@@ -24,7 +24,6 @@ import Modal from '../../../components/Modal.astro';
 import EstadoVacio from '../../../components/EstadoVacio.astro';
 import EstadoError from '../../../components/EstadoError.astro';
 import Resumen from '../_Resumen.astro';
-import TarjetaSam from '../../../components/TarjetaSam.astro';
 import { textosAdmin } from '../_textos';
 import { traductor } from '../../../i18n';
 import '../_admin.css';
@@ -223,9 +222,6 @@ const FILTROS = [
 
   <script type="application/json" id="textos-admin" set:html={JSON.stringify(textosCliente('cursos'))} />
   <script type="application/json" id="catalogo-admin" set:html={JSON.stringify(catalogo)} />
-
-  <!-- Act. 20: tarjeta SAM del flujo B (solo se abre con una prueba SAM activa, al ver el curso publicado) -->
-  {!simular && <TarjetaSam flujo="B" />}
 </Admin>
 
 <script>

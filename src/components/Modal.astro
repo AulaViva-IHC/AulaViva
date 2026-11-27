@@ -11,21 +11,11 @@ interface Props {
   /** Icono sobre el título (en un círculo del tono indicado). */
   icono?: NombreIcono;
   tono?: 'advertencia' | 'info';
-  /** Act. 20: más ancho (720 px) para contenidos con muchas columnas, como la escala SAM. */
-  amplio?: boolean;
-  /** Act. 20: false si el contenido es un formulario largo (no se lee entero como descripción). */
-  describir?: boolean;
 }
-const { id, titulo, icono, tono = 'advertencia', amplio = false, describir = true } = Astro.props;
+const { id, titulo, icono, tono = 'advertencia' } = Astro.props;
 ---
 
-<dialog
-  class:list={['modal', amplio && 'modal--amplio']}
-  id={id}
-  aria-labelledby={`${id}-titulo`}
-  aria-describedby={describir ? `${id}-texto` : undefined}
-  data-modal
->
+<dialog class="modal" id={id} aria-labelledby={`${id}-titulo`} aria-describedby={`${id}-texto`} data-modal>
   <div class="modal__cuerpo">
     {icono && <span class:list={['modal__icono', `modal__icono--${tono}`]} aria-hidden="true"><Icono nombre={icono} tamano={32} /></span>}
     <h2 class="modal__titulo" id={`${id}-titulo`} data-modal-titulo>{titulo}</h2>
@@ -53,9 +43,6 @@ const { id, titulo, icono, tono = 'advertencia', amplio = false, describir = tru
     background: var(--white);
     color: var(--ink);
     box-shadow: 0 24px 64px rgb(23 21 59 / 0.28); /* flota sobre la página */
-  }
-  .modal--amplio {
-    width: min(720px, calc(100vw - 32px));
   }
   .modal::backdrop {
     background: rgb(23 21 59 / 0.55);
